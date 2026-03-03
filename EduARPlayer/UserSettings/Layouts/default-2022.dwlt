@@ -353,7 +353,7 @@ MonoBehaviour:
       scrollPos: {x: 0, y: 0}
       m_SelectedIDs: 
       m_LastClickedID: 0
-      m_ExpandedIDs: 26fbffff
+      m_ExpandedIDs: cad8feff74d9feffccddfeffe0ddfeffeee7feff98e8fefff0ecfeff04edfeff50fcfefff4fcfeff4c01ffff6001ffff520bfffff60bffff4e10ffff6210ffffbe1fffff6820ffffc024ffffd424ffff9035ffff3c36fffff43affff083bfffff04affff964bffff5450ffff6e50ffff327cffffdc7cffff9281ffffa681ffffb08dffff548effffac92ffffc092ffff289effffce9effff26a3ffff3aa3ffff10adffffb6adffff0eb2ffff22b2ffff3ebeffffeabeffff42c3ffff56c3ffff3aceffffe0ceffff38d3ffff4cd3ffffe4deffff8adfffffe2e3fffff6e3ffff42eeffffe6eeffff9ef3ffffb2f3ffff26fbffff
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -469,7 +469,7 @@ MonoBehaviour:
     m_SkipHidden: 0
     m_SearchArea: 1
     m_Folders:
-    - Assets
+    - Assets/Scenes/StartupScene
     m_Globs: []
     m_OriginalText: 
     m_ImportLogFlags: 0
@@ -477,16 +477,16 @@ MonoBehaviour:
   m_ViewMode: 1
   m_StartGridSize: 64
   m_LastFolders:
-  - Assets
+  - Assets/Scenes/StartupScene
   m_LastFoldersGridSize: -1
   m_LastProjectPath: C:\Users\jivot\Documents\EduAR\EduARPlayer
   m_LockTracker:
     m_IsLocked: 0
   m_FolderTreeState:
     scrollPos: {x: 0, y: 0}
-    m_SelectedIDs: da7d0000
-    m_LastClickedID: 32218
-    m_ExpandedIDs: 00000000da7d0000dc7d000000ca9a3b
+    m_SelectedIDs: 2a970000
+    m_LastClickedID: 38698
+    m_ExpandedIDs: 00000000ba7d0000bc7d0000ea7f000000ca9a3b
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -514,7 +514,7 @@ MonoBehaviour:
     scrollPos: {x: 0, y: 0}
     m_SelectedIDs: 
     m_LastClickedID: 0
-    m_ExpandedIDs: 00000000da7d0000dc7d0000
+    m_ExpandedIDs: 00000000ba7d0000bc7d0000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -541,7 +541,7 @@ MonoBehaviour:
   m_ListAreaState:
     m_SelectedInstanceIDs: 
     m_LastClickedInstanceID: 0
-    m_HadKeyboardFocusLastEvent: 0
+    m_HadKeyboardFocusLastEvent: 1
     m_ExpandedInstanceIDs: 
     m_RenameOverlay:
       m_UserAcceptedRename: 0
@@ -566,7 +566,7 @@ MonoBehaviour:
       m_Icon: {fileID: 0}
       m_ResourceFile: 
     m_NewAssetIndexInList: -1
-    m_ScrollPosition: {x: 0, y: 181.33334}
+    m_ScrollPosition: {x: 0, y: 0}
     m_GridSize: 64
   m_SkipHiddenPackages: 0
   m_DirectoriesAreaWidth: 207.66667

@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Firebase.Firestore;
@@ -15,39 +16,53 @@ public class StartupScript : MonoBehaviour {
     private Button _submitButton;
     private bool _isLoading;
 
-    private async void Start() {
+    private IEnumerator Start() {
         Debug.Log("[StartupScript] Start sequence initiated.");
         if (ParentGameObject == null) {
             Debug.LogError("[StartupScript] ParentGameObject is null!");
-            return;
+            yield break;
         }
 
-        // Initialize Firebase and wait for dependencies
-        Debug.Log("[StartupScript] Checking Firebase dependencies...");
-        var dependencyStatus = await Firebase.FirebaseApp.CheckAndFixDependenciesAsync();
-        Debug.Log($"[StartupScript] Dependency status: {dependencyStatus}");
-
-        if (dependencyStatus != Firebase.DependencyStatus.Available) {
-            Debug.LogError($"[StartupScript] Could not resolve all Firebase dependencies: {dependencyStatus}");
-            return;
+        // Ensure FirebaseInitializer is present in the scene.
+        // It should have 'Execute in Awake' priority, but we add it here
+        // as a fallback if it was accidentally deleted from the hierarchy.
+        if (FirebaseInitializer.Instance == null) {
+            Debug.LogWarning("[StartupScript] FirebaseInitializer instance not found. Adding it to this GameObject.");
+            gameObject.AddComponent<FirebaseInitializer>();
         }
 
-        if (Firebase.FirebaseApp.DefaultInstance == null) {
-            Debug.LogError("[StartupScript] FirebaseApp.DefaultInstance is NULL!");
-            return;
+        // Wait for FirebaseInitializer to complete its Awake/Start sequence.
+        Debug.Log("[StartupScript] Waiting for FirebaseInitializer...");
+        float waitedSeconds = 0f;
+        const float maxWait = 15f;
+
+        while (FirebaseInitializer.Instance == null ||
+               (!FirebaseInitializer.Instance.IsReady && !FirebaseInitializer.Instance.HasFailed))
+        {
+            waitedSeconds += Time.unscaledDeltaTime;
+            if (waitedSeconds > maxWait) {
+                Debug.LogError("[StartupScript] Timed out waiting for Firebase init.");
+                yield break;
+            }
+            yield return null;
         }
 
-        Debug.Log("[StartupScript] Initializing Firestore...");
+        if (FirebaseInitializer.Instance.HasFailed) {
+            Debug.LogError($"[StartupScript] Firebase init failed: {FirebaseInitializer.Instance.InitError}");
+            yield break;
+        }
+
+        Debug.Log("[StartupScript] Firebase is ready. Initializing Firestore...");
         try {
             _db = FirebaseFirestore.DefaultInstance;
             if (_db == null) {
                 Debug.LogError("[StartupScript] FirebaseFirestore.DefaultInstance returned null!");
-                return;
+                yield break;
             }
             Debug.Log("[StartupScript] Firestore initialized.");
         } catch (System.Exception ex) {
             Debug.LogError($"[StartupScript] CRITICAL: Exception during Firestore initialization: {ex.Message}\n{ex.StackTrace}");
-            return;
+            yield break;
         }
 
         BuildCodeEntryUI();

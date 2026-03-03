@@ -16,8 +16,6 @@ namespace Assets.Interaction {
         private Vector3 _designerLocalPosition;
         private Quaternion _designerLocalRotation;
         private Vector3 _designerLocalScale;
-        private bool _attached;
-
         void Start() {
             // Capture designer-assigned transforms before any AR manipulation
             _designerLocalPosition = transform.localPosition;
@@ -53,7 +51,6 @@ namespace Assets.Interaction {
         private void HandleMarkerLost(string id) {
             if (id == markerId) {
                 SetVisible(false);
-                _attached = false;
             }
         }
 
@@ -66,7 +63,6 @@ namespace Assets.Interaction {
             transform.localRotation = _designerLocalRotation;
             transform.localScale = _designerLocalScale * ArScale;
 
-            _attached = true;
             SetVisible(true);
         }
 

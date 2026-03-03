@@ -1,37 +1,13 @@
 {
-    "m_SelectedDeviceId": "3414636581000C3",
+    "m_SelectedDeviceId": "ZF6523HFKG",
     "m_SelectedProcess": {
         "deviceId": "ZF6523HFKG",
         "name": "com.example.campuspulse",
-        "processId": 8196,
+        "processId": 2952,
         "exited": false
     },
     "m_SelectedPriority": 3,
     "m_KnownProcessesForSerialization": [
-        {
-            "deviceId": "3414636581000C3",
-            "name": "com.instagram.android",
-            "processId": 17940,
-            "exited": true
-        },
-        {
-            "deviceId": "3414636581000C3",
-            "name": "com.unity.template.ar_mobile",
-            "processId": 21362,
-            "exited": true
-        },
-        {
-            "deviceId": "3414636581000C3",
-            "name": "com.example.campuspulse",
-            "processId": 11043,
-            "exited": true
-        },
-        {
-            "deviceId": "3414636581000C3",
-            "name": "com.example.campuspulse",
-            "processId": 12794,
-            "exited": true
-        },
         {
             "deviceId": "3414636581000C3",
             "name": "com.android.launcher3",
@@ -41,7 +17,43 @@
         {
             "deviceId": "3414636581000C3",
             "name": "com.example.campuspulse",
-            "processId": 19666,
+            "processId": 5001,
+            "exited": true
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.example.campuspulse",
+            "processId": 5901,
+            "exited": true
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.example.campuspulse",
+            "processId": 9894,
+            "exited": true
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.example.campuspulse",
+            "processId": 12346,
+            "exited": true
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.example.campuspulse",
+            "processId": 12807,
+            "exited": false
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.example.campuspulse",
+            "processId": 18083,
+            "exited": false
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.example.campuspulse",
+            "processId": 18742,
             "exited": false
         },
         {
@@ -87,10 +99,28 @@
             "exited": false
         },
         {
-            "deviceId": "SGY5EEX4OVV8LJDI",
-            "name": "com.android.settings",
-            "processId": 28268,
-            "exited": true
+            "deviceId": "ZF6523HFKG",
+            "name": "com.example.campuspulse",
+            "processId": 29524,
+            "exited": false
+        },
+        {
+            "deviceId": "ZF6523HFKG",
+            "name": "com.example.campuspulse",
+            "processId": 31640,
+            "exited": false
+        },
+        {
+            "deviceId": "ZF6523HFKG",
+            "name": "com.example.campuspulse",
+            "processId": 1301,
+            "exited": false
+        },
+        {
+            "deviceId": "ZF6523HFKG",
+            "name": "com.example.campuspulse",
+            "processId": 2952,
+            "exited": false
         },
         {
             "deviceId": "SGY5EEX4OVV8LJDI",
@@ -101,25 +131,31 @@
         {
             "deviceId": "SGY5EEX4OVV8LJDI",
             "name": "com.example.campuspulse",
-            "processId": 17720,
-            "exited": true
-        },
-        {
-            "deviceId": "SGY5EEX4OVV8LJDI",
-            "name": "com.example.campuspulse",
-            "processId": 19664,
-            "exited": true
-        },
-        {
-            "deviceId": "SGY5EEX4OVV8LJDI",
-            "name": "com.example.campuspulse",
-            "processId": 6398,
-            "exited": true
-        },
-        {
-            "deviceId": "SGY5EEX4OVV8LJDI",
-            "name": "com.example.campuspulse",
             "processId": 28066,
+            "exited": true
+        },
+        {
+            "deviceId": "SGY5EEX4OVV8LJDI",
+            "name": "com.example.campuspulse",
+            "processId": 25830,
+            "exited": true
+        },
+        {
+            "deviceId": "SGY5EEX4OVV8LJDI",
+            "name": "com.example.campuspulse",
+            "processId": 22286,
+            "exited": true
+        },
+        {
+            "deviceId": "SGY5EEX4OVV8LJDI",
+            "name": "com.example.campuspulse",
+            "processId": 24741,
+            "exited": true
+        },
+        {
+            "deviceId": "SGY5EEX4OVV8LJDI",
+            "name": "com.whatsapp",
+            "processId": 26636,
             "exited": false
         }
     ],
