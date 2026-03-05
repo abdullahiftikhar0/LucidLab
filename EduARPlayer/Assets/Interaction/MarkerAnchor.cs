@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.XR.ARFoundation;
 
 namespace Assets.Interaction {
     /// <summary>
@@ -18,6 +19,8 @@ namespace Assets.Interaction {
         private Vector3 _designerLocalScale;
         private bool _isVisible = false;
         private bool _isLocked = false;
+        public bool isPlanePlaced = false;
+        private ARAnchor _arAnchor;
         void Start() {
             // Capture designer-assigned transforms before any AR manipulation
             _designerLocalPosition = transform.localPosition;
@@ -44,16 +47,72 @@ namespace Assets.Interaction {
             ARExperimentManager.OnMarkerLost -= HandleMarkerLost;
         }
 
-        public void LockInPlace() {
-            if (!_isVisible) return; // Only lock if it is currently visible based on marker
-            
-            _isLocked = true;
+        public void HideForPlaneTransition() {
+            SetVisible(false);
             transform.SetParent(null, true);
         }
 
+        public void SnapToPlane(Pose hitPose) {
+            // Edge case fix: If an anchor already exists (we repinned it), destroy it first!
+            // Unity's AR system won't let you just move an active ARAnchor via transforms permanently.
+            if (_arAnchor != null) {
+                DestroyImmediate(_arAnchor);
+                _arAnchor = null;
+            }
+
+            transform.SetParent(null, true);
+            
+            // Edge case fix: Respect designer relative offsets when placing on a tracked plane
+            // Treat the hit.pose as if it was the marker's coordinate system
+            transform.position = hitPose.position + (hitPose.rotation * (_designerLocalPosition * ArScale));
+            transform.rotation = hitPose.rotation * _designerLocalRotation;
+            transform.localScale = _designerLocalScale * ArScale;
+            
+            isPlanePlaced = true;
+            
+            _arAnchor = gameObject.AddComponent<ARAnchor>();
+
+            SetVisible(true);
+        }
+
+        public void ClearPlanePlacement() {
+            isPlanePlaced = false;
+            // Also need to stop ARAnchor overriding manual resets
+            if (_arAnchor != null) {
+                DestroyImmediate(_arAnchor);
+                _arAnchor = null;
+            }
+            SetVisible(false);
+
+            // Re-check original marker tracking in case it's still in view
+            if (!string.IsNullOrEmpty(markerId) &&
+                ARExperimentManager.MarkerTransforms.TryGetValue(markerId, out var markerTransform)) {
+                AttachTo(markerTransform);
+            }
+        }
+
+        public void LockInPlace() {
+            if (!_isVisible || isPlanePlaced) return; // Only lock if it is currently visible based on marker
+            
+            _isLocked = true;
+            transform.SetParent(null, true);
+
+            // Add ARAnchor to pin it precisely to geographic physical space, preventing drift
+            if (_arAnchor == null) {
+                _arAnchor = gameObject.AddComponent<ARAnchor>();
+            }
+        }
+
         public void Unlock() {
+            if (isPlanePlaced) return; // Don't unlock plane-placed objects via marker flow
             _isLocked = false;
             
+            // Remove ARAnchor tracking
+            if (_arAnchor != null) {
+                Destroy(_arAnchor);
+                _arAnchor = null;
+            }
+
             // If unlocked, revert to tracking logic
             if (!string.IsNullOrEmpty(markerId) &&
                 ARExperimentManager.MarkerTransforms.TryGetValue(markerId, out var markerTransform)) {
@@ -64,7 +123,7 @@ namespace Assets.Interaction {
         }
 
         private void HandleMarkerTracked(string id, Transform markerTransform) {
-            if (_isLocked) return;
+            if (_isLocked || isPlanePlaced) return;
 
             if (id == markerId) {
                 AttachTo(markerTransform);
@@ -72,7 +131,7 @@ namespace Assets.Interaction {
         }
 
         private void HandleMarkerLost(string id) {
-            if (_isLocked) return;
+            if (_isLocked || isPlanePlaced) return;
 
             if (id == markerId) {
                 SetVisible(false);

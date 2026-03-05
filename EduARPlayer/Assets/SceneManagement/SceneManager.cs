@@ -104,6 +104,9 @@ namespace Assets.SceneManagement {
                 var tmp = sceneDescriptionGameObject.GetComponentsInChildren<TextMeshProUGUI>()
                     .FirstOrDefault(x => x.name == "SceneDescriptionText");
                 if (tmp != null) tmp.text = message;
+                Debug.Log($"[SceneManager] ShowDescription updated text to: {message}");
+            } else {
+                Debug.LogWarning("[SceneManager] ShowDescription failed because sceneDescriptionGameObject is NULL!");
             }
         }
 
@@ -133,8 +136,15 @@ namespace Assets.SceneManagement {
                 }
             }
 
-            // Don't auto-load scene — show scan prompt and wait for marker
-            ShowDescription("SCAN A MARKER TO START THE EXPERIMENT");
+            // Edge Case Fix: Check ARModeManager before defaulting back to marker phrase
+            var modeManager = FindObjectOfType<ARModeManager>();
+            if (modeManager != null && modeManager.currentMode == TrackingModeToggleUI.TrackingMode.Plane) {
+                // If the user already switched the mode while loading, respect the plane state.
+                // The Mode Manager's OnPlanesChanged will soon override this if a plane is already visible.
+                ShowDescription("SCAN A PLANE");
+            } else {
+                ShowDescription("SCAN A MARKER TO START THE EXPERIMENT");
+            }
         }
 
         void OnDestroy() {
