@@ -294,7 +294,7 @@ export default function DashboardHome() {
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 md:flex-row">
           <div className="flex items-center gap-2 text-slate-400">
             <span className="material-symbols-outlined text-xl">view_in_ar</span>
-            <span className="text-sm font-medium">© 2026 EduAR Designer. All rights reserved.</span>
+            <span className="text-sm font-medium">© 2026 EduAR. All rights reserved.</span>
           </div>
           <div className="flex gap-8 text-sm font-medium text-slate-500">
             <a className="hover:text-primary" href="#">Support</a>

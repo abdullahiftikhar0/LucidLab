@@ -16,14 +16,15 @@ import Scene from './routes/Scene/scene';
 import SceneManager from './routes/scene_manager';
 import LoginPage from './routes/Login';
 import RegisterPage from './routes/Register';
+import LandingPage from './routes/Landing';
 import DashboardHome from './routes/Dashboard';
 import ClassroomDetail from './routes/ClassroomDetail';
 import ExperimentsList from './routes/ExperimentsList';
 import EvaluationPage from './routes/Evaluation';
 
 const router = createBrowserRouter([
-  // New auth routes
-  { path: '/', element: <Navigate to="/dashboard" /> },
+  // Landing page as default
+  { path: '/', element: <LandingPage /> },
   { path: '/login', element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },
 

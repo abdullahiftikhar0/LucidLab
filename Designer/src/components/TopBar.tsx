@@ -29,9 +29,9 @@ export default function TopBar() {
         <div className="flex items-center gap-10">
           <Link to="/dashboard" className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white">
-              <span className="material-symbols-outlined">view_in_ar</span>
+              <span className="material-symbols-outlined">science</span>
             </div>
-            <h2 className="text-xl font-bold tracking-tight">EduAR Designer</h2>
+            <h2 className="text-xl font-bold tracking-tight">EduAR</h2>
           </Link>
           <nav className="hidden md:flex items-center gap-8">
             <Link
