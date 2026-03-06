@@ -7,14 +7,33 @@ import {
 } from '@chakra-ui/react';
 import { getFirestore } from '@firebase/firestore';
 import React from 'react';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import { FirestoreProvider, useFirebaseApp } from 'reactfire';
+import { AuthProvider } from './contexts/AuthContext';
+import AuthGuard from './components/AuthGuard';
 import ExperimentRoot from './routes/experiment_root';
 import Scene from './routes/Scene/scene';
 import SceneManager from './routes/scene_manager';
-
+import LoginPage from './routes/Login';
+import RegisterPage from './routes/Register';
+import DashboardHome from './routes/Dashboard';
+import ClassroomDetail from './routes/ClassroomDetail';
+import ExperimentsList from './routes/ExperimentsList';
+import EvaluationPage from './routes/Evaluation';
 
 const router = createBrowserRouter([
+  // New auth routes
+  { path: '/', element: <Navigate to="/dashboard" /> },
+  { path: '/login', element: <LoginPage /> },
+  { path: '/register', element: <RegisterPage /> },
+
+  // New authenticated routes
+  { path: '/dashboard', element: <AuthGuard><DashboardHome /></AuthGuard> },
+  { path: '/classrooms/:classroomId', element: <AuthGuard><ClassroomDetail /></AuthGuard> },
+  { path: '/experiments', element: <AuthGuard><ExperimentsList /></AuthGuard> },
+  { path: '/evaluation/:classroomId/:experimentId', element: <AuthGuard><EvaluationPage /></AuthGuard> },
+
+  // EXISTING — DO NOT TOUCH
   {
     path: '/experiment/:expName',
     element: <SceneManager />,
@@ -35,18 +54,20 @@ export default function App() {
 
   return (
     <Container width="100vw" height="100vh">
-      <EduXRContext.Provider value={{ username: 'mainuser' }}>
-        <FirestoreProvider sdk={firestoreInstance}>
-          <ExperimentRoot>
-            <ColorModeScript />
-            <ChakraProvider theme={theme}>
-              <React.Suspense fallback={<Skeleton />}>
-                <RouterProvider router={router} />
-              </React.Suspense>
-            </ChakraProvider>
-          </ExperimentRoot>
-        </FirestoreProvider>
-      </EduXRContext.Provider>
+      <AuthProvider>
+        <EduXRContext.Provider value={{ username: 'mainuser' }}>
+          <FirestoreProvider sdk={firestoreInstance}>
+            <ExperimentRoot>
+              <ColorModeScript />
+              <ChakraProvider theme={theme}>
+                <React.Suspense fallback={<Skeleton />}>
+                  <RouterProvider router={router} />
+                </React.Suspense>
+              </ChakraProvider>
+            </ExperimentRoot>
+          </FirestoreProvider>
+        </EduXRContext.Provider>
+      </AuthProvider>
     </Container>
   );
 }
