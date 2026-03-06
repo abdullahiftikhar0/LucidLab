@@ -18,7 +18,7 @@ public class BuildARToggleUI {
         bgGo.transform.SetParent(canvas.transform, false);
         var bgRt = bgGo.GetComponent<RectTransform>();
         bgRt.anchorMin = new Vector2(0, 1);
-        bgRt.anchorMax = new Vector2(0, 1);
+        bgRt.anchorMax = new Vector2(0, 1);             
         bgRt.pivot = new Vector2(0, 1);
         bgRt.anchoredPosition = new Vector2(30, -30);
         bgRt.sizeDelta = new Vector2(160, 70);
