@@ -231,7 +231,7 @@ function SceneContent() {
                 </Box>
 
                 <Box borderTop="1px solid" borderColor="gray.600" pt="1em">
-                  <Heading size="md" mb="0.5em">AR Markers (EduAR Anchors)</Heading>
+                  <Heading size="md" mb="0.5em">AR Markers (LucidLab Anchors)</Heading>
                   <Flex gap="1em" mb="1em" align="flex-end">
                     <FormControl>
                       <FormLabel>Marker Name</FormLabel>

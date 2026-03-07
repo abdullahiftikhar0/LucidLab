@@ -1,4 +1,4 @@
-# EduAR Designer — Frontend Screen Specification
+# LucidLab Designer — Frontend Screen Specification
 
 > **For:** Frontend Developer  
 > **Stack:** React + TypeScript, Chakra UI, React Router, Reactfire (Firebase)  
@@ -55,14 +55,14 @@ Before building any screens, implement a route guard:
 
 **Layout:**
 - Centered card on a clean background
-- EduAR logo at the top
+- LucidLab logo at the top
 - Login form
 
 **Elements on screen:**
 | Element | Type | Details |
 |---|---|---|
-| EduAR Logo | Image | Centered at top of card |
-| "EduAR Designer" | Heading (h1) | Below logo |
+| LucidLab Logo | Image | Centered at top of card |
+| "LucidLab Designer" | Heading (h1) | Below logo |
 | Email field | Text input | Required, email validation |
 | Password field | Password input | Required, min 6 characters |
 | "Login" button | Primary button | Triggers `signInWithEmailAndPassword` |
@@ -96,7 +96,7 @@ Before building any screens, implement a route guard:
 **Elements on screen:**
 | Element | Type | Details |
 |---|---|---|
-| EduAR Logo | Image | Centered at top |
+| LucidLab Logo | Image | Centered at top |
 | "Create Account" | Heading (h1) | |
 | Full Name field | Text input | Required |
 | Email field | Text input | Required, email validation |
@@ -141,7 +141,7 @@ Before building any screens, implement a route guard:
 **Top Bar (appears on ALL authenticated pages):**
 | Element | Type | Details |
 |---|---|---|
-| "EduAR Designer" text/logo | Link | Clicking it navigates to `/dashboard` |
+| "LucidLab Designer" text/logo | Link | Clicking it navigates to `/dashboard` |
 | Navigation links | Links/tabs | "Dashboard", "Experiments" |
 | Notification bell icon | Icon button | Future use (can be placeholder for now) |
 | User avatar + name | Menu button | Dropdown with: Profile, Logout |

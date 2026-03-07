@@ -1,4 +1,4 @@
-# EduAR — API Structure & Endpoints
+# LucidLab — API Structure & Endpoints
 
 > This document defines all API interactions between the Designer/Player clients and the Firebase backend + AI Assistant service.
 
@@ -90,7 +90,7 @@ The AI Assistant is an external REST API service (can be a Firebase Cloud Functi
 
 ### Base URL
 ```
-https://eduar-ai.YOUR_DOMAIN/api/v1
+https://lucidlab-ai.YOUR_DOMAIN/api/v1
 ```
 
 ### Authentication

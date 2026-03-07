@@ -1,12 +1,12 @@
-# EduAR — AI Assistant Integration Specification
+# LucidLab — AI Assistant Integration Specification
 
-> Detailed specification for the scene-aware AI assistant used by instructors (and optionally students) within the EduAR platform.
+> Detailed specification for the scene-aware AI assistant used by instructors (and optionally students) within the LucidLab platform.
 
 ---
 
 ## 1. Overview
 
-The AI Assistant is a context-aware conversational agent embedded in the EduAR Designer (and optionally the Player). It understands the current experiment design and helps instructors build Visual Programming Language (VPL) logic through natural language interaction.
+The AI Assistant is a context-aware conversational agent embedded in the LucidLab Designer (and optionally the Player). It understands the current experiment design and helps instructors build Visual Programming Language (VPL) logic through natural language interaction.
 
 ---
 
@@ -121,9 +121,9 @@ The AI must have access to the following context for every request:
 The LLM receives this system prompt (condensed version):
 
 ```
-You are the EduAR AI Assistant, a specialist in augmented reality experiment design.
+You are the LucidLab AI Assistant, a specialist in augmented reality experiment design.
 
-You help teachers design AR science experiments using the EduAR Visual Programming Language (VPL).
+You help teachers design AR science experiments using the LucidLab Visual Programming Language (VPL).
 
 ## Your Context
 - You have access to the teacher's current scene objects, their properties, and marker assignments.

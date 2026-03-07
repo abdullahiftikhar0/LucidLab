@@ -14,7 +14,7 @@ function VideoPlayer() {
           <iframe
             className="w-full h-full"
             src={`https://www.youtube-nocookie.com/embed/${VIDEO_ID}?autoplay=1&modestbranding=1&rel=0&color=white&iv_load_policy=3`}
-            title="EduAR Demo"
+            title="LucidLab Demo"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
           />
@@ -27,7 +27,7 @@ function VideoPlayer() {
             {/* Thumbnail */}
             <img
               src={thumbnail}
-              alt="EduAR Demo Video"
+              alt="LucidLab Demo Video"
               className="w-full h-full object-cover"
             />
             {/* Dark overlay */}
@@ -39,10 +39,10 @@ function VideoPlayer() {
               </div>
               <span className="text-white text-sm font-semibold tracking-wide opacity-80">Watch Demo</span>
             </div>
-            {/* EduAR badge - bottom left */}
+            {/* LucidLab badge - bottom left */}
             <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full">
               <span className="material-symbols-outlined text-primary text-sm">science</span>
-              <span className="text-white text-xs font-bold tracking-wide">EduAR</span>
+              <span className="text-white text-xs font-bold tracking-wide">LucidLab</span>
             </div>
             {/* Duration chip - bottom right */}
             <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full">
@@ -67,7 +67,7 @@ export default function LandingPage() {
           <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-primary text-3xl">science</span>
-              <span className="text-xl font-bold tracking-tight">EduAR</span>
+              <span className="text-xl font-bold tracking-tight">LucidLab</span>
             </div>
             <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600 dark:text-slate-400">
               <a className="hover:text-primary transition-colors" href="#features">Features</a>
@@ -221,7 +221,7 @@ export default function LandingPage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {[
-                  { quote: '"EduAR has completely transformed our chemistry curriculum. Students are more engaged than ever, and safety concerns are a thing of the past."', name: 'Dr. Sarah Miller', role: 'Dept. Head, Stanford University', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCIjbPZMDpXMyOyysoWVU7o2u_31ykTkXfSKzX8GEU_7d98QtlaTOG5g-QwurZtHRDfKBViwDJ4k7uyu780n_dHXxOwUB6Xw6kUqsZUIFCF879VUUKVRJ9ggrfI4muvRrJ73LzQEU4xPs7JEXG2YBRoCK2d-D2eYy7Ve-HKzxh1CO7gdE7zDqpm0zTcbbX5zsWMuhOZG2YmJvUgygTp-Uv1xnTM1sFYK3JYctZOuoZWp-BdZMRprf4cFmrZFwql7OUpA6QiPsLfpiuv' },
+                  { quote: '"LucidLab has completely transformed our chemistry curriculum. Students are more engaged than ever, and safety concerns are a thing of the past."', name: 'Dr. Sarah Miller', role: 'Dept. Head, Stanford University', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCIjbPZMDpXMyOyysoWVU7o2u_31ykTkXfSKzX8GEU_7d98QtlaTOG5g-QwurZtHRDfKBViwDJ4k7uyu780n_dHXxOwUB6Xw6kUqsZUIFCF879VUUKVRJ9ggrfI4muvRrJ73LzQEU4xPs7JEXG2YBRoCK2d-D2eYy7Ve-HKzxh1CO7gdE7zDqpm0zTcbbX5zsWMuhOZG2YmJvUgygTp-Uv1xnTM1sFYK3JYctZOuoZWp-BdZMRprf4cFmrZFwql7OUpA6QiPsLfpiuv' },
                   { quote: '"The drag-and-drop builder is so intuitive. I was able to create a full physics module for my high schoolers in just one afternoon."', name: 'James Wilson', role: 'Science Lead, NY Public Schools', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB4e0L-BAOc85iYHe4CdRvFAorQERAsg8g6b1MdA8r2JaCl68OMjGphGQfsiDjF7rvBzxa8kFqAX9eyazTc6mvhdsNqq2Y_ULQddS6KAVYtmTzEyAI8WSMrdhHug87xvNAVYXLRDMriBfEBq5UxWiWBG5VQGm2adTLC_CMMMRWVpOBnZ8b-8rQH3yJjMQF7Z11a8sQQKz1jYBLC_X5PGEuUNLkxBDXonLqOsGyJ6RUnZeQudzW5SeTejSoXAi1L1sDP6-fEQOeVmHGe' },
                   { quote: '"The student recording feature is a game changer for assessment. Hearing their thought process while they work is invaluable."', name: 'Elena Rodriguez', role: 'Curriculum Director, STEM Academy', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDPzIaksImAqOgFKuADPU6c2gKKUMBU5KrbbMij650y6HFCHgcsQ9YXlQad0snqTAlgJ5kKfGG017bDLVo8VIhrYGQkAgfOxV0KU9-5NBHrRvMhHAdph-TaG4kxlgvyMoYJ5TbugnFkjsS31fBALUUzdKdSht-6W0gaCTY1ckIbu2pmiwpF7BdYcDv5qYoyvL8yJQyc4OdyJvrocATdEqKyttV-MH8ewOZOYiDndNiCnDVELxrj4Rtc6IYAdEimBzW2eZ4tCzdopnn7' },
                 ].map(t => (
@@ -268,7 +268,7 @@ export default function LandingPage() {
               <div className="col-span-2">
                 <div className="flex items-center gap-2 mb-6">
                   <span className="material-symbols-outlined text-primary text-3xl">science</span>
-                  <span className="text-xl font-bold tracking-tight">EduAR</span>
+                  <span className="text-xl font-bold tracking-tight">LucidLab</span>
                 </div>
                 <p className="text-slate-500 dark:text-slate-400 text-sm max-w-xs mb-6">
                   Providing world-class augmented reality laboratory experiences for educational institutions since 2021.
@@ -309,7 +309,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="pt-8 border-t border-slate-100 dark:border-slate-900 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500 dark:text-slate-600">
-              <p>© 2026 EduAR. All rights reserved.</p>
+              <p>© 2026 LucidLab. All rights reserved.</p>
               <div className="flex gap-8">
                 <a className="hover:text-slate-900 dark:hover:text-slate-300 transition-colors" href="#">Privacy Policy</a>
                 <a className="hover:text-slate-900 dark:hover:text-slate-300 transition-colors" href="#">Terms of Service</a>

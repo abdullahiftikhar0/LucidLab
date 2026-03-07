@@ -45,7 +45,7 @@ const router = createBrowserRouter([
   },
 ]);
 
-export const EduXRContext = React.createContext<{
+export const LucidLabContext = React.createContext<{
   username: string;
 }>(null!);
 
@@ -56,7 +56,7 @@ export default function App() {
   return (
     <Container width="100vw" height="100vh">
       <AuthProvider>
-        <EduXRContext.Provider value={{ username: 'mainuser' }}>
+        <LucidLabContext.Provider value={{ username: 'mainuser' }}>
           <FirestoreProvider sdk={firestoreInstance}>
             <ExperimentRoot>
               <ColorModeScript />
@@ -67,7 +67,7 @@ export default function App() {
               </ChakraProvider>
             </ExperimentRoot>
           </FirestoreProvider>
-        </EduXRContext.Provider>
+        </LucidLabContext.Provider>
       </AuthProvider>
     </Container>
   );

@@ -1,11 +1,11 @@
-# EduAR — Complete Project Folder Structure
+# LucidLab — Complete Project Folder Structure
 
 > Full platform directory layout covering Designer, Player, EditorRenderer, Cloud Functions, and shared assets.
 
 ---
 
 ```
-EduAR/
+LucidLab/
 │
 ├── README.md                           # Project overview
 ├── converted.md                        # Original project specification
@@ -166,7 +166,7 @@ EduAR/
 │   ├── .eslintrc.json
 │   └── .prettierrc.json
 │
-├── EduARPlayer/                       # 📱 Unity Mobile AR App (Student)
+├── LucidLabPlayer/                       # 📱 Unity Mobile AR App (Student)
 │   ├── Assets/
 │   │   ├── Scenes/                    # Unity scenes
 │   │   │   ├── MainMenu.unity         # Auth + classroom selection

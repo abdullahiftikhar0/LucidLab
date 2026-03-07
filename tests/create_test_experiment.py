@@ -51,4 +51,4 @@ object_ref.set({
 })
 
 print("✅ Successfully created 'Test AR Experiment' in Firestore!")
-print("Run the EduARPlayer in Unity -> StartupScene to see the button appear.")
+print("Run the LucidLabPlayer in Unity -> StartupScene to see the button appear.")

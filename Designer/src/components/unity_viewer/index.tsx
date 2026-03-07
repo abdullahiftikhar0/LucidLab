@@ -37,7 +37,7 @@ export default function UnityViewer({ style, expName, sceneName }: props) {
     codeUrl: '/renderer/Build/renderer.wasm',
     streamingAssetsUrl: 'StreamingAssets',
     companyName: 'DefaultCompany',
-    productName: 'EduXRDesigner',
+    productName: 'LucidLabDesigner',
     productVersion: '0.1',
   });
 

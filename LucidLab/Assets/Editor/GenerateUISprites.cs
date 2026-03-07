@@ -4,7 +4,7 @@ using System.IO;
 
 public class GenerateUISprites
 {
-    [MenuItem("EduAR/Generate Joystick Assets")]
+    [MenuItem("LucidLab/Generate Joystick Assets")]
     public static void Generate()
     {
         string dir = "Assets/UI/Sprites";
