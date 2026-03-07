@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { getAuth, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirebaseApp } from 'reactfire';
 import { useAuth } from '../../contexts/AuthContext';
+import { uploadAvatar } from '../../utils/storageHelpers';
 
 export default function RegisterPage() {
   const app = useFirebaseApp();
@@ -20,6 +21,9 @@ export default function RegisterPage() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   if (!authLoading && currentUser) return <Navigate to="/dashboard" replace />;
 
@@ -28,7 +32,7 @@ export default function RegisterPage() {
       <div className="dark min-h-screen flex items-center justify-center bg-background-dark">
         <div className="flex flex-col items-center gap-4">
           <div className="size-12 bg-primary rounded-lg flex items-center justify-center text-white animate-pulse">
-            <span className="material-symbols-outlined text-3xl">view_in_ar</span>
+            <span className="material-symbols-outlined text-3xl">science</span>
           </div>
           <p className="text-slate-400 text-sm font-medium">Loading...</p>
         </div>
@@ -50,6 +54,7 @@ export default function RegisterPage() {
           uid: user.uid,
           email: user.email,
           displayName: user.displayName || '',
+          photoURL: user.photoURL || '',
           role: 'instructor',
           institution: '',
           classroomIds: [],
@@ -84,10 +89,15 @@ export default function RegisterPage() {
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       const user = result.user;
+      let photoURL = '';
+      if (avatarFile) {
+        try { photoURL = await uploadAvatar(app, user.uid, avatarFile); } catch (e) { console.warn('Avatar upload failed:', e); }
+      }
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
         email: user.email,
         displayName: fullName,
+        photoURL,
         role: 'instructor',
         institution: institution || '',
         classroomIds: [],
@@ -197,6 +207,40 @@ export default function RegisterPage() {
               )}
 
               <form className="space-y-4" onSubmit={handleSubmit}>
+                {/* Avatar Picker */}
+                <div className="flex flex-col items-center mb-2">
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="relative group"
+                  >
+                    <div className="size-20 rounded-full bg-slate-800 border-2 border-slate-700 overflow-hidden flex items-center justify-center group-hover:border-primary transition-colors">
+                      {avatarPreview ? (
+                        <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="material-symbols-outlined text-slate-500 text-4xl">person</span>
+                      )}
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 size-7 bg-primary rounded-full flex items-center justify-center border-2 border-slate-900 group-hover:scale-110 transition-transform">
+                      <span className="material-symbols-outlined text-white text-sm">photo_camera</span>
+                    </div>
+                  </button>
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => {
+                      const f = e.target.files?.[0];
+                      if (f) {
+                        setAvatarFile(f);
+                        setAvatarPreview(URL.createObjectURL(f));
+                      }
+                    }}
+                  />
+                  <span className="text-xs text-slate-500 mt-2">Upload photo (optional)</span>
+                </div>
+
                 {/* Full Name */}
                 <div>
                   <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1 mb-1 block">Full Name</label>

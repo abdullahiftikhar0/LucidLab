@@ -1,17 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { getFirestore, doc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs, addDoc, serverTimestamp, arrayUnion, arrayRemove, increment } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs, addDoc, serverTimestamp, arrayUnion, arrayRemove, increment, setDoc } from 'firebase/firestore';
 import { useFirebaseApp } from 'reactfire';
 import { useAuth } from '../../contexts/AuthContext';
 import TopBar from '../../components/TopBar';
 import StatusBadge from '../../components/StatusBadge';
 import EmptyState from '../../components/EmptyState';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import { uploadCoverImage } from '../../utils/storageHelpers';
 
 interface ClassroomData {
   name: string; subject: string; description: string; instructorId: string;
   joinCode: string; joinCodeActive: boolean; studentCount: number;
-  experimentIds: string[]; archived: boolean;
+  experimentIds: string[]; archived: boolean; coverImageURL?: string;
 }
 interface Member { id: string; displayName: string; email: string; joinedAt: any; status: string; }
 interface ExperimentData { id: string; title: string; category: string; status: string; }
@@ -50,6 +51,9 @@ export default function ClassroomDetail() {
   const [availableExperiments, setAvailableExperiments] = useState<ExperimentData[]>([]);
   const [selectedExpIds, setSelectedExpIds] = useState<string[]>([]);
   const [searchFilter, setSearchFilter] = useState('');
+  const [editCoverFile, setEditCoverFile] = useState<File | null>(null);
+  const [editCoverPreview, setEditCoverPreview] = useState<string | null>(null);
+  const editCoverRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { if (classroomId) loadAll(); }, [classroomId]);
 
@@ -65,6 +69,8 @@ export default function ClassroomDetail() {
       const data = snap.data() as ClassroomData;
       setClassroom(data);
       setEditForm({ name: data.name, subject: data.subject, description: data.description });
+      setEditCoverPreview(data.coverImageURL || null);
+      setEditCoverFile(null);
       if (data.experimentIds?.length) loadExperiments(data.experimentIds);
     }
   }
@@ -115,7 +121,14 @@ export default function ClassroomDetail() {
   }
 
   async function saveEdit() {
-    await updateDoc(doc(db, 'classrooms', classroomId!), { name: editForm.name, subject: editForm.subject, description: editForm.description, updatedAt: serverTimestamp() });
+    const updates: any = { name: editForm.name, subject: editForm.subject, description: editForm.description, updatedAt: serverTimestamp() };
+    if (editCoverFile) {
+      try {
+        const url = await uploadCoverImage(app, classroomId!, editCoverFile);
+        updates.coverImageURL = url;
+      } catch (e) { console.warn('Cover upload failed:', e); }
+    }
+    await updateDoc(doc(db, 'classrooms', classroomId!), updates);
     setShowEditModal(false); loadClassroom();
   }
 
@@ -178,6 +191,14 @@ export default function ClassroomDetail() {
           <span className="material-symbols-outlined text-sm">chevron_right</span>
           <span className="text-slate-900 font-medium">{classroom.name}</span>
         </nav>
+
+        {/* Cover Image Header */}
+        {classroom.coverImageURL && (
+          <div className="w-full h-48 rounded-xl overflow-hidden mb-8 relative">
+            <img src={classroom.coverImageURL} alt="" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+          </div>
+        )}
 
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
@@ -372,6 +393,29 @@ export default function ClassroomDetail() {
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Description</label>
                 <textarea className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" rows={3} value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Cover Image</label>
+                <button
+                  type="button"
+                  onClick={() => editCoverRef.current?.click()}
+                  className="w-full h-28 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 hover:border-primary/50 hover:bg-primary/5 transition-all flex flex-col items-center justify-center gap-1 overflow-hidden relative"
+                >
+                  {editCoverPreview ? (
+                    <>
+                      <img src={editCoverPreview} alt="Cover" className="w-full h-full object-cover absolute inset-0" />
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                        <span className="text-white text-sm font-semibold">Change Image</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined text-slate-400 text-xl">add_photo_alternate</span>
+                      <span className="text-xs text-slate-400">Upload cover</span>
+                    </>
+                  )}
+                </button>
+                <input ref={editCoverRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) { setEditCoverFile(f); setEditCoverPreview(URL.createObjectURL(f)); } }} />
               </div>
             </div>
             <div className="flex justify-end gap-3 mt-6">
