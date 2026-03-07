@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate, Link, Navigate } from 'react-router-dom';
-import { getAuth, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, updateProfile } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirebaseApp } from 'reactfire';
 import { useAuth } from '../../contexts/AuthContext';
@@ -19,10 +19,10 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   if (!authLoading && currentUser) return <Navigate to="/dashboard" replace />;
@@ -72,6 +72,22 @@ export default function RegisterPage() {
     }
   }
 
+  function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function triggerAvatarUpload() {
+    avatarInputRef.current?.click();
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
@@ -91,7 +107,7 @@ export default function RegisterPage() {
       const user = result.user;
       let photoURL = '';
       if (avatarFile) {
-        try { photoURL = await uploadAvatar(app, user.uid, avatarFile); } catch (e) { console.warn('Avatar upload failed:', e); }
+        try { photoURL = await uploadAvatar(user.uid, avatarFile); } catch (e) { console.warn('Avatar upload failed:', e); }
       }
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
@@ -104,6 +120,10 @@ export default function RegisterPage() {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
+      // Sync displayName to Auth so TopBar shows correct initials immediately
+      if (fullName.trim()) {
+        await updateProfile(user, { displayName: fullName.trim() });
+      }
       navigate('/dashboard');
     } catch (err: any) {
       const code = err.code || '';
