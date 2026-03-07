@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, Navigate } from 'react-router-dom';
-import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, updateProfile } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirebaseApp } from 'reactfire';
 import { useAuth } from '../../contexts/AuthContext';
@@ -71,7 +71,16 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const { user } = await signInWithEmailAndPassword(auth, email, password);
+      // Sync displayName from Firestore to Auth so TopBar shows correct initials immediately
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        const firestoreName = data?.displayName?.trim?.();
+        if (firestoreName && !user.displayName) {
+          await updateProfile(user, { displayName: firestoreName });
+        }
+      }
       navigate('/dashboard');
     } catch (err: any) {
       const code = err.code || '';
