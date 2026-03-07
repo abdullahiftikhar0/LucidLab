@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>LucidLab - Student Assignments</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#00f2ff",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#0f2223",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+    <style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 252, 255, 0.1);
+        }
+
+        .neon-glow {
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.4);
+        }
+
+        .neon-text-glow {
+            text-shadow: 0 0 8px rgba(0, 242, 255, 0.5);
+        }
+    </style>
+    <style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+    <!-- Top App Bar -->
+    <header
+        class="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-4 py-4 border-b border-primary/10">
+        <div class="flex items-center justify-between">
+            <div class="w-10"></div> <!-- Spacer -->
+            <h1 class="text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">My Assignments</h1>
+            <button
+                class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-primary/10 transition-colors">
+                <span class="material-symbols-outlined text-slate-900 dark:text-slate-100">filter_list</span>
+            </button>
+        </div>
+    </header>
+    <!-- Tabs / Segmented Control -->
+    <div class="px-4 mt-6">
+        <div class="flex p-1 bg-slate-200 dark:bg-primary/5 rounded-xl">
+            <button
+                class="flex-1 py-2.5 text-sm font-semibold rounded-lg bg-white dark:bg-primary text-slate-900 dark:text-background-dark shadow-sm transition-all">
+                To Do
+            </button>
+            <button
+                class="flex-1 py-2.5 text-sm font-semibold rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-all">
+                Completed
+            </button>
+        </div>
+    </div>
+    <!-- Main Content: Task List -->
+    <main class="flex-1 px-4 py-6 space-y-4 overflow-y-auto">
+        <div id="assignments-list"></div>
+        <div id="empty-state" class="hidden flex flex-col items-center justify-center py-16 text-center">
+            <span class="material-symbols-outlined text-5xl text-slate-600 mb-3">check_circle</span>
+            <p class="text-slate-400 text-sm">No active assignments.<br>You’re all caught up!</p>
+        </div>
+    </main>
+    <script>
+    (function () {
+      // Hide bottom nav — shell provides its own
+      var nav = document.querySelector("nav");
+      if (nav) nav.style.display = "none";
+      var main = document.querySelector("main");
+      if (main) main.style.paddingBottom = "16px";
+
+      // "Completed" tab → navigate to completed screen
+      var tabs = document.querySelectorAll("button");
+      tabs.forEach(function (btn) {
+        if (btn.textContent.trim() === "Completed") {
+          btn.addEventListener("click", function (e) {
+            e.preventDefault(); e.stopPropagation();
+            parent.postMessage("navigate:completed", "*");
+          });
+        }
+      });
+
+      function esc(s) {
+        var d = document.createElement("div");
+        d.appendChild(document.createTextNode(s));
+        return d.innerHTML;
+      }
+
+      function renderAssignments(experiments) {
+        var list = document.getElementById("assignments-list");
+        var empty = document.getElementById("empty-state");
+        list.innerHTML = "";
+
+        if (!experiments || experiments.length === 0) {
+          empty.classList.remove("hidden");
+          return;
+        }
+        empty.classList.add("hidden");
+
+        experiments.forEach(function (exp) {
+          var hasSubmission = exp.submission && (exp.submission.status === "in_progress" || exp.submission.status === "submitted");
+          var statusLabel = hasSubmission ? "In Progress" : "Not Started";
+          var statusColor = hasSubmission ? "text-amber-400 bg-amber-400/10" : "text-slate-400 bg-slate-500/10";
+          var barColor = hasSubmission ? "bg-primary" : "bg-slate-600";
+          var pct = (exp.submission && exp.submission.completionPercentage) || 0;
+          var classroomName = (exp.classroom && exp.classroom.name) || "";
+
+          var card = document.createElement("div");
+          card.className = "glass-card rounded-xl p-4 flex gap-4 items-start relative overflow-hidden mb-4";
+          card.innerHTML =
+            '<div class="absolute top-0 left-0 w-1 h-full ' + (hasSubmission ? 'bg-primary neon-glow' : 'bg-primary/30') + '"></div>' +
+            '<div class="flex-shrink-0 w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">' +
+              '<span class="material-symbols-outlined text-3xl text-primary">science</span>' +
+            '</div>' +
+            '<div class="flex-1">' +
+              '<div class="flex justify-between items-start mb-1">' +
+                '<h3 class="font-bold text-base leading-tight">' + esc(exp.title || exp.name || "Experiment") + '</h3>' +
+                '<span class="text-[10px] font-bold uppercase tracking-wider ' + statusColor + ' px-2 py-1 rounded-full">' + statusLabel + '</span>' +
+              '</div>' +
+              '<p class="text-sm text-slate-500 dark:text-slate-400 mb-4">' + esc(classroomName) + '</p>' +
+              '<button class="ar-btn w-full bg-gradient-to-r from-primary to-cyan-400 text-background-dark font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 neon-glow active:scale-95 transition-transform">' +
+                '<span class="material-symbols-outlined text-lg">play_arrow</span> Start AR' +
+              '</button>' +
+            '</div>';
+
+          card.querySelector(".ar-btn").addEventListener("click", function (e) {
+            e.stopPropagation();
+            var mode = hasSubmission ? "continue" : "launch";
+            parent.postMessage("unity:start_ar:" + JSON.stringify({ experimentId: exp.id, title: exp.title || exp.name, mode: mode }), "*");
+          });
+          list.appendChild(card);
+        });
+      }
+
+      window.addEventListener("message", function (e) {
+        var d = e.data;
+        if (d && typeof d === "object" && d.type === "assignments") renderAssignments(d.data);
+      });
+    })();
+    </script>
+</body>
+
+</html>

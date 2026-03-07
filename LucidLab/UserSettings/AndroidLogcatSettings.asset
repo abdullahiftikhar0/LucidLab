@@ -1,36 +1,90 @@
 {
-    "m_SelectedDeviceId": "ZF6523HFKG",
+    "m_SelectedDeviceId": "3414636581000C3",
     "m_SelectedProcess": {
-        "deviceId": "ZF6523HFKG",
-        "name": "com.example.campuspulse",
-        "processId": 17252,
+        "deviceId": "3414636581000C3",
+        "name": "com.example.lucidlab",
+        "processId": 19097,
         "exited": false
     },
     "m_SelectedPriority": 0,
     "m_KnownProcessesForSerialization": [
         {
             "deviceId": "3414636581000C3",
-            "name": "com.example.campuspulse",
-            "processId": 12807,
+            "name": "com.instagram.android",
+            "processId": 10821,
+            "exited": false
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.example.lucidlab",
+            "processId": 17587,
             "exited": true
         },
         {
             "deviceId": "3414636581000C3",
-            "name": "com.example.campuspulse",
-            "processId": 18083,
+            "name": "com.example.lucidlab",
+            "processId": 18870,
             "exited": true
         },
         {
             "deviceId": "3414636581000C3",
-            "name": "com.example.campuspulse",
-            "processId": 18742,
+            "name": "com.example.lucidlab",
+            "processId": 23154,
             "exited": true
         },
         {
             "deviceId": "3414636581000C3",
-            "name": "com.example.campuspulse",
-            "processId": 19893,
+            "name": "com.example.lucidlab",
+            "processId": 28598,
             "exited": true
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.google.android.apps.tachyon",
+            "processId": 4438,
+            "exited": false
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.example.lucidlab",
+            "processId": 10271,
+            "exited": false
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.example.lucidlab",
+            "processId": 11193,
+            "exited": false
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.example.lucidlab",
+            "processId": 14455,
+            "exited": false
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.example.lucidlab",
+            "processId": 15140,
+            "exited": false
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.example.lucidlab",
+            "processId": 16583,
+            "exited": false
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.example.lucidlab",
+            "processId": 17224,
+            "exited": false
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.example.lucidlab",
+            "processId": 19097,
+            "exited": false
         },
         {
             "deviceId": "ZF6523HFKG",
@@ -219,7 +273,7 @@
         "AutoCapture": true
     },
     "m_FilterOptions": {
-        "m_Filter": "objectmani",
+        "m_Filter": "",
         "m_UseRegularExpressions": false,
         "m_MatchCase": false
     },
@@ -257,5 +311,5 @@
             "exited": false
         }
     },
-    "m_AutoScroll": 2
+    "m_AutoScroll": 0
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getFirestore, collection, query, where, getDocs, addDoc, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs, addDoc, doc, setDoc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
 import { useFirebaseApp } from 'reactfire';
 import { useAuth } from '../../contexts/AuthContext';
 import TopBar from '../../components/TopBar';
@@ -137,11 +137,11 @@ export default function DashboardHome() {
           await setDoc(doc(db, 'classrooms', docRef.id), { coverImageURL: url }, { merge: true });
         } catch (e) { console.warn('Cover upload failed:', e); }
       }
-      // Use setDoc with merge:true so it creates the user doc if it doesn't exist yet
-      await setDoc(doc(db, 'users', currentUser!.uid), {
-        classroomIds: [docRef.id],
+      // Add new classroom to instructor's classroomIds without overwriting existing ones
+      await updateDoc(doc(db, 'users', currentUser!.uid), {
+        classroomIds: arrayUnion(docRef.id),
         updatedAt: serverTimestamp(),
-      }, { merge: true });
+      });
       setShowCreateModal(false);
       setNewClassroom({ name: '', subject: 'Chemistry', description: '' });
       setCoverFile(null); setCoverPreview(null);
