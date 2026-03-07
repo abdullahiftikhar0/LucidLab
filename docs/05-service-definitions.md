@@ -1,4 +1,4 @@
-# EduAR — Service Definitions
+# LucidLab — Service Definitions
 
 > Defines each service component, its responsibilities, interfaces, and dependencies.
 
@@ -6,7 +6,7 @@
 
 ## 1. Authentication Service
 
-**Location:** `Designer/src/core/services/userService.ts` + `EduARPlayer/Assets/Scripts/Auth/AuthManager.cs`
+**Location:** `Designer/src/core/services/userService.ts` + `LucidLabPlayer/Assets/Scripts/Auth/AuthManager.cs`
 
 | Property | Value |
 |---|---|
@@ -49,7 +49,7 @@ public class AuthManager : MonoBehaviour {
 
 ## 2. Classroom Service
 
-**Location:** `Designer/src/core/services/classroomService.ts` + `EduARPlayer/Assets/Scripts/Classrooms/ClassroomManager.cs`
+**Location:** `Designer/src/core/services/classroomService.ts` + `LucidLabPlayer/Assets/Scripts/Classrooms/ClassroomManager.cs`
 
 | Property | Value |
 |---|---|
@@ -94,7 +94,7 @@ public class ClassroomManager : MonoBehaviour {
 
 ## 3. Experiment Service
 
-**Location:** `Designer/src/core/services/experimentService.ts` + `EduARPlayer/Assets/Scripts/Experiments/ExperimentLoader.cs`
+**Location:** `Designer/src/core/services/experimentService.ts` + `LucidLabPlayer/Assets/Scripts/Experiments/ExperimentLoader.cs`
 
 | Property | Value |
 |---|---|
@@ -133,7 +133,7 @@ public class ExperimentLoader : MonoBehaviour {
 
 ## 4. Submission Service
 
-**Location:** `Designer/src/core/services/submissionService.ts` + `EduARPlayer/Assets/Scripts/Submission/SubmissionManager.cs`
+**Location:** `Designer/src/core/services/submissionService.ts` + `LucidLabPlayer/Assets/Scripts/Submission/SubmissionManager.cs`
 
 | Property | Value |
 |---|---|
@@ -185,7 +185,7 @@ public class SubmissionManager : MonoBehaviour {
 
 ## 6. AI Assistant Service
 
-**Location:** `cloud-functions/src/ai/` + `Designer/src/components/ai_assistant/aiService.ts` + `EduARPlayer/Assets/Scripts/AI/AIApiClient.cs`
+**Location:** `cloud-functions/src/ai/` + `Designer/src/components/ai_assistant/aiService.ts` + `LucidLabPlayer/Assets/Scripts/AI/AIApiClient.cs`
 
 | Property | Value |
 |---|---|
@@ -205,7 +205,7 @@ interface AIService {
 
 **Context Injection (for LLM prompts):**
 The AI service constructs prompts that include:
-1. System prompt explaining EduAR VPL concepts
+1. System prompt explaining LucidLab VPL concepts
 2. Current scene objects (serialized from sceneData)
 3. Current VPL graph (serialized from vplGraph)
 4. Marker assignments
@@ -244,7 +244,7 @@ type UnityResponse =
 
 ## 8. Logic Engine (VPL Runtime)
 
-**Location:** `EduARPlayer/Assets/Logic/`
+**Location:** `LucidLabPlayer/Assets/Logic/`
 
 | Property | Value |
 |---|---|

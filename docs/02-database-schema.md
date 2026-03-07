@@ -1,4 +1,4 @@
-# EduAR — Database Schema (Firestore Collections)
+# LucidLab — Database Schema (Firestore Collections)
 
 > All data is stored in Firebase Firestore as JSON documents organized in collections and subcollections.
 

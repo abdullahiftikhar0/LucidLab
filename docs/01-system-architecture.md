@@ -1,4 +1,4 @@
-# EduAR — System Architecture Document
+# LucidLab — System Architecture Document
 
 > **Version:** 2.0 (Classroom Model)  
 > **Date:** March 6, 2026  
@@ -8,10 +8,10 @@
 
 ## 1. System Overview
 
-EduAR is a two-sided Augmented Reality education platform:
+LucidLab is a two-sided Augmented Reality education platform:
 
-- **EduAR Designer** — A web application where instructors design AR science experiments
-- **EduAR Player** — A mobile AR app where students run those experiments
+- **LucidLab Designer** — A web application where instructors design AR science experiments
+- **LucidLab Player** — A mobile AR app where students run those experiments
 - **Cloud Backend** — Firebase services + AI Assistant API for synchronization and intelligence
 
 The platform now uses a **classroom-based workflow** (similar to Google Classroom) where experiments are organized inside classrooms, enabling structured instructor-student relationships.
@@ -19,7 +19,7 @@ The platform now uses a **classroom-based workflow** (similar to Google Classroo
 ```mermaid
 graph TB
     subgraph "Instructor Side"
-        D[EduAR Designer<br/>React Web App]
+        D[LucidLab Designer<br/>React Web App]
         WGL[Unity WebGL Preview<br/>EditorRenderer]
     end
 
@@ -31,7 +31,7 @@ graph TB
     end
 
     subgraph "Student Side"
-        P[EduAR Player<br/>Unity Mobile AR App]
+        P[LucidLab Player<br/>Unity Mobile AR App]
     end
 
     D <-->|Scene data, VPL graph| WGL
@@ -85,7 +85,7 @@ graph TB
 
 ## 3. Application Architecture
 
-### 3.1 EduAR Designer (Web — React + TypeScript)
+### 3.1 LucidLab Designer (Web — React + TypeScript)
 
 ```mermaid
 graph LR
@@ -124,7 +124,7 @@ graph LR
 | Classroom Manager | React + Firestore SDK | CRUD classrooms, manage students |
 | Evaluation Dashboard | React + Firestore SDK | View/grade student submissions |
 
-### 3.2 EduAR Player (Mobile — Unity + C#)
+### 3.2 LucidLab Player (Mobile — Unity + C#)
 
 ```mermaid
 graph LR
