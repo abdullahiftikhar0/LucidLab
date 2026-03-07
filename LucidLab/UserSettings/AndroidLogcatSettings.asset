@@ -3,7 +3,7 @@
     "m_SelectedProcess": {
         "deviceId": "ZF6523HFKG",
         "name": "com.example.campuspulse",
-        "processId": 4056,
+        "processId": 17252,
         "exited": false
     },
     "m_SelectedPriority": 0,
@@ -72,6 +72,12 @@
             "deviceId": "ZF6523HFKG",
             "name": "com.example.campuspulse",
             "processId": 4056,
+            "exited": false
+        },
+        {
+            "deviceId": "ZF6523HFKG",
+            "name": "com.example.campuspulse",
+            "processId": 17252,
             "exited": false
         },
         {

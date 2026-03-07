@@ -1,301 +1,187 @@
-# EduAR — Platform Workflows
+# EduAR — Comprehensive Platform Workflows
 
-> Complete workflow descriptions for all user journeys in the classroom-based EduAR platform.
-
----
-
-## 1. Instructor Registration & Setup
-
-```mermaid
-flowchart TD
-    A[Instructor opens EduAR Designer] --> B[Register / Login]
-    B --> C[Create profile<br/>Name, Institution, Avatar]
-    C --> D[Dashboard loads]
-    D --> E{First time?}
-    E -->|Yes| F[Create first Classroom]
-    E -->|No| G[View existing Classrooms]
-```
-
-**Steps:**
-1. Instructor opens EduAR Designer web app in browser
-2. Registers with email/password or Google SSO
-3. Selects role = "Instructor" during registration
-4. Fills in profile (name, institution)
-5. Arrives at Dashboard showing classrooms and experiments
+> This document details every workflow in the EduAR platform, covering the entire lifecycle of Users, Classrooms, Experiments, and Submissions across both the Designer (Web) and Player (Mobile) apps.
 
 ---
 
-## 2. Classroom Creation Workflow
+## 1. Authentication & Account Management
 
-```mermaid
-flowchart TD
-    A[Instructor clicks 'New Classroom'] --> B[Enter classroom details]
-    B --> C[Name, Subject, Description]
-    C --> D[System generates join code<br/>e.g. CHEM-10A]
-    D --> E[Classroom created in Firestore]
-    E --> F[Instructor shares join code<br/>with students]
-    F --> G[Students join from Player app]
-```
+### 1.1 User Registration
+**Actor:** Instructor (Web) / Student (Mobile)
+1. User opens app and navigates to Register screen.
+2. Form requires: Name, Email, Password, Role (Instructor or Student), Institution (Optional).
+3. User submits -> Firebase Auth `createUserWithEmailAndPassword`.
+4. System creates user profile doc in `/users/{uid}` with provided data.
+5. User is redirected to Dashboard (Web) or Classroom List (Mobile).
 
-**Steps:**
-1. Instructor clicks **"+ New Classroom"** on dashboard
-2. Enters: name, subject, description, optional cover image
-3. System generates unique 6-character join code
-4. Classroom document created in Firestore
-5. Instructor shares the join code with students (verbally, on board, or via messaging)
-6. Join code can be regenerated or deactivated at any time
+### 1.2 Login & Password Reset
+**Actor:** Instructor / Student
+1. **Login:** Enter Email/Password -> `signInWithEmailAndPassword`. Success redirects to main app. Google SSO option maps to `signInWithPopup`.
+2. **Reset:** User clicks "Forgot Password" -> enters email -> `sendPasswordResetEmail`. User receives reset link to update password.
 
----
-
-## 3. Student Joins Classroom
-
-```mermaid
-flowchart TD
-    A[Student opens EduAR Player] --> B[Login / Register]
-    B --> C[Student role selected]
-    C --> D[Student taps 'Join Classroom']
-    D --> E[Enter join code]
-    E --> F{Code valid?}
-    F -->|Yes| G[Student added to<br/>classroom members]
-    F -->|No| H[Error: Invalid code]
-    G --> I[Classroom appears<br/>in student's list]
-```
-
-**Steps:**
-1. Student opens EduAR Player on their smartphone
-2. Registers or logs in
-3. Taps **"Join Classroom"** button
-4. Enters the 6-character join code
-5. System validates the code against Firestore
-6. On success, student is added to `classrooms/{id}/members`
-7. Classroom appears in the student's classroom list
+### 1.3 Profile Management
+**Actor:** Instructor / Student
+1. User opens Profile dropdown -> settings.
+2. Can update Name, Avatar URL (uploads new image to Storage), and Institution.
+3. System updates `/users/{uid}`, reflecting changes across classrooms/submissions.
 
 ---
 
-## 4. Experiment Design Workflow
+## 2. Classroom Management (Instructor)
 
+### 2.1 Classroom Creation
 ```mermaid
 flowchart TD
-    A[Instructor clicks 'New Experiment'] --> B[Select category<br/>Chemistry / Physics / Biology]
-    B --> C[Scene Editor opens]
-    C --> D[Drag 3D objects from<br/>Asset Library]
-    D --> E[Set object properties<br/>color, size, label]
-    E --> F[Assign markers to objects]
-    F --> G[Open VPL Editor]
-    G --> H[Drag trigger blocks<br/>condition blocks<br/>action blocks]
-    H --> I[Connect nodes with edges]
-    I --> J{Need AI help?}
-    J -->|Yes| K[Open AI Panel<br/>Ask for VPL suggestions]
-    K --> L[AI generates VPL nodes]
-    L --> M[Accept / modify suggestions]
-    M --> I
-    J -->|No| N[Click Preview]
-    N --> O[Unity WebGL renders<br/>live 3D preview]
-    O --> P[Test VPL logic in preview]
-    P --> Q{Satisfied?}
-    Q -->|No| C
-    Q -->|Yes| R[Click Publish]
+    A[Instructor clicks 'New Classroom'] --> B[Enter Details: Name, Subject, Desc]
+    B --> C[System generates 6-char unique Join Code]
+    C --> D[Create Firestore /classrooms doc]
+    D --> E[Instructor shares code with students]
 ```
 
-**Steps:**
-1. Instructor clicks **"+ New Experiment"** on dashboard
-2. Selects experiment category (Chemistry, Physics, Biology, etc.)
-3. **Scene Editor** opens:
-   - Drag 3D objects from the Asset Library panel
-   - Position objects on the scene canvas
-   - Set properties for each object (color, size, label, initial state)
-   - Assign each object to a marker ID
-4. Switch to **VPL Editor**:
-   - Drag blocks from the Node Palette
-   - **Blue blocks** = Triggers (marker detected, tap, tilt, proximity, timer)
-   - **Yellow blocks** = Conditions (compare value, check state, distance check)
-   - **Green blocks** = Actions (animate, color change, show label, play sound, particles)
-   - Connect blocks by drawing edges between output and input handles
-5. Optionally use **AI Assistant**:
-   - Click AI panel icon
-   - Describe desired behavior in natural language
-   - AI generates VPL node suggestions with edges
-   - Accept, modify, or discard suggestions
-6. Click **Preview** to see in live Unity WebGL renderer
-7. Click **Play** to simulate VPL logic
-8. Iterate until satisfied
+### 2.2 Editing & Archiving Classrooms
+1. **Edit:** Instructor opens Classroom Details -> clicks "Edit". Updates Name/Subject/Cover Image. `updateDoc` saves to Firestore.
+2. **Archive/Delete:** Instructor clicks "Archive Classroom". Confirmation dialog. System sets `archived: true` on the classroom document, hiding it from default views but preserving data.
+
+### 2.3 Join Code Management
+1. **Regenerate:** If a code leaks, instructor clicks "Regenerate". System generates a new unique code, updating the classroom document. Old code becomes invalid instantly.
+2. **Deactivate:** Instructor toggles "Accepting Members" off. Join code remains but `joinCodeActive: false` blocks new queries from succeeding.
+
+### 2.4 Student Roster Management
+1. Instructor opens Classroom Detail -> "Students" tab.
+2. Views list of all joined students (queried from `/classrooms/{id}/members`).
+3. **Remove Student:** Click "Remove" -> confirm. Deletes student from the `members` subcollection and updates `studentCount`.
 
 ---
 
-## 5. Experiment Publishing Workflow
+## 3. Experiment Design & Lifecycle (Instructor)
 
+### 3.1 Creating a Draft Experiment
+1. Instructor clicks "+ New Experiment".
+2. System immediately creates a shell document in `/experiments` with `status: "draft"`.
+3. Instructor is routed to Scene Editor to begin work. Auto-save fires periodically.
+
+### 3.2 Scene Design (Object & Property Setup)
+1. Drag 3D object from Asset Library onto the 2D layout canvas.
+2. Assign logical ID and select properties (color, scale, initial states).
+3. Assign physical Marker ID from dropdown to anchor the object in real space.
+
+### 3.3 VPL Logic Design
 ```mermaid
 flowchart TD
-    A[Instructor clicks Publish] --> B[Upload 3D assets<br/>to Firebase Storage]
-    B --> C[Upload marker images<br/>to Firebase Storage]
-    C --> D[Serialize scene + VPL<br/>to JSON]
-    D --> E[Save experiment document<br/>to Firestore]
-    E --> F[Generate experiment code<br/>e.g. CHEM-042]
-    F --> G[Status = 'published']
-    G --> H[Assign to classrooms]
-    H --> I[Experiment appears in<br/>assigned classrooms]
+    A[Open VPL Editor] --> B[Drag Trigger Node e.g., 'Proximity']
+    B --> C[Configure Trigger parameters]
+    C --> D[Drag Action Node e.g., 'Change Color']
+    D --> E[Draw edge: Output of Trigger to Input of Action]
+    E --> F[VPL auto-serializes to JSON graph on save]
 ```
 
-**Steps:**
-1. Instructor clicks **"Publish"**
-2. System uploads all 3D assets to Firebase Storage
-3. System uploads marker reference images
-4. Scene data + VPL graph serialized to JSON
-5. Experiment document created/updated in Firestore with status `published`
-6. Unique experiment code generated (e.g., "CHEM-042")
-7. Instructor selects which classrooms to assign the experiment to
-8. Experiment appears in selected classroom experiment lists
+### 3.4 AI Assistant Interaction
+1. Instructor opens AI Chat panel in the Designer.
+2. Asks: *"Make Beaker A bubble when tapped."*
+3. System sends scene context + VPL state to Cloud Function.
+4. AI responds with explanation and `suggestedVplNodes`.
+5. Instructor clicks "Accept" -> Nodes are injected into the React Flow canvas.
+
+### 3.5 Experiment Preview (WebGL)
+1. Instructor clicks "Preview" tab.
+2. React app sends `postMessage` with current Scene JSON + VPL JSON to embedded Unity WebGL build.
+3. WebGL renders 3D scene. Instructor clicks "Play" to simulate logic triggers with mouse clicks.
+
+### 3.6 Publishing & Unpublishing
+1. **Publish:** Validates scene (no missing markers, intact VPL edges). Uploads used 3D Assets/Thumbnails to Storage. Updates `/experiments/{id}` with `status: "published"` and generates an `experimentCode`.
+2. **Unpublish:** Reverts status to `"draft"`. Experiment becomes invisible to students (they cannot launch it, though past submissions remain).
+
+### 3.7 Duplicating & Deleting
+1. **Duplicate:** Creates a deep copy of the experiment document with a new ID and title suffix "(Copy)". Reset status to "draft".
+2. **Delete:** Hard deletes document. Cloud storage cleanup runs periodically for orphaned assets via Cloud Function.
 
 ---
 
-## 6. Experiment Assignment Workflow
+## 4. Classroom-Experiment Operations
 
-```mermaid
-flowchart TD
-    A[Instructor opens Classroom Detail] --> B[Click 'Assign Experiment']
-    B --> C[Select from published<br/>experiment list]
-    C --> D[Experiment ID added to<br/>classroom.experimentIds]
-    D --> E[Experiment visible to<br/>all classroom students]
-```
-
-**Steps:**
-1. Instructor opens a classroom detail view
-2. Clicks **"Assign Experiment"**
-3. Selects one or more published experiments from their list
-4. Experiment IDs are added to the classroom's `experimentIds` array
-5. Students in that classroom can now see and launch the experiment
+### 4.1 Assigning/Unassigning Experiments
+1. **Assign:** From Classroom detail, instructor picks from their "Published" experiment list. `experimentId` is added to the classroom's array field, pushing it to students' mobile apps.
+2. **Unassign:** Instructor clicks "Remove from Classroom". Modifies array. Students can no longer see the experiment in that classroom view.
 
 ---
 
-## 7. Student Experiment Execution Workflow
+## 5. Student Classroom Experience
 
+### 5.1 Joining a Classroom
 ```mermaid
 flowchart TD
-    A[Student opens EduAR Player] --> B[Select Classroom]
-    B --> C[View assigned experiments]
-    C --> D[Tap on experiment]
-    D --> E[Download experiment config<br/>from Firestore]
-    E --> F[Download 3D assets<br/>from Storage]
-    F --> G[Build AR scene]
-    G --> H[Student places marker<br/>sheet on desk]
-    H --> I[Point phone camera<br/>at markers]
-    I --> J[3D objects appear<br/>on markers in AR]
-    J --> K[Student interacts:<br/>tap, move, proximity]
-    K --> L[VPL logic executes<br/>animations, sounds, labels]
-    L --> M{Experiment complete?}
-    M -->|Continue| K
-    M -->|Done| N[Submit Experiment]
+    A[Student opens Player App] --> B[Taps 'Join Classroom']
+    B --> C[Enters 6-char Join Code]
+    C --> D{Query matches & Active?}
+    D -->|Yes| E[Add Student UID to classroom 'members']
+    D -->|No| F[Show Error UI]
 ```
 
-**Steps:**
-1. Student opens EduAR Player
-2. Selects a classroom from their list
-3. Views experiments assigned to that classroom
-4. Taps on an experiment to start
-5. App downloads experiment configuration from Firestore
-6. App downloads 3D assets from Firebase Storage (cached locally after first download)
-7. App builds the AR scene:
-   - Creates scene objects
-   - Configures marker reference images
-   - Initializes VPL Logic Engine
-8. Student places the printed marker sheet on their desk
-9. Points phone camera at markers
-10. 3D objects appear anchored to markers in AR
-11. Student interacts: tap markers, move phone, bring markers together
-12. VPL logic executes in real-time: animations, color changes, sounds, particle effects, labels
-13. Student can repeat interactions unlimited times
+### 5.2 Browsing & Leaving Classrooms
+1. Student dashboard queries classrooms where student UID exists in members.
+2. Shows cards with instructor name, subject, and available experiments.
+3. **Leave:** Student enters classroom settings -> "Leave Classroom". Removes their document from the `members` subcollection.
 
 ---
 
-## 8. Experiment Submission Workflow
+## 6. AR Experiment Execution (Student)
 
+### 6.1 Launching & Asset Download
+1. Student selects an assigned experiment.
+2. App queries the `/experiments/{id}` document for JSON configuration.
+3. App checks local cache. If assets/markers are missing, it downloads them from Firebase Storage with progress bar.
+
+### 6.2 AR Marker Detection & Initialization
+1. Phone camera activates using AR Foundation.
+2. Vuforia/AR Core scans for specific reference images provided by the experiment config.
+3. When identified, Unity instantiates the associated 3D Prefab at the anchor location.
+4. Logic Engine `LogicBuilder` parses the VPL JSON and arms initial triggers.
+
+### 6.3 Interactive Execution
 ```mermaid
 flowchart TD
-    A[Student presses 'Submit'] --> B{Recording enabled?}
-    B -->|Yes| C[Stop recording<br/>Save video]
-    B -->|No| D[Capture experiment state]
-    C --> D
-    D --> E{Quiz enabled?}
-    E -->|Yes| F[Show quiz overlay<br/>Student answers questions]
-    F --> G[Calculate quiz score]
-    E -->|No| G
-    G --> H[Upload recording to<br/>Firebase Storage]
-    H --> I[Create submission document<br/>in Firestore]
-    I --> J[Notify instructor<br/>via Cloud Function]
-    J --> K[Show confirmation<br/>to student]
+    A[Camera detects physical interaction] --> B[Trigger instruction fires in Logic Engine]
+    B --> C{Condition instructions evaluate}
+    C -->|True| D[Action Instructions execute]
+    C -->|False| E[Nothing happens]
+    D --> F[Particle effect plays / Color changes / Audio plays]
+    F --> G[Experiment state variables update in memory]
 ```
 
-**Submission includes:**
-- Experiment state snapshot (completed steps, variable values, completion %)
-- AR recording video (if recording was enabled)
-- Quiz answers and score (if quiz was enabled)
+### 6.4 Sandbox/Variable Customization (Bonus)
+1. If experiment `sandboxMode: true`, Player shows a UI overlay (e.g., Sliders for temperature/resistance).
+2. Changing slider dynamically updates the runtime Variable Store inside the Logic Engine, recalculating visual formulas immediately.
+
+### 6.5 Collaborative Execution (Bonus)
+1. Multiple students in physical proximity scan the same marker sheet.
+2. Their local state syncs simple boolean flags via Firebase Realtime DB presence (e.g., Student A unlocks phase 1 on their phone, allowing Student B to trigger phase 2 on theirs).
 
 ---
 
-## 9. Instructor Evaluation Workflow
+## 7. Submissions & Evaluation
 
+### 7.1 Student Submission
+1. Student presses "Submit Experiment".
+2. **Capture:** App serializes runtime `VariableStore` and "steps completed" tracker.
+3. **Recording (Optional):** If screen recording was active, the `.mp4` is pushed to Firebase Storage under `/recordings/{submissionId}`.
+4. **Quiz (Optional):** App presents multiple-choice AR overlay. Scores are finalized.
+5. Create `/submissions/{id}` document capturing state, URL, and score.
+
+### 7.2 Instructor Evaluation
 ```mermaid
 flowchart TD
-    A[Instructor opens Dashboard] --> B[Select Classroom]
-    B --> C[Select Experiment]
-    C --> D[View submission list<br/>with student names]
-    D --> E[Click on submission]
-    E --> F[View experiment state]
-    F --> G{Recording available?}
-    G -->|Yes| H[Play student's<br/>AR recording video]
-    G -->|No| I[Review state data only]
-    H --> J[View quiz results<br/>if applicable]
-    I --> J
-    J --> K[Assign grade]
-    K --> L{Select status}
-    L --> M[✅ Correct]
-    L --> N[❌ Incorrect]
-    L --> O[🔄 Needs Revision]
-    M --> P[Optional: write feedback]
-    N --> P
-    O --> P
-    P --> Q[Save grade + feedback<br/>to Firestore]
-    Q --> R[Student can see grade<br/>in Player app]
+    A[Instructor opens Evaluation Dashboard] --> B[Selects Student Submission]
+    B --> C[Views State Data & Quiz Score]
+    C --> D{Has Recording?}
+    D -->|Yes| E[Play video from Storage]
+    D -->|No| F[Proceed to UI]
+    E --> F
+    F --> G[Select Grade: Correct/Incorrect/Revise]
+    G --> H[Enter textual feedback & Save]
+    H --> I[Update /submissions/ document]
 ```
 
-**Steps:**
-1. Instructor opens the Designer dashboard
-2. Selects a classroom
-3. Selects an experiment
-4. Views list of all student submissions
-5. Clicks on a submission to open detail view
-6. Reviews:
-   - Experiment completion state
-   - AR recording video (if available)
-   - Quiz answers and score (if enabled)
-7. Assigns a status: **Correct**, **Incorrect**, or **Needs Revision**
-8. Optionally writes written feedback
-9. Saves grade — student can see it in the Player app
-
----
-
-## 10. AI Assistant Interaction Workflow
-
-```mermaid
-flowchart TD
-    A[Instructor opens AI Panel<br/>in Designer] --> B[Type question or request]
-    B --> C[System bundles:<br/>message + scene context + VPL graph]
-    C --> D[Send to AI API<br/>Cloud Function]
-    D --> E[LLM processes with<br/>full experiment context]
-    E --> F{Response type?}
-    F -->|Chat answer| G[Display text response]
-    F -->|VPL suggestion| H[Show suggested nodes<br/>as cards]
-    H --> I{Accept suggestion?}
-    I -->|Yes| J[Insert nodes into<br/>VPL editor]
-    I -->|Modify| K[Edit in VPL editor]
-    I -->|Reject| L[Dismiss]
-    G --> M[Continue conversation]
-```
-
-**Example Interactions:**
-| User Says | AI Does |
-|---|---|
-| "How do I make the beaker change color?" | Explains trigger → action flow, suggests nodes |
-| "Generate logic for acid-base neutralization" | Creates full VPL subgraph with triggers, conditions, actions |
-| "What's wrong with my experiment?" | Analyzes scene for orphaned objects, missing triggers |
-| "Add a particle effect when markers are close" | Generates MarkerProximity trigger → ParticleEffect action nodes |
+### 7.3 Student Grade Review
+1. Student opens Player app and accesses a submitted experiment.
+2. The UI shows the submission receipt, and loads any Instructor assigned `grade` and `instructorFeedback` attached to the document.
+3. If "Needs Revision", a "Retake Experiment" button is unlocked.
