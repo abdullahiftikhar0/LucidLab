@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getFirestore, collection, query, where, getDocs, addDoc, deleteDoc, doc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs, addDoc, deleteDoc, doc, getDoc, serverTimestamp, updateDoc, arrayRemove } from 'firebase/firestore';
 import { useFirebaseApp } from 'reactfire';
 import { useAuth } from '../../contexts/AuthContext';
 import TopBar from '../../components/TopBar';
@@ -78,6 +78,21 @@ export default function ExperimentsList() {
 
   async function deleteExperiment(id: string) {
     try {
+      const exp = experiments.find(e => e.id === id);
+
+      // Clean up references in assigned classrooms
+      if (exp && exp.classroomIds && exp.classroomIds.length > 0) {
+        // Use Promise.all to fetch and update in parallel
+        await Promise.all(
+          exp.classroomIds.map(cId =>
+            // We use updateDoc and arrayRemove to safely pull out the experiment ID
+            updateDoc(doc(db, 'classrooms', cId), {
+              experimentIds: arrayRemove(id)
+            }).catch((e: any) => console.warn('Failed to clean up classroom reference:', e))
+          )
+        );
+      }
+
       await deleteDoc(doc(db, 'experiments', id));
       setExperiments(prev => prev.filter(e => e.id !== id));
     } catch (e) { console.error(e); }
