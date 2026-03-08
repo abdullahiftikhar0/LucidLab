@@ -74,7 +74,11 @@ namespace Assets.Structures {
         public void UpdateColor() {
             if (!_gameObject) throw new Exception("InitGameobject first!");
 
-            if (!ColorUtility.TryParseHtmlString(color, out Color clr)) {
+            var colorToParse = color;
+            if (!string.IsNullOrEmpty(colorToParse) && colorToParse[0] != '#')
+                colorToParse = "#" + colorToParse;
+
+            if (!ColorUtility.TryParseHtmlString(colorToParse, out Color clr)) {
                 Debug.LogWarning($"[SceneObject] Invalid color string for '{objectName}': {color}");
                 return;
             }
@@ -138,6 +142,22 @@ namespace Assets.Structures {
             var rigidBody = _gameObject.GetComponent<Rigidbody>();
             rigidBody.useGravity = hasGravity;
             rigidBody.isKinematic = true;
+        }
+
+        public void UpdateStaticFriction(float value) {
+            if (!_gameObject) return;
+            foreach (var collider in _gameObject.GetComponentsInChildren<Collider>()) {
+                if (collider.material == null) collider.material = new PhysicMaterial();
+                collider.material.staticFriction = value;
+            }
+        }
+
+        public void UpdateDynamicFriction(float value) {
+            if (!_gameObject) return;
+            foreach (var collider in _gameObject.GetComponentsInChildren<Collider>()) {
+                if (collider.material == null) collider.material = new PhysicMaterial();
+                collider.material.dynamicFriction = value;
+            }
         }
 
         public void Dispose() {

@@ -10,9 +10,11 @@ type props = {
   unityContext: UnityContextHook;
   expName: string;
   sceneName: string;
+  /** When true, do not push Firestore "modified" state to Unity so simulation-driven updates are not overwritten */
+  isSimulating?: boolean;
 };
 
-export default function useUnityAndDbSync({ unityContext, expName, sceneName }: props) {
+export default function useUnityAndDbSync({ unityContext, expName, sceneName, isSimulating }: props) {
   const fsapp = useFirestore();
   const dataStore = useFirestoreCollection(
     getSceneObjectsCollectionRef(fsapp, expName, sceneName),
@@ -28,6 +30,10 @@ export default function useUnityAndDbSync({ unityContext, expName, sceneName }: 
   const previousObjectsRef = useRef<Map<string, SceneObjectState>>(new Map());
 
   useEffect(() => {
+    if (isSimulating) {
+      setObjectsList(dataStore.data.docs.map(doc => doc.data() as SceneObjectState));
+      return;
+    }
     for (let change of dataStore.data.docChanges()) {
       switch (change.type) {
         case 'added': {
@@ -102,7 +108,7 @@ export default function useUnityAndDbSync({ unityContext, expName, sceneName }: 
     // Convert current map to array for the UI state, rather than using dataStore.docs
     // Since Firebase dataStore might have duplicates if not carefully handled, but docs map is fine.
     setObjectsList(dataStore.data.docs.map(doc => doc.data() as SceneObjectState));
-  }, [dataStore, objectTypeManager, unityObjectManager]); // Object reference stability guarantees
+  }, [dataStore, objectTypeManager, unityObjectManager, isSimulating]);
 
   return { objectsList }; // Expose objectsList if needed, or we can just leave it as it was (no return)
 }

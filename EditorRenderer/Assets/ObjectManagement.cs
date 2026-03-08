@@ -8,6 +8,12 @@ public class ObjectManagement : MonoBehaviour
 {
     Dictionary<string, SceneObject> sceneObjsDict = new();
 
+    /// <summary>Used by PlayMode to resolve objects when running scene logic.</summary>
+    public SceneObject GetSceneObject(string objectName)
+    {
+        return sceneObjsDict.TryGetValue(objectName, out var obj) ? obj : null;
+    }
+
     class SetModelObjectParams {
         public string objectModelName;
         public string objURL;

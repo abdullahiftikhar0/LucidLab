@@ -1,7 +1,7 @@
 /* Matches Unity's dark theme toolbar */
 .unity-toolbar-container {
   position: absolute;
-  top: 10px;
+  bottom: 56px;
   left: 10px;
   display: flex;
   flex-direction: column;

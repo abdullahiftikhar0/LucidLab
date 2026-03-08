@@ -1,4 +1,4 @@
-﻿//===========================================================================//
+//===========================================================================//
 //                       FreeFlyCamera (Version 1.2)                         //
 //                        (c) 2019 Sergey Stafeyev                           //
 //===========================================================================//
@@ -23,8 +23,12 @@ public class FreeFlyCamera : MonoBehaviour
     private bool _enableRotation = true;
 
     [SerializeField]
-    [Tooltip("Sensitivity of mouse rotation")]
-    private float _mouseSense = 1.8f;
+    [Tooltip("Sensitivity of mouse rotation (orbit)")]
+    private float _mouseSense = 2.8f;
+
+    [SerializeField]
+    [Tooltip("Clamp vertical angle (pitch) to avoid flipping. Degrees from horizontal.")]
+    private float _pitchClamp = 88f;
 
     [Space]
 
@@ -34,7 +38,15 @@ public class FreeFlyCamera : MonoBehaviour
 
     [SerializeField]
     [Tooltip("Velocity of camera zooming in/out")]
-    private float _translationSpeed = 55f;
+    private float _translationSpeed = 80f;
+
+    [SerializeField]
+    [Tooltip("Pan speed when using middle mouse or Shift+right-drag")]
+    private float _panSpeed = 0.4f;
+
+    [SerializeField]
+    [Tooltip("Dolly speed when using Alt+right-drag (vertical) to move in/out")]
+    private float _dollySpeed = 0.08f;
 
     [Space]
 
@@ -88,6 +100,9 @@ public class FreeFlyCamera : MonoBehaviour
 
     private ToolController _toolController;
 
+    private Vector3 _lastPanMousePos;
+    private bool _isPanning;
+
 #if UNITY_EDITOR
     private void OnValidate()
     {
@@ -122,74 +137,85 @@ public class FreeFlyCamera : MonoBehaviour
         if (!_active)
             return;
 
-        // Only allow movement and rotation if the Hand tool is active, OR if the user holds the right mouse button.
-        // Let's combine standard Unity Editor logic: right mouse button drag = freelook camera
         bool isHandTool = _toolController != null && _toolController.currentTool == ToolController.ToolMode.Hand;
         bool isRightMouseDown = Input.GetMouseButton(1);
-        bool shouldProcessMovement = isHandTool || isRightMouseDown;
+        bool isMiddleMouseDown = Input.GetMouseButton(2);
+        bool shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+        bool alt = Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt);
 
-        if (!shouldProcessMovement)
-            return;
-
-        // Translation
-        if (_enableTranslation)
+        // Dolly (move in depth): Alt+right-drag vertical
+        bool wantDolly = isRightMouseDown && alt;
+        if (wantDolly)
         {
-            transform.Translate(Vector3.forward * Input.mouseScrollDelta.y * Time.deltaTime * _translationSpeed);
+            float dy = Input.GetAxis("Mouse Y");
+            transform.position += transform.forward * (dy * _dollySpeed);
         }
 
-        // Movement
-        if (_enableMovement)
+        // Pan: middle mouse or Shift+right-drag (so right-drag alone = orbit)
+        bool wantPan = !wantDolly && (isMiddleMouseDown || (isRightMouseDown && shift));
+        if (wantPan)
         {
-            Vector3 deltaPosition = Vector3.zero;
-            float currentSpeed = _movementSpeed;
-
-            if (Input.GetKey(_boostSpeed))
-                currentSpeed = _boostedSpeed;
-
-            if (Input.GetKey(KeyCode.W))
-                deltaPosition += transform.forward;
-
-            if (Input.GetKey(KeyCode.S))
-                deltaPosition -= transform.forward;
-
-            if (Input.GetKey(KeyCode.A))
-                deltaPosition -= transform.right;
-
-            if (Input.GetKey(KeyCode.D))
-                deltaPosition += transform.right;
-
-            if (Input.GetKey(_moveUp))
-                deltaPosition += transform.up;
-
-            if (Input.GetKey(_moveDown))
-                deltaPosition -= transform.up;
-
-            // Calc acceleration
-            CalculateCurrentIncrease(deltaPosition != Vector3.zero);
-
-            transform.position += deltaPosition * currentSpeed * _currentIncrease;
+            if (!_isPanning)
+            {
+                _isPanning = true;
+                _lastPanMousePos = Input.mousePosition;
+            }
+            Vector3 delta = Input.mousePosition - _lastPanMousePos;
+            _lastPanMousePos = Input.mousePosition;
+            float scale = _panSpeed * 0.01f;
+            transform.position -= transform.right * (delta.x * scale);
+            transform.position -= transform.up * (delta.y * scale);
+        }
+        else
+        {
+            _isPanning = false;
         }
 
-        // Rotation (only allow when right mouse button is held OR left mouse button is held in Hand mode)
-        bool allowRotation = isRightMouseDown || (isHandTool && Input.GetMouseButton(0));
+        // Orbit + move only when Hand tool or right mouse (and not panning/dolly)
+        bool shouldProcessMoveAndOrbit = (isHandTool || isRightMouseDown) && !wantPan && !wantDolly;
 
-        if (_enableRotation && allowRotation)
+        if (shouldProcessMoveAndOrbit)
         {
-            // Pitch
-            transform.rotation *= Quaternion.AngleAxis(
-                -Input.GetAxis("Mouse Y") * _mouseSense,
-                Vector3.right
-            );
+            // Scroll zoom
+            if (_enableTranslation)
+                transform.Translate(Vector3.forward * Input.mouseScrollDelta.y * Time.deltaTime * _translationSpeed);
 
-            // Yaw
-            transform.rotation = Quaternion.Euler(
-                transform.eulerAngles.x,
-                transform.eulerAngles.y + Input.GetAxis("Mouse X") * _mouseSense,
-                transform.eulerAngles.z
-            );
+            // WASD/QE movement
+            if (_enableMovement)
+            {
+                Vector3 deltaPosition = Vector3.zero;
+                float currentSpeed = _movementSpeed;
+                if (Input.GetKey(_boostSpeed))
+                    currentSpeed = _boostedSpeed;
+                if (Input.GetKey(KeyCode.W)) deltaPosition += transform.forward;
+                if (Input.GetKey(KeyCode.S)) deltaPosition -= transform.forward;
+                if (Input.GetKey(KeyCode.A)) deltaPosition -= transform.right;
+                if (Input.GetKey(KeyCode.D)) deltaPosition += transform.right;
+                if (Input.GetKey(_moveUp)) deltaPosition += transform.up;
+                if (Input.GetKey(_moveDown)) deltaPosition -= transform.up;
+                CalculateCurrentIncrease(deltaPosition != Vector3.zero);
+                transform.position += deltaPosition * currentSpeed * _currentIncrease;
+            }
+
+            // Orbit: right-mouse drag, or left-drag when Hand tool (click on empty space then drag to orbit)
+            bool allowOrbit = _enableRotation && (isRightMouseDown || (isHandTool && Input.GetMouseButton(0)));
+            if (allowOrbit)
+            {
+                float pitch = -Input.GetAxis("Mouse Y") * _mouseSense;
+                float yaw = Input.GetAxis("Mouse X") * _mouseSense;
+                transform.rotation *= Quaternion.AngleAxis(pitch, Vector3.right);
+                transform.rotation = Quaternion.Euler(transform.eulerAngles.x, transform.eulerAngles.y + yaw, transform.eulerAngles.z);
+                float x = transform.eulerAngles.x;
+                if (x > 180f) x -= 360f;
+                x = Mathf.Clamp(x, -_pitchClamp, _pitchClamp);
+                transform.rotation = Quaternion.Euler(x, transform.eulerAngles.y, transform.eulerAngles.z);
+            }
+        }
+        else if (!wantPan)
+        {
+            _isPanning = false;
         }
 
-        // Return to init position
         if (Input.GetKeyDown(_initPositonButton))
         {
             transform.position = _initPosition;
