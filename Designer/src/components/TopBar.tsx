@@ -21,6 +21,14 @@ export default function TopBar() {
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   useEffect(() => {
+    function onEsc(e: KeyboardEvent) {
+      if (e.key === 'Escape') setShowMenu(false);
+    }
+    document.addEventListener('keydown', onEsc);
+    return () => document.removeEventListener('keydown', onEsc);
+  }, []);
+
+  useEffect(() => {
     if (!currentUser) return;
     (async () => {
       try {
@@ -94,8 +102,8 @@ export default function TopBar() {
             </button>
             {showMenu && (
               <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
-                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 z-50 py-2">
+                <div className="fixed inset-0 z-[100]" onClick={() => setShowMenu(false)} />
+                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 z-[110] py-2">
                   <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
                     <div className="size-9 rounded-full overflow-hidden flex items-center justify-center bg-primary/10 text-primary font-bold text-xs shrink-0">
                       {avatarDisplay.type === 'image' ? (
