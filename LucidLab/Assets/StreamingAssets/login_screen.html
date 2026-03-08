@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LucidLab - Student Login</title>
+  <link rel="stylesheet" href="fonts/fonts.css" />
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+        :root {
+            --bg: #0f2223;
+            --bg-elev: #132a2b;
+            --card: rgba(18, 35, 36, 0.82);
+            --line: rgba(0, 242, 255, 0.22);
+            --line-soft: rgba(148, 163, 184, 0.28);
+            --text: #e6f3f4;
+            --muted: #95aab0;
+            --primary: #00f2ff;
+            --danger: #f87171;
+            --ok: #34d399;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100dvh;
+            font-family: Inter, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(1200px 640px at -10% 0%, rgba(0, 242, 255, 0.16), transparent 55%),
+                radial-gradient(800px 480px at 100% 100%, rgba(8, 76, 94, 0.46), transparent 65%),
+                var(--bg);
+        }
+
+        .page {
+            min-height: 100dvh;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+        }
+
+        .shell {
+            width: min(460px, 100%);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .brand {
+            text-align: center;
+        }
+
+        .logo {
+            width: 88px;
+            height: 88px;
+            border-radius: 20px;
+            margin: 0 auto 12px;
+            display: grid;
+            place-items: center;
+            border: 1px solid var(--line);
+            background: rgba(0, 242, 255, 0.08);
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.16);
+        }
+
+        .logo .material-symbols-outlined {
+            font-size: 56px;
+            color: var(--primary);
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: clamp(28px, 6vw, 36px);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        .brand h1 span {
+            color: var(--primary);
+        }
+
+        .brand p {
+            margin: 6px 0 0;
+            color: var(--muted);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .card {
+            border-radius: 18px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            box-shadow: 0 24px 60px rgba(3, 9, 14, 0.5);
+            padding: 22px;
+        }
+
+        .card h2 {
+            margin: 0;
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .sub {
+            margin: 4px 0 0;
+            text-align: center;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .alert {
+            margin-top: 14px;
+            min-height: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--danger);
+        }
+
+        .field {
+            margin-top: 14px;
+        }
+
+        .field-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 12px;
+            margin-bottom: 6px;
+        }
+
+        label {
+            font-size: 13px;
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .link {
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .link:hover {
+            text-decoration: underline;
+        }
+
+        .input-wrap {
+            position: relative;
+        }
+
+        .input-wrap .material-symbols-outlined.input-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #7f9398;
+            font-size: 20px;
+            pointer-events: none;
+        }
+
+        input {
+            width: 100%;
+            height: 48px;
+            border-radius: 12px;
+            border: 1px solid var(--line-soft);
+            background: rgba(3, 12, 15, 0.45);
+            color: var(--text);
+            padding: 0 42px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input::placeholder {
+            color: #6f858b;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 242, 255, 0.18);
+        }
+
+        .toggle {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 0;
+            background: transparent;
+            color: #7f9398;
+            width: 32px;
+            height: 32px;
+            display: grid;
+            place-items: center;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .toggle:hover {
+            background: rgba(0, 242, 255, 0.08);
+            color: var(--primary);
+        }
+
+        .submit {
+            margin-top: 16px;
+            width: 100%;
+            height: 48px;
+            border: 0;
+            border-radius: 12px;
+            background: var(--primary);
+            color: #072024;
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            box-shadow: 0 0 22px rgba(0, 242, 255, 0.38);
+            transition: opacity 0.2s, transform 0.08s;
+        }
+
+        .submit:active {
+            transform: scale(0.985);
+        }
+
+        .submit[disabled] {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .divider {
+            margin: 16px 0;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 10px;
+            align-items: center;
+            color: #7f9398;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.11em;
+            font-weight: 700;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: "";
+            display: block;
+            height: 1px;
+            background: var(--line-soft);
+        }
+
+        .google {
+            width: 100%;
+            height: 48px;
+            border-radius: 12px;
+            border: 1px solid var(--line-soft);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .google:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .google svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .swap {
+            text-align: center;
+            color: var(--muted);
+            font-size: 14px;
+            margin-top: 6px;
+        }
+
+        .swap a {
+            color: var(--primary);
+            font-weight: 700;
+            text-decoration: none;
+            margin-left: 6px;
+        }
+
+        .swap a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <section class="shell">
+            <div class="brand">
+                <div class="logo">
+                    <span class="material-symbols-outlined">view_in_ar</span>
+                </div>
+                <h1>Lucid<span>Lab</span></h1>
+                <p>Student Portal for AR Science Learning</p>
+            </div>
+
+            <div class="card">
+                <h2>Welcome Back</h2>
+                <p class="sub">Sign in to continue your classroom sessions</p>
+
+                <div id="loginError" class="alert" role="alert" aria-live="polite"></div>
+
+                <form id="loginForm" novalidate>
+                    <div class="field">
+                        <label for="email">Student Email</label>
+                        <div class="input-wrap">
+                            <span class="material-symbols-outlined input-icon">mail</span>
+                            <input id="email" name="email" type="email" placeholder="name@school.edu" autocomplete="email" required />
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <div class="field-row">
+                            <label for="password">Password</label>
+                            <a id="forgotBtn" class="link" href="#">Forgot password?</a>
+                        </div>
+                        <div class="input-wrap">
+                            <span class="material-symbols-outlined input-icon">lock</span>
+                            <input id="password" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required minlength="6" />
+                            <button id="passwordToggle" type="button" class="toggle" aria-label="Toggle password visibility">
+                                <span class="material-symbols-outlined">visibility</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button id="loginBtn" class="submit" type="submit">LOG IN</button>
+                </form>
+
+                <div class="divider">or</div>
+
+                <button id="googleBtn" class="google" type="button">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"></path>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path>
+                    </svg>
+                    Continue with Google
+                </button>
+            </div>
+
+            <p class="swap">
+                New student here?
+                <a id="goRegister" href="#">Create account</a>
+            </p>
+        </section>
+    </main>
+
+    <script>
+        function sendToUnity(msg) {
+            if (window.Unity && window.Unity.call) {
+                window.Unity.call(msg);
+            } else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.unityControl) {
+                window.webkit.messageHandlers.unityControl.postMessage(msg);
+            } else {
+                console.log("Sent to Unity:", msg);
+                window.location = "unity:" + msg;
+            }
+        }
+
+        function isValidEmail(value) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            var form = document.getElementById("loginForm");
+            var errorBox = document.getElementById("loginError");
+            var emailEl = document.getElementById("email");
+            var passwordEl = document.getElementById("password");
+            var loginBtn = document.getElementById("loginBtn");
+            var googleBtn = document.getElementById("googleBtn");
+            var registerLink = document.getElementById("goRegister");
+            var forgotBtn = document.getElementById("forgotBtn");
+            var toggleBtn = document.getElementById("passwordToggle");
+            var toggleIcon = toggleBtn.querySelector(".material-symbols-outlined");
+
+            function setLoading(isLoading) {
+                loginBtn.disabled = isLoading;
+                googleBtn.disabled = isLoading;
+                loginBtn.textContent = isLoading ? "Signing in..." : "LOG IN";
+            }
+
+            function showError(message) {
+                errorBox.textContent = message || "";
+            }
+
+            toggleBtn.addEventListener("click", function () {
+                var showing = passwordEl.type === "text";
+                passwordEl.type = showing ? "password" : "text";
+                toggleIcon.textContent = showing ? "visibility" : "visibility_off";
+            });
+
+            form.addEventListener("submit", function (event) {
+                event.preventDefault();
+                showError("");
+
+                var email = emailEl.value.trim();
+                var password = passwordEl.value;
+
+                if (!email || !password) {
+                    showError("Enter both email and password to continue.");
+                    return;
+                }
+                if (!isValidEmail(email)) {
+                    showError("Enter a valid student email address.");
+                    return;
+                }
+                if (password.length < 6) {
+                    showError("Password must be at least 6 characters.");
+                    return;
+                }
+
+                setLoading(true);
+                sendToUnity("login:" + JSON.stringify({ email: email, password: password, role: "student" }));
+                setTimeout(function () {
+                    setLoading(false);
+                }, 900);
+            });
+
+            googleBtn.addEventListener("click", function (event) {
+                event.preventDefault();
+                showError("");
+                sendToUnity("google_login");
+            });
+
+            registerLink.addEventListener("click", function (event) {
+                event.preventDefault();
+                sendToUnity("register_clicked");
+            });
+
+            forgotBtn.addEventListener("click", function (event) {
+                event.preventDefault();
+                var email = emailEl.value.trim();
+                if (!email || !isValidEmail(email)) {
+                    showError("Enter your email address above, then tap Forgot password.");
+                    return;
+                }
+                showError("");
+                sendToUnity("forgot_password:" + email);
+                forgotBtn.textContent = "Sending...";
+                setTimeout(function () { forgotBtn.textContent = "Forgot password?"; }, 3000);
+            });
+        });
+    </script>
+    <script>
+    // Bridge: route auth through shell via postMessage
+    (function () {
+        window.sendToUnity = function (msg) {
+            if (msg === "register_clicked") {
+                parent.postMessage("navigate:signup", "*");
+            } else if (msg.indexOf("login:") === 0) {
+                var creds = JSON.parse(msg.substring(6));
+                parent.postMessage({ type: "auth", action: "login", email: creds.email, password: creds.password }, "*");
+            } else if (msg === "google_login") {
+                parent.postMessage({ type: "auth", action: "google_login" }, "*");
+            } else if (msg.indexOf("forgot_password:") === 0) {
+                var fpEmail = msg.substring("forgot_password:".length);
+                parent.postMessage({ type: "forgot_password", email: fpEmail }, "*");
+            } else {
+                parent.postMessage("unity:" + msg, "*");
+            }
+        };
+
+        // Listen for auth results from shell
+        window.addEventListener("message", function (event) {
+            var data = event.data;
+            if (!data || data.type !== "auth_result") return;
+            var loginBtn = document.getElementById("loginBtn");
+            var googleBtn = document.getElementById("googleBtn");
+            var errorBox = document.getElementById("loginError");
+            if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = "LOG IN"; }
+            if (googleBtn) googleBtn.disabled = false;
+            if (!data.success && errorBox) {
+                errorBox.textContent = data.error || "Login failed.";
+            }
+            if (data.success && data.info && errorBox) {
+                errorBox.style.color = "#10b981";
+                errorBox.textContent = data.info;
+                setTimeout(function () { errorBox.style.color = ""; }, 5000);
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

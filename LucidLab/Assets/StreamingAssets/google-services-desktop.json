@@ -8,12 +8,25 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:91092596944:android:d047f91581399f3a1486d5",
+        "mobilesdk_app_id": "1:91092596944:android:76b907a090988b501486d5",
         "android_client_info": {
-          "package_name": "com.example.EduAR"
+          "package_name": "com.example.lucidlab"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "91092596944-0n7rq9f1f3jcnp9gcb440e73032q49h7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.lucidlab",
+            "certificate_hash": "634287eb85f97cff996eb77b6bf6eb77d7a4c39c"
+          }
+        },
+        {
+          "client_id": "91092596944-r1u8d0oigkfdhlnadmcpj8gj88csati6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDIUSfiVd_qu2lYKsjgK4pZZbC4rHvN82M"
@@ -21,26 +34,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:91092596944:android:4f11879c351376e21486d5",
-        "android_client_info": {
-          "package_name": "com.example.campuspulse"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDIUSfiVd_qu2lYKsjgK4pZZbC4rHvN82M"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "91092596944-r1u8d0oigkfdhlnadmcpj8gj88csati6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

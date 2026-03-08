@@ -2,82 +2,76 @@
     "m_SelectedDeviceId": "ZF6523HFKG",
     "m_SelectedProcess": {
         "deviceId": "ZF6523HFKG",
-        "name": "com.example.campuspulse",
-        "processId": 17252,
+        "name": "com.example.lucidlab",
+        "processId": 6598,
         "exited": false
     },
-    "m_SelectedPriority": 0,
+    "m_SelectedPriority": 3,
     "m_KnownProcessesForSerialization": [
         {
             "deviceId": "3414636581000C3",
-            "name": "com.example.campuspulse",
-            "processId": 12807,
+            "name": "com.example.lucidlab",
+            "processId": 5585,
             "exited": true
         },
         {
             "deviceId": "3414636581000C3",
-            "name": "com.example.campuspulse",
-            "processId": 18083,
+            "name": "com.example.lucidlab",
+            "processId": 9534,
             "exited": true
         },
         {
             "deviceId": "3414636581000C3",
-            "name": "com.example.campuspulse",
-            "processId": 18742,
+            "name": "com.example.lucidlab",
+            "processId": 13965,
             "exited": true
         },
         {
             "deviceId": "3414636581000C3",
-            "name": "com.example.campuspulse",
-            "processId": 19893,
+            "name": "com.example.lucidlab",
+            "processId": 19617,
             "exited": true
         },
         {
             "deviceId": "ZF6523HFKG",
-            "name": "com.example.campuspulse",
-            "processId": 14964,
+            "name": "com.example.lucidlab",
+            "processId": 22762,
             "exited": true
         },
         {
             "deviceId": "ZF6523HFKG",
-            "name": "com.example.campuspulse",
-            "processId": 22761,
+            "name": "com.example.lucidlab",
+            "processId": 26116,
             "exited": true
         },
         {
             "deviceId": "ZF6523HFKG",
-            "name": "com.example.campuspulse",
-            "processId": 12902,
+            "name": "com.example.lucidlab",
+            "processId": 27563,
             "exited": true
         },
         {
             "deviceId": "ZF6523HFKG",
-            "name": "com.example.campuspulse",
-            "processId": 28787,
+            "name": "com.example.lucidlab",
+            "processId": 30139,
             "exited": true
         },
         {
             "deviceId": "ZF6523HFKG",
-            "name": "com.example.campuspulse",
-            "processId": 29851,
+            "name": "com.example.lucidlab",
+            "processId": 842,
             "exited": false
         },
         {
             "deviceId": "ZF6523HFKG",
-            "name": "com.example.campuspulse",
-            "processId": 32758,
+            "name": "com.example.lucidlab",
+            "processId": 3716,
             "exited": false
         },
         {
             "deviceId": "ZF6523HFKG",
-            "name": "com.example.campuspulse",
-            "processId": 4056,
-            "exited": false
-        },
-        {
-            "deviceId": "ZF6523HFKG",
-            "name": "com.example.campuspulse",
-            "processId": 17252,
+            "name": "com.example.lucidlab",
+            "processId": 6598,
             "exited": false
         },
         {
@@ -219,7 +213,7 @@
         "AutoCapture": true
     },
     "m_FilterOptions": {
-        "m_Filter": "objectmani",
+        "m_Filter": "",
         "m_UseRegularExpressions": false,
         "m_MatchCase": false
     },
@@ -257,5 +251,5 @@
             "exited": false
         }
     },
-    "m_AutoScroll": 2
+    "m_AutoScroll": 0
 }
