@@ -247,7 +247,7 @@ function SceneContent() {
                         id="markerFileInput"
                         type="file"
                         onChange={e => setMarkerFile(e.target.files?.[0] || null)}
-                        accept="image/*"
+                        accept="image/png,image/jpeg,image/webp,image/svg+xml"
                         p={1}
                       />
                     </FormControl>

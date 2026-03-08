@@ -1,4 +1,4 @@
-import { setDoc } from '@firebase/firestore';
+import { setDoc, updateDoc } from '@firebase/firestore';
 import { useFirestore, useFirestoreCollectionData, useFirestoreDocData } from 'reactfire';
 import {
   getExperimentDocRef,
@@ -25,6 +25,11 @@ export default function useExperiment(expName: string) {
     );
   }
 
+  async function updateExperiment(fields: { title?: string; description?: string }) {
+    const experimentRef = getExperimentDocRef(fsapp, expName);
+    await setDoc(experimentRef, fields, { merge: true });
+  }
+
   async function createScene(name: string) {
     await createSelf();
 
@@ -43,5 +48,6 @@ export default function useExperiment(expName: string) {
     scenes: (scenes as any[]) ?? [],
     createScene,
     createSelf,
+    updateExperiment,
   };
 }
