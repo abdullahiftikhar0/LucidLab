@@ -8,12 +8,18 @@ namespace LucidLab.UI
     public class LoginWebController : MonoBehaviour
     {
         public CanvasGroup loadingScreen;
+        [Tooltip("Minimum seconds the splash screen is shown")]
+        public float minSplashDuration = 3f;
         private WebViewObject webViewObject;
 
         // Persistent WebViewObject that survives scene loads
         private static WebViewObject _persistentWebView;
         // Route callbacks to whichever LoginWebController is currently active
         private static LoginWebController _activeController;
+
+        // Splash → app loading state
+        private bool _splashLoaded;
+        private bool _appLoadRequested;
 
         private void Awake()
         {
@@ -44,6 +50,9 @@ namespace LucidLab.UI
                 yield break;
             }
 
+            _splashLoaded = false;
+            _appLoadRequested = false;
+
             webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
             DontDestroyOnLoad(webViewObject.gameObject);
             _persistentWebView = webViewObject;
@@ -62,12 +71,23 @@ namespace LucidLab.UI
                 ld: (msg) =>
                 {
                     Debug.Log($"WebView Loaded: {msg}");
-                    if (_persistentWebView != null)
-                        _persistentWebView.SetVisibility(true);
-                    
-                    if (_activeController != null && _activeController.loadingScreen != null) 
+                    if (_activeController == null) return;
+
+                    if (!_activeController._splashLoaded)
                     {
-                        _activeController.StartCoroutine(_activeController.FadeOutLoader());
+                        // Splash page finished loading — show it and fade out the Unity canvas overlay
+                        _activeController._splashLoaded = true;
+                        if (_persistentWebView != null)
+                            _persistentWebView.SetVisibility(true);
+                        if (_activeController.loadingScreen != null)
+                            _activeController.StartCoroutine(_activeController.FadeOutLoader());
+                        // Start the timer to transition to the real app
+                        _activeController.StartCoroutine(_activeController.LoadAppAfterSplash());
+                    }
+                    else if (_activeController._appLoadRequested)
+                    {
+                        // student_app.html finished loading — splash is naturally replaced
+                        Debug.Log("[Splash] App loaded, splash dismissed.");
                     }
                 },
                 transparent: true
@@ -81,14 +101,34 @@ namespace LucidLab.UI
 
             webViewObject.SetMargins(0, 0, 0, 0);
 
-            // Load the unified shell that handles login, signup, and all post-login screens
-            string url = System.IO.Path.Combine(Application.streamingAssetsPath, "student_app.html");
-            url = url.Replace("\\", "/");
+            // Load the splash screen first
+            string splashUrl = System.IO.Path.Combine(Application.streamingAssetsPath, "splash_screen.html");
+            splashUrl = splashUrl.Replace("\\", "/");
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+            webViewObject.LoadURL("file:///android_asset/splash_screen.html");
+#else
+            webViewObject.LoadURL("file://" + splashUrl);
+#endif
+        }
+
+        /// <summary>
+        /// Wait for the minimum splash duration, then navigate to the real app shell.
+        /// The WebView keeps showing splash_screen.html until student_app.html finishes loading.
+        /// </summary>
+        private IEnumerator LoadAppAfterSplash()
+        {
+            yield return new WaitForSeconds(minSplashDuration);
+
+            _appLoadRequested = true;
+
+            string appUrl = System.IO.Path.Combine(Application.streamingAssetsPath, "student_app.html");
+            appUrl = appUrl.Replace("\\", "/");
 
 #if UNITY_ANDROID && !UNITY_EDITOR
             webViewObject.LoadURL("file:///android_asset/student_app.html");
 #else
-            webViewObject.LoadURL("file://" + url);
+            webViewObject.LoadURL("file://" + appUrl);
 #endif
         }
 

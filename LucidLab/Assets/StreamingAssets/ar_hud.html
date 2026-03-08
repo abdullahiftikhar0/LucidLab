@@ -1,1 +1,220 @@
-OK
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <title>AR HUD</title>
+  <link rel="stylesheet" href="fonts/fonts.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --primary: #00f2ff;
+      --bg: rgba(15, 34, 35, 0.7);
+      --text: #e6f3f4;
+      --muted: #7f9398;
+      --danger: #ff4466;
+      --success: #22c55e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%; width: 100%;
+      overflow: hidden;
+      font-family: Inter, system-ui, sans-serif;
+      background: transparent;
+      color: var(--text);
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* ===== Glassmorphism ===== */
+    .glass {
+      background: var(--bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(0, 242, 255, 0.2);
+    }
+
+    /* ===== Layout ===== */
+    #hud {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      padding: 8px 10px;
+      padding-top: max(env(safe-area-inset-top, 8px), 8px);
+      pointer-events: none;
+    }
+    #hud > * { pointer-events: auto; }
+
+    /* ===== Top Header Bar ===== */
+    .top-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 10px;
+      border-radius: 12px;
+      flex-shrink: 0;
+    }
+    .top-bar .left { display: flex; align-items: center; gap: 8px; }
+    .top-bar .title { font-size: 14px; font-weight: 300; letter-spacing: 0.04em; color: #f1f5f9; }
+    .top-bar .status-row { display: flex; align-items: center; gap: 5px; margin-top: 1px; }
+    .top-bar .status-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 8px var(--primary);
+    }
+    .top-bar .status-dot.inactive { background: var(--muted); box-shadow: none; }
+    .top-bar .status-dot.danger { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+    .top-bar .status-text {
+      font-size: 8px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: rgba(0, 242, 255, 0.8);
+    }
+    .top-bar .status-text.inactive { color: var(--muted); }
+    .top-bar .status-text.danger { color: var(--danger); }
+
+    .icon-btn {
+      width: 34px; height: 34px; border-radius: 50%;
+      border: none; background: transparent;
+      color: #f1f5f9; display: grid; place-items: center;
+      cursor: pointer; transition: color 0.15s, background 0.15s;
+    }
+    .icon-btn:active { background: rgba(0, 242, 255, 0.15); color: var(--primary); }
+    .icon-btn .material-symbols-outlined { font-size: 20px; }
+
+    /* ===== Lock Button ===== */
+    .lock-btn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border-radius: 999px; border: none;
+      font-family: Inter, sans-serif; font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .lock-btn .material-symbols-outlined { font-size: 14px; }
+    .lock-btn[data-state="cant-lock"] {
+      background: rgba(100, 116, 139, 0.3); color: #94a3b8;
+      border: 1px solid rgba(100, 116, 139, 0.3);
+      pointer-events: none; opacity: 0.6;
+    }
+    .lock-btn[data-state="unlocked"] {
+      background: rgba(34, 197, 94, 0.2); color: var(--success);
+      border: 1px solid rgba(34, 197, 94, 0.4);
+    }
+    .lock-btn[data-state="locked"] {
+      background: rgba(255, 68, 102, 0.2); color: var(--danger);
+      border: 1px solid rgba(255, 68, 102, 0.4);
+    }
+  </style>
+</head>
+<body>
+
+  <div id="hud">
+
+    <!-- Top Header Bar -->
+    <header class="top-bar glass">
+      <div class="left">
+        <button class="icon-btn" id="btn-back" onclick="sendToUnity('back')">
+          <span class="material-symbols-outlined">arrow_back</span>
+        </button>
+        <div>
+          <div class="title" id="experiment-title">AR Experiment</div>
+          <div class="status-row">
+            <div class="status-dot inactive" id="tracking-dot"></div>
+            <span class="status-text inactive" id="tracking-status">Initializing</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <button class="lock-btn" id="lock-btn" data-state="cant-lock" onclick="sendToUnity('toggle_lock')">
+          <span class="material-symbols-outlined" id="lock-icon">lock_open</span>
+          <span id="lock-label">Can't Lock</span>
+        </button>
+      </div>
+    </header>
+
+  </div>
+
+  <script>
+    /* ===== Unity Bridge ===== */
+    function sendToUnity(msg) {
+      if (window.Unity && window.Unity.call) {
+        window.Unity.call(msg);
+      } else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.unityControl) {
+        window.webkit.messageHandlers.unityControl.postMessage(msg);
+      } else {
+        console.log("[AR HUD -> Unity]", msg);
+        window.location = "unity:" + msg;
+      }
+    }
+
+    /* ===== State Update Functions (called from Unity via EvaluateJS) ===== */
+
+    function setTrackingStatus(status) {
+      var dot = document.getElementById("tracking-dot");
+      var text = document.getElementById("tracking-status");
+      dot.className = "status-dot";
+      text.className = "status-text";
+
+      switch (status) {
+        case "tracking":
+          text.textContent = "Surface Locked";
+          break;
+        case "plane_detected":
+          text.textContent = "Plane Detected";
+          break;
+        case "plane_placed":
+          text.textContent = "Plane Placed";
+          break;
+        case "lost":
+          dot.className = "status-dot danger";
+          text.className = "status-text danger";
+          text.textContent = "Tracking Lost";
+          break;
+        default:
+          dot.className = "status-dot inactive";
+          text.className = "status-text inactive";
+          text.textContent = "Initializing";
+          break;
+      }
+    }
+
+    function setLockState(state) {
+      var btn = document.getElementById("lock-btn");
+      var icon = document.getElementById("lock-icon");
+      var label = document.getElementById("lock-label");
+      btn.setAttribute("data-state", state);
+
+      switch (state) {
+        case "locked":
+          icon.textContent = "lock";
+          label.textContent = "Unlock";
+          break;
+        case "unlocked":
+          icon.textContent = "lock_open";
+          label.textContent = "Lock";
+          break;
+        default:
+          icon.textContent = "lock_open";
+          label.textContent = "Can't Lock";
+          break;
+      }
+    }
+
+    /* Stubs so C# EvaluateJS calls don't throw errors */
+    function setMode(mode) { /* handled by separate mode toggle panel */ }
+
+    function setTitle(title) {
+      document.getElementById("experiment-title").textContent = title || "AR Experiment";
+    }
+
+    /* ===== Touch Forwarding ===== */
+    /* Forward every touch to Unity so the AR scene can still process taps
+       (object selection, plane placement) through the HUD overlay. */
+    document.addEventListener('touchstart', function(e) {
+      var t = e.changedTouches[0];
+      if (t) sendToUnity('touch_at:' + Math.round(t.screenX) + ',' + Math.round(t.screenY));
+    }, { passive: true });
+
+    /* ===== Notify Unity that HUD is ready ===== */
+    sendToUnity("hud_ready");
+  </script>
+</body>
+</html>
+</body>
+</html>

@@ -889,6 +889,7 @@ GameObject:
   - component: {fileID: 800521073}
   - component: {fileID: 800521074}
   - component: {fileID: 800521075}
+  - component: {fileID: 800521076}
   m_Layer: 0
   m_Name: CoreGameObject
   m_TagString: Untagged
@@ -1143,6 +1144,20 @@ MonoBehaviour:
   rightJoystick: {fileID: 1555018041576664993}
   heightSlider: {fileID: 67322026230351979}
   joystickPanel: {fileID: 5043747418069082366}
+--- !u!114 &800521076
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 800521059}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed54725b4fed56f4991972485b1ae639, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  useHtmlHud: 1
+  nativeCanvas: {fileID: 1157897775}
 --- !u!1 &920351477
 GameObject:
   m_ObjectHideFlags: 0

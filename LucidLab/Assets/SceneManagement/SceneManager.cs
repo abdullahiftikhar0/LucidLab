@@ -108,10 +108,17 @@ namespace Assets.SceneManagement {
             } else {
                 Debug.LogWarning("[SceneManager] ShowDescription failed because sceneDescriptionGameObject is NULL!");
             }
+
+            // Update HTML HUD
+            var hud = FindObjectOfType<Assets.Interaction.ARHudController>();
+            if (hud != null) hud.SetInstruction(message);
         }
 
         public void HideDescription() {
             if (sceneDescriptionGameObject != null) sceneDescriptionGameObject.SetActive(false);
+
+            var hud = FindObjectOfType<Assets.Interaction.ARHudController>();
+            if (hud != null) hud.HideInstruction();
         }
 
         public void LoadDefaultSceneForPlaneMode() {

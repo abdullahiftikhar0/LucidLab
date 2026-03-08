@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LucidLab - Splash Screen</title>
+<!-- Tailwind CSS v3 CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- BEGIN: Custom Configuration -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'lucid-dark': '#0a0a1f',
+            'lucid-violet': '#1a0b2e',
+            'neon-cyan': '#00f2ff',
+            'neon-blue': '#0072ff',
+          },
+          fontFamily: {
+            'futuristic': ['Orbitron', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<!-- END: Custom Configuration -->
+<!-- Google Fonts for Futuristic Typography -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<!-- BEGIN: Global Styles -->
+<style data-purpose="background-gradients">
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: radial-gradient(circle at center, #1a0b2e 0%, #0a0a1f 100%);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+    }
+  </style>
+<style data-purpose="animations">
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-20px) rotate(5deg); }
+    }
+    
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.6; filter: blur(2px); }
+      50% { opacity: 1; filter: blur(4px); }
+    }
+
+    .glass-effect {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+  </style>
+<!-- END: Global Styles -->
+</head>
+<body class="safe-area-inset">
+<!-- BEGIN: MainContent -->
+<main class="flex flex-col items-center justify-center flex-grow w-full relative">
+<!-- Canvas for Particle System & 3D Cube -->
+<canvas class="absolute inset-0 z-0" data-purpose="ar-visualization" id="splash-canvas"></canvas>
+<!-- Glassmorphic Text Container -->
+<div class="z-10 mt-64 glass-effect px-6 py-3 rounded-full animate-pulse" data-purpose="loading-indicator">
+<p class="text-neon-cyan text-sm tracking-widest font-futuristic uppercase">Initializing AR Core...</p>
+</div>
+</main>
+<!-- END: MainContent -->
+<!-- BEGIN: FooterLogo -->
+<footer class="pb-12 z-10 w-full flex flex-col items-center">
+<div class="flex flex-col items-center gap-2">
+<h1 class="text-white text-4xl font-bold tracking-[0.2em] font-futuristic">
+        LUCID<span class="text-neon-cyan">LAB</span>
+</h1>
+<div class="h-[1px] w-24 bg-gradient-to-r from-transparent via-neon-cyan to-transparent"></div>
+<p class="text-gray-400 text-[10px] uppercase tracking-[0.4em] mt-2">Future of Science</p>
+</div>
+</footer>
+<!-- END: FooterLogo -->
+<!-- BEGIN: CanvasScript -->
+<script data-purpose="canvas-render-logic">
+    const canvas = document.getElementById('splash-canvas');
+    const ctx = canvas.getContext('2d');
+
+    let width, height;
+    let particles = [];
+    let rotation = 0;
+
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    }
+
+    class Particle {
+      constructor() {
+        this.reset();
+      }
+      reset() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        this.size = Math.random() * 2 + 1;
+        this.speedX = (Math.random() - 0.5) * 0.5;
+        this.speedY = (Math.random() - 0.5) * 0.5;
+        this.alpha = Math.random();
+      }
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        if (this.x < 0 || this.x > width) this.speedX *= -1;
+        if (this.y < 0 || this.y > height) this.speedY *= -1;
+        this.alpha += 0.01;
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0, 242, 255, ${Math.abs(Math.sin(this.alpha)) * 0.5})`;
+        ctx.fill();
+      }
+    }
+
+    function init() {
+      resize();
+      for (let i = 0; i < 60; i++) {
+        particles.push(new Particle());
+      }
+      animate();
+    }
+
+    function drawWireframeCube(x, y, size, angle) {
+      const vertices = [
+        [-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1],
+        [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]
+      ];
+
+      const edges = [
+        [0, 1], [1, 2], [2, 3], [3, 0],
+        [4, 5], [5, 6], [6, 7], [7, 4],
+        [0, 4], [1, 5], [2, 6], [3, 7]
+      ];
+
+      const projected = vertices.map(v => {
+        // Simple 3D Rotation Y and X
+        let x1 = v[0] * Math.cos(angle) - v[2] * Math.sin(angle);
+        let z1 = v[0] * Math.sin(angle) + v[2] * Math.cos(angle);
+        let y1 = v[1] * Math.cos(angle * 0.5) - z1 * Math.sin(angle * 0.5);
+        let z2 = v[1] * Math.sin(angle * 0.5) + z1 * Math.cos(angle * 0.5);
+        
+        // Perspective Projection
+        const d = 4;
+        const f = size / (d - z2);
+        return [x1 * f + x, y1 * f + y];
+      });
+
+      ctx.strokeStyle = '#00f2ff';
+      ctx.lineWidth = 2;
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = '#00f2ff';
+
+      edges.forEach(e => {
+        ctx.beginPath();
+        ctx.moveTo(projected[e[0]][0], projected[e[0]][1]);
+        ctx.lineTo(projected[e[1]][0], projected[e[1]][1]);
+        ctx.stroke();
+      });
+      ctx.shadowBlur = 0;
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, width, height);
+      
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+
+      rotation += 0.01;
+      drawWireframeCube(width / 2, height / 2.2, 180, rotation);
+      
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('resize', resize);
+    init();
+  </script>
+<!-- END: CanvasScript -->
+</body></html>

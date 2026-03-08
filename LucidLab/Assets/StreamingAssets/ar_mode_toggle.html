@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>AR Mode Toggle</title>
+  <link rel="stylesheet" href="fonts/fonts.css" />
+  <style>
+    :root { --primary: #00f2ff; --muted: #7f9398; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%; width: 100%; overflow: hidden;
+      background: transparent;
+      font-family: Inter, system-ui, sans-serif;
+      display: flex; align-items: flex-start; justify-content: flex-start;
+      padding: 4px 10px;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none; -webkit-user-select: none;
+    }
+    .mode-toggle {
+      display: inline-flex; align-items: center; gap: 0;
+      border-radius: 999px; padding: 2px;
+      background: rgba(15, 34, 35, 0.7);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(0, 242, 255, 0.2);
+    }
+    .mode-btn {
+      padding: 5px 14px; border-radius: 999px; border: none;
+      font-family: Inter, sans-serif; font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      cursor: pointer; transition: all 0.2s;
+      color: var(--muted); background: transparent;
+    }
+    .mode-btn.active {
+      color: #0f2223; background: var(--primary);
+      box-shadow: 0 0 12px rgba(0, 242, 255, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="mode-toggle" id="mode-toggle">
+    <button class="mode-btn active" id="mode-marker" onclick="sendToUnity('mode_marker')">Marker</button>
+    <button class="mode-btn" id="mode-plane" onclick="sendToUnity('mode_plane')">Plane</button>
+  </div>
+  <script>
+    function sendToUnity(msg) {
+      if (window.Unity && window.Unity.call) window.Unity.call(msg);
+      else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.unityControl)
+        window.webkit.messageHandlers.unityControl.postMessage(msg);
+      else window.location = "unity:" + msg;
+    }
+    function setMode(mode) {
+      document.getElementById("mode-marker").classList.toggle("active", mode === "marker");
+      document.getElementById("mode-plane").classList.toggle("active", mode === "plane");
+    }
+    document.addEventListener('touchstart', function(e) {
+      var t = e.changedTouches[0];
+      if (t) sendToUnity('touch_at:' + Math.round(t.screenX) + ',' + Math.round(t.screenY));
+    }, { passive: true });
+    sendToUnity("mode_toggle_ready");
+  </script>
+</body>
+</html>
