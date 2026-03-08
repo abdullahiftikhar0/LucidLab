@@ -5,21 +5,15 @@
     <meta charset="utf-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>LucidLab - Student Dashboard</title>
+  <link rel="stylesheet" href="fonts/fonts.css" />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap"
-        rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap"
-        rel="stylesheet">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
-        rel="stylesheet">
-    <script id="tailwind-config">
+<script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#00f2ff",
+                        "primary": "var(--accent, #00f2ff)",
                         "background-light": "#f5f8f8",
                         "background-dark": "#0f2223",
                         "surface-dark": "rgba(255, 255, 255, 0.05)",
@@ -33,6 +27,7 @@
         }
     </script>
     <style>
+        :root { --accent: #00f2ff; --text-scale: 1; }
         .glass {
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(12px);
@@ -41,11 +36,12 @@
         }
 
         .neon-glow {
-            box-shadow: 0 0 15px rgba(0, 242, 255, 0.4);
+            box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 40%, transparent);
         }
 
         body {
             font-family: 'Inter', sans-serif;
+            font-size: calc(16px * var(--text-scale));
         }
     </style>
     <style>
@@ -164,6 +160,7 @@
       });
     })();
     </script>
+<script src="preferences.js"></script>
 </body>
 
 </html>

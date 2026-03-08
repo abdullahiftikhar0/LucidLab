@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LucidLab - Help &amp; Support</title>
+  <link rel="stylesheet" href="fonts/fonts.css" />
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                colors: {
+                    "primary": "var(--accent, #00f2ff)",
+                    "background-light": "#f5f8f8",
+                    "background-dark": "#0f2223",
+                },
+                fontFamily: { "display": ["Inter", "sans-serif"] },
+                borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+            },
+        },
+    }
+</script>
+<style>
+    .glass-panel {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid color-mix(in srgb, var(--accent) 10%, transparent);
+    }
+    :root { --accent: #00f2ff; --text-scale: 1; }
+    body { min-height: max(884px, 100dvh); font-size: calc(16px * var(--text-scale)); }
+    .faq-answer {
+        max-height: 0; overflow: hidden;
+        transition: max-height 0.3s ease, padding 0.3s ease;
+        padding: 0 16px;
+    }
+    .faq-item.open .faq-answer { max-height: 300px; padding: 0 16px 16px; }
+    .faq-item.open .faq-chevron { transform: rotate(180deg); }
+    .faq-chevron { transition: transform 0.2s ease; }
+</style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+
+<!-- Header -->
+<header class="sticky top-0 z-50 flex items-center gap-3 px-4 py-4 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-primary/10">
+    <button id="back-btn" class="flex items-center justify-center size-10 rounded-full hover:bg-primary/10 transition-colors">
+        <span class="material-symbols-outlined">arrow_back</span>
+    </button>
+    <h1 class="text-lg font-bold tracking-tight">Help &amp; Support</h1>
+</header>
+
+<main class="flex-1 overflow-y-auto px-4 pb-8">
+
+    <!-- Hero -->
+    <section class="mt-8 mb-8 text-center">
+        <div class="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4">
+            <span class="material-symbols-outlined text-primary text-3xl">support_agent</span>
+        </div>
+        <h2 class="text-xl font-bold mb-1">How can we help?</h2>
+        <p class="text-sm text-slate-400">Find answers or get in touch with the LucidLab team.</p>
+    </section>
+
+    <!-- Quick Actions -->
+    <section class="grid grid-cols-2 gap-3 mb-8">
+        <a id="action-email" class="glass-panel rounded-xl p-4 flex flex-col items-center text-center gap-2 hover:bg-primary/5 transition-colors cursor-pointer">
+            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                <span class="material-symbols-outlined">mail</span>
+            </div>
+            <span class="text-sm font-semibold">Email Us</span>
+            <span class="text-[10px] text-slate-500">support@lucidlab.app</span>
+        </a>
+        <a id="action-bug" class="glass-panel rounded-xl p-4 flex flex-col items-center text-center gap-2 hover:bg-primary/5 transition-colors cursor-pointer">
+            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                <span class="material-symbols-outlined">bug_report</span>
+            </div>
+            <span class="text-sm font-semibold">Report Bug</span>
+            <span class="text-[10px] text-slate-500">Found an issue?</span>
+        </a>
+    </section>
+
+    <!-- FAQs -->
+    <section class="mb-8">
+        <h2 class="text-[11px] font-bold uppercase tracking-widest text-primary mb-4">Frequently Asked Questions</h2>
+        <div class="space-y-2" id="faq-list">
+            <div class="faq-item glass-panel rounded-xl overflow-hidden">
+                <button class="faq-trigger w-full flex items-center justify-between p-4 text-left">
+                    <span class="text-sm font-semibold pr-4">How do I join a classroom?</span>
+                    <span class="material-symbols-outlined text-slate-500 faq-chevron shrink-0">expand_more</span>
+                </button>
+                <div class="faq-answer text-sm text-slate-400 leading-relaxed">
+                    Tap the <strong class="text-primary">+</strong> button on the Home screen. Enter the 6-character join code your instructor shared, then tap "Join Class". The classroom will appear on your dashboard.
+                </div>
+            </div>
+            <div class="faq-item glass-panel rounded-xl overflow-hidden">
+                <button class="faq-trigger w-full flex items-center justify-between p-4 text-left">
+                    <span class="text-sm font-semibold pr-4">How do I start an AR experiment?</span>
+                    <span class="material-symbols-outlined text-slate-500 faq-chevron shrink-0">expand_more</span>
+                </button>
+                <div class="faq-answer text-sm text-slate-400 leading-relaxed">
+                    Open a classroom, find the experiment you want, and tap <strong class="text-primary">Launch AR</strong>. Point your camera at the marker sheet provided by your instructor. The 3D objects will appear once the markers are detected.
+                </div>
+            </div>
+            <div class="faq-item glass-panel rounded-xl overflow-hidden">
+                <button class="faq-trigger w-full flex items-center justify-between p-4 text-left">
+                    <span class="text-sm font-semibold pr-4">Can I retake an experiment?</span>
+                    <span class="material-symbols-outlined text-slate-500 faq-chevron shrink-0">expand_more</span>
+                </button>
+                <div class="faq-answer text-sm text-slate-400 leading-relaxed">
+                    If your instructor marks your submission as "Needs Revision", a <strong class="text-primary">Retake Experiment</strong> button will appear on the experiment card. Tap it to start a new session.
+                </div>
+            </div>
+            <div class="faq-item glass-panel rounded-xl overflow-hidden">
+                <button class="faq-trigger w-full flex items-center justify-between p-4 text-left">
+                    <span class="text-sm font-semibold pr-4">How do I leave a classroom?</span>
+                    <span class="material-symbols-outlined text-slate-500 faq-chevron shrink-0">expand_more</span>
+                </button>
+                <div class="faq-answer text-sm text-slate-400 leading-relaxed">
+                    Open the classroom, tap the <strong class="text-primary">three-dot menu</strong> (⋮) in the top-right corner, and select "Leave Classroom". Your past submissions are preserved even after leaving.
+                </div>
+            </div>
+            <div class="faq-item glass-panel rounded-xl overflow-hidden">
+                <button class="faq-trigger w-full flex items-center justify-between p-4 text-left">
+                    <span class="text-sm font-semibold pr-4">My AR markers aren't being detected</span>
+                    <span class="material-symbols-outlined text-slate-500 faq-chevron shrink-0">expand_more</span>
+                </button>
+                <div class="faq-answer text-sm text-slate-400 leading-relaxed">
+                    Make sure you're in a well-lit environment. Hold your phone 20–40 cm from the markers. Avoid glare or crumpled sheets. If issues persist, try restarting the experiment from the card.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- App Info -->
+    <section class="text-center pb-4">
+        <p class="text-xs text-slate-500">LucidLab Student v1.0.0</p>
+        <p class="text-[10px] text-slate-600 mt-1">Built with ♥ for science education</p>
+    </section>
+
+</main>
+
+<script>
+(function () {
+    var nav = document.querySelector("nav"); if (nav) nav.style.display = "none";
+
+    document.getElementById("back-btn").addEventListener("click", function () {
+        parent.postMessage("navigate:profile", "*");
+    });
+
+    // FAQ accordion
+    document.querySelectorAll(".faq-trigger").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            var item = btn.closest(".faq-item");
+            var wasOpen = item.classList.contains("open");
+            // Close all
+            document.querySelectorAll(".faq-item").forEach(function (i) { i.classList.remove("open"); });
+            // Toggle clicked
+            if (!wasOpen) item.classList.add("open");
+        });
+    });
+
+    // Quick actions
+    document.getElementById("action-email").addEventListener("click", function () {
+        try { window.open("mailto:support@lucidlab.app?subject=LucidLab%20Student%20Support", "_blank"); } catch(e) {}
+    });
+    document.getElementById("action-bug").addEventListener("click", function () {
+        try { window.open("mailto:support@lucidlab.app?subject=Bug%20Report%20-%20LucidLab%20Student", "_blank"); } catch(e) {}
+    });
+})();
+</script>
+<script src="preferences.js"></script>
+</body>
+</html>

@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LucidLab - Appearance</title>
+  <link rel="stylesheet" href="fonts/fonts.css" />
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                colors: {
+                    "primary": "var(--accent, #00f2ff)",
+                    "background-light": "#f5f8f8",
+                    "background-dark": "#0f2223",
+                },
+                fontFamily: { "display": ["Inter", "sans-serif"] },
+                borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+            },
+        },
+    }
+</script>
+<style>
+    :root { --accent: #00f2ff; --text-scale: 1; }
+    .glass-panel {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid color-mix(in srgb, var(--accent) 10%, transparent);
+    }
+    html.light .glass-panel {
+        background: rgba(0, 0, 0, 0.03);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+    body { min-height: max(884px, 100dvh); font-size: calc(16px * var(--text-scale)); }
+    .theme-card {
+        position: relative;
+        border-radius: 1rem;
+        padding: 20px;
+        cursor: pointer;
+        transition: border-color 0.3s, box-shadow 0.3s;
+        border: 2px solid transparent;
+    }
+    .theme-card.selected {
+        border-color: var(--accent);
+        box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 25%, transparent);
+    }
+    .theme-card .check-badge {
+        position: absolute; top: 10px; right: 10px;
+        width: 24px; height: 24px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #0f2223;
+        display: none; align-items: center; justify-content: center;
+    }
+    .theme-card.selected .check-badge { display: flex; }
+    .accent-dot {
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        cursor: pointer;
+        border: 3px solid transparent;
+        transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+        position: relative;
+    }
+    .accent-dot.selected {
+        border-color: var(--accent);
+        transform: scale(1.15);
+        box-shadow: 0 0 14px currentColor;
+    }
+    .accent-dot .inner-check {
+        position: absolute; inset: 0; display: none;
+        align-items: center; justify-content: center;
+    }
+    .accent-dot.selected .inner-check { display: flex; }
+    /* Size buttons */
+    .size-btn {
+        flex: 1; padding: 12px 8px; border-radius: 12px;
+        cursor: pointer; text-align: center;
+        border: 2px solid transparent;
+        transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+    .size-btn.selected {
+        border-color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 8%, transparent);
+        box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 15%, transparent);
+    }
+    /* Preview card */
+    .preview-card {
+        transition: font-size 0.3s ease;
+    }
+    /* Toast */
+    .toast {
+        position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+        background: rgba(22, 44, 45, 0.95); backdrop-filter: blur(12px);
+        border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent); color: var(--accent);
+        font-size: 13px; font-weight: 600; padding: 10px 20px; border-radius: 999px;
+        z-index: 300; opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    html.light .toast {
+        background: rgba(245, 248, 248, 0.95);
+        color: #0f2223;
+    }
+    /* Light mode overrides */
+    html.light body { background: #f5f8f8; color: #0f2223; }
+    html.light header { background: rgba(245,248,248,0.8); border-color: rgba(0,0,0,0.08); }
+    html.light header h1, html.light header span { color: #0f2223; }
+</style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+
+<!-- Header -->
+<header class="sticky top-0 z-50 flex items-center gap-3 px-4 py-4 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-primary/10">
+    <button id="back-btn" class="flex items-center justify-center size-10 rounded-full hover:bg-primary/10 transition-colors">
+        <span class="material-symbols-outlined">arrow_back</span>
+    </button>
+    <h1 class="text-lg font-bold tracking-tight">Appearance</h1>
+</header>
+
+<main class="flex-1 overflow-y-auto px-4 pb-8">
+
+    <!-- Live Preview -->
+    <section class="mt-5 mb-6">
+        <div id="preview-card" class="preview-card glass-panel rounded-xl p-5 text-center">
+            <p class="font-semibold" style="color: var(--accent)">Live Preview</p>
+            <p id="preview-text" class="text-sm mt-1 opacity-70">This is how your content will look.</p>
+        </div>
+    </section>
+
+    <!-- Theme Selection -->
+    <section class="mb-8">
+        <h2 class="text-[11px] font-bold uppercase tracking-widest mb-4" style="color: var(--accent)">Theme</h2>
+        <div class="grid grid-cols-2 gap-3">
+            <div class="theme-card glass-panel selected" data-theme="dark">
+                <div class="check-badge"><span class="material-symbols-outlined" style="font-size:16px">check</span></div>
+                <div class="w-full h-20 rounded-lg bg-[#0f2223] border border-white/10 mb-3 flex items-center justify-center">
+                    <div class="flex gap-1.5">
+                        <div class="w-8 h-2 rounded" style="background: color-mix(in srgb, var(--accent) 60%, transparent)"></div>
+                        <div class="w-5 h-2 rounded bg-white/20"></div>
+                        <div class="w-6 h-2 rounded bg-white/10"></div>
+                    </div>
+                </div>
+                <span class="text-sm font-semibold">Dark</span>
+                <p class="text-[10px] text-slate-500 mt-0.5">Easier on the eyes</p>
+            </div>
+            <div class="theme-card glass-panel" data-theme="light">
+                <div class="check-badge"><span class="material-symbols-outlined" style="font-size:16px">check</span></div>
+                <div class="w-full h-20 rounded-lg bg-[#f5f8f8] border border-slate-200 mb-3 flex items-center justify-center">
+                    <div class="flex gap-1.5">
+                        <div class="w-8 h-2 rounded" style="background: color-mix(in srgb, var(--accent) 50%, #0f2223)"></div>
+                        <div class="w-5 h-2 rounded bg-slate-300"></div>
+                        <div class="w-6 h-2 rounded bg-slate-200"></div>
+                    </div>
+                </div>
+                <span class="text-sm font-semibold">Light</span>
+                <p class="text-[10px] text-slate-500 mt-0.5">Bright and clean</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Accent Color -->
+    <section class="mb-8">
+        <h2 class="text-[11px] font-bold uppercase tracking-widest mb-4" style="color: var(--accent)">Accent Color</h2>
+        <div class="glass-panel rounded-xl p-5">
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+                <div class="accent-dot selected" data-color="#00f2ff" style="background:#00f2ff; color:#00f2ff">
+                    <div class="inner-check"><span class="material-symbols-outlined" style="font-size:16px;color:#0f2223">check</span></div>
+                </div>
+                <div class="accent-dot" data-color="#6366f1" style="background:#6366f1; color:#6366f1">
+                    <div class="inner-check"><span class="material-symbols-outlined" style="font-size:16px;color:#fff">check</span></div>
+                </div>
+                <div class="accent-dot" data-color="#10b981" style="background:#10b981; color:#10b981">
+                    <div class="inner-check"><span class="material-symbols-outlined" style="font-size:16px;color:#fff">check</span></div>
+                </div>
+                <div class="accent-dot" data-color="#f59e0b" style="background:#f59e0b; color:#f59e0b">
+                    <div class="inner-check"><span class="material-symbols-outlined" style="font-size:16px;color:#0f2223">check</span></div>
+                </div>
+                <div class="accent-dot" data-color="#ef4444" style="background:#ef4444; color:#ef4444">
+                    <div class="inner-check"><span class="material-symbols-outlined" style="font-size:16px;color:#fff">check</span></div>
+                </div>
+                <div class="accent-dot" data-color="#ec4899" style="background:#ec4899; color:#ec4899">
+                    <div class="inner-check"><span class="material-symbols-outlined" style="font-size:16px;color:#fff">check</span></div>
+                </div>
+            </div>
+            <p id="accent-label" class="text-[11px] text-slate-400 mt-4 text-center font-medium">Cyan</p>
+        </div>
+    </section>
+
+    <!-- Text Size -->
+    <section class="mb-8">
+        <h2 class="text-[11px] font-bold uppercase tracking-widest mb-4" style="color: var(--accent)">Text Size</h2>
+        <div class="glass-panel rounded-xl p-5">
+            <div class="flex gap-3">
+                <div class="size-btn glass-panel" data-size="small" data-scale="0.85">
+                    <span class="text-xs opacity-70">A</span>
+                    <p class="text-[10px] mt-1 opacity-50">Small</p>
+                </div>
+                <div class="size-btn glass-panel selected" data-size="default" data-scale="1">
+                    <span class="text-sm font-semibold">A</span>
+                    <p class="text-[10px] mt-1 opacity-50">Default</p>
+                </div>
+                <div class="size-btn glass-panel" data-size="large" data-scale="1.15">
+                    <span class="text-lg font-bold">A</span>
+                    <p class="text-[10px] mt-1 opacity-50">Large</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Reset -->
+    <button id="reset-btn" class="w-full py-3 border border-slate-600 text-slate-400 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 hover:bg-white/5 transition-colors mb-4">
+        <span class="material-symbols-outlined text-base">restart_alt</span>
+        Reset to Defaults
+    </button>
+
+</main>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<script>
+(function () {
+    var nav = document.querySelector("nav"); if (nav) nav.style.display = "none";
+    var root = document.documentElement;
+
+    var ACCENT_NAMES = {
+        "#00f2ff": "Cyan",
+        "#6366f1": "Indigo",
+        "#10b981": "Emerald",
+        "#f59e0b": "Amber",
+        "#ef4444": "Red",
+        "#ec4899": "Pink"
+    };
+
+    // ── Storage helpers ──
+    function save(key, val) { try { localStorage.setItem("lucidlab_" + key, val); } catch(e) {} }
+    function load(key, def) { try { return localStorage.getItem("lucidlab_" + key) || def; } catch(e) { return def; } }
+
+    // ── Toast ──
+    function showToast(msg) {
+        var t = document.getElementById("toast");
+        t.textContent = msg; t.classList.add("show");
+        setTimeout(function () { t.classList.remove("show"); }, 1800);
+    }
+
+    // ── Broadcast preference to shell (which broadcasts to all frames) ──
+    function broadcast(key, value) {
+        parent.postMessage({ type: "preference_change", key: key, value: value }, "*");
+    }
+
+    // ══════════════════════════════════════════
+    //  THEME
+    // ══════════════════════════════════════════
+    var currentTheme = load("theme", "dark");
+
+    function applyTheme(theme) {
+        currentTheme = theme;
+        root.classList.toggle("dark", theme === "dark");
+        root.classList.toggle("light", theme === "light");
+
+        var cards = document.querySelectorAll(".theme-card");
+        cards.forEach(function (c) { c.classList.toggle("selected", c.dataset.theme === theme); });
+
+        save("theme", theme);
+        broadcast("theme", theme);
+    }
+
+    document.querySelectorAll(".theme-card").forEach(function (card) {
+        card.addEventListener("click", function () {
+            applyTheme(card.dataset.theme);
+            showToast(card.dataset.theme === "dark" ? "Dark theme applied" : "Light theme applied");
+        });
+    });
+
+    // ══════════════════════════════════════════
+    //  ACCENT COLOR
+    // ══════════════════════════════════════════
+    var currentAccent = load("accent", "#00f2ff");
+
+    function applyAccent(color) {
+        currentAccent = color;
+        root.style.setProperty("--accent", color);
+
+        var dots = document.querySelectorAll(".accent-dot");
+        dots.forEach(function (d) { d.classList.toggle("selected", d.dataset.color === color); });
+
+        document.getElementById("accent-label").textContent = ACCENT_NAMES[color] || "Custom";
+
+        save("accent", color);
+        broadcast("accent", color);
+    }
+
+    document.querySelectorAll(".accent-dot").forEach(function (dot) {
+        dot.addEventListener("click", function () {
+            applyAccent(dot.dataset.color);
+            showToast("Accent: " + (ACCENT_NAMES[dot.dataset.color] || dot.dataset.color));
+        });
+    });
+
+    // ══════════════════════════════════════════
+    //  TEXT SIZE
+    // ══════════════════════════════════════════
+    var currentSize = load("textsize", "default");
+
+    var SCALE_MAP = { small: 0.85, "default": 1, large: 1.15 };
+
+    function applySize(size) {
+        currentSize = size;
+        var scale = SCALE_MAP[size] || 1;
+        root.style.setProperty("--text-scale", scale);
+
+        var btns = document.querySelectorAll(".size-btn");
+        btns.forEach(function (b) { b.classList.toggle("selected", b.dataset.size === size); });
+
+        // Update preview
+        var preview = document.getElementById("preview-text");
+        preview.style.fontSize = (14 * scale) + "px";
+
+        save("textsize", size);
+        broadcast("textsize", size);
+    }
+
+    document.querySelectorAll(".size-btn").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            applySize(btn.dataset.size);
+            showToast("Text size: " + btn.dataset.size.charAt(0).toUpperCase() + btn.dataset.size.slice(1));
+        });
+    });
+
+    // ══════════════════════════════════════════
+    //  RESET
+    // ══════════════════════════════════════════
+    document.getElementById("reset-btn").addEventListener("click", function () {
+        applyTheme("dark");
+        applyAccent("#00f2ff");
+        applySize("default");
+        showToast("Reset to defaults");
+    });
+
+    // ══════════════════════════════════════════
+    //  BACK
+    // ══════════════════════════════════════════
+    document.getElementById("back-btn").addEventListener("click", function () {
+        parent.postMessage("navigate:profile", "*");
+    });
+
+    // ══════════════════════════════════════════
+    //  INIT — restore saved preferences
+    // ══════════════════════════════════════════
+    applyTheme(currentTheme);
+    applyAccent(currentAccent);
+    applySize(currentSize);
+})();
+</script>
+</body>
+</html>

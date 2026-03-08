@@ -4,17 +4,15 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>LucidLab - Completed Assignments</title>
+  <link rel="stylesheet" href="fonts/fonts.css" />
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#00f2ff",
+                        "primary": "var(--accent, #00f2ff)",
                         "background-light": "#f5f8f8",
                         "background-dark": "#0f2223",
                         "accent-success": "#10b981", // Neon green for completion
@@ -33,14 +31,16 @@
         }
     </script>
 <style>
+        :root { --accent: #00f2ff; --text-scale: 1; }
         .glass-panel {
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .neon-glow-primary {
-            box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+            box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 30%, transparent);
         }
+        body { font-size: calc(16px * var(--text-scale)); }
         .neon-glow-success {
             box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
         }
@@ -58,7 +58,7 @@
 <button class="flex items-center justify-center size-10 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
 <span class="material-symbols-outlined text-slate-600 dark:text-slate-400">arrow_back</span>
 </button>
-<h1 class="text-lg font-bold tracking-tight text-slate-900 dark:text-white">My Assignments</h1>
+<h1 class="text-lg font-bold tracking-tight text-slate-900 dark:text-white">My Experiments</h1>
 <button class="flex items-center justify-center size-10 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
 <span class="material-symbols-outlined text-primary">filter_list</span>
 </button>
@@ -183,4 +183,5 @@
   });
 })();
 </script>
+<script src="preferences.js"></script>
 </body></html>

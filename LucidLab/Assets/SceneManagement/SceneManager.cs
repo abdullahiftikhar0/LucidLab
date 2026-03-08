@@ -122,25 +122,42 @@ namespace Assets.SceneManagement {
         }
 
         async void Start() {
+            Debug.Log("[SceneManager] Start() BEGIN");
             ShowDescription("Loading experiment...");
             await sceneLoader.LoadAllScenes();
 
             if (sceneLoader.Scenes == null || sceneLoader.Scenes.Count == 0) {
+                Debug.LogWarning("[SceneManager] No scenes loaded! sceneLoader.Scenes is " + (sceneLoader.Scenes == null ? "null" : "empty"));
                 ShowDescription("No scenes found. Check experiment code.");
                 return;
             }
+
+            Debug.Log($"[SceneManager] {sceneLoader.Scenes.Count} scene(s) loaded. Collecting markers...");
 
             // Global Marker Discovery Setup
             var allMarkers = sceneLoader.Scenes
                 .Where(s => s.markers != null)
                 .SelectMany(s => s.markers).ToList();
+
+            Debug.LogWarning($"[SceneManager] Found {allMarkers.Count} total marker(s) across all scenes.");
+            foreach (var m in allMarkers) {
+                Debug.LogWarning($"[SceneManager]   → Marker id='{m.id}', name='{m.name}', imageUrl='{(string.IsNullOrEmpty(m.imageUrl) ? "<EMPTY>" : m.imageUrl)}'");
+            }
+
             var arManager = FindObjectOfType<ARExperimentManager>();
             if (arManager != null) {
+                Debug.Log("[SceneManager] ARExperimentManager found. Subscribing to events.");
                 ARExperimentManager.OnMarkerTracked += OnMarkerDetected;
                 ARExperimentManager.OnMarkerLost += OnMarkerLost;
                 if (allMarkers.Count > 0) {
+                    Debug.Log($"[SceneManager] Calling InitializeDynamicMarkersAsync with {allMarkers.Count} marker(s)...");
                     await arManager.InitializeDynamicMarkersAsync(allMarkers);
+                    Debug.Log("[SceneManager] InitializeDynamicMarkersAsync returned.");
+                } else {
+                    Debug.LogWarning("[SceneManager] No markers to initialize — allMarkers is empty.");
                 }
+            } else {
+                Debug.LogError("[SceneManager] ARExperimentManager NOT FOUND in scene!");
             }
 
             // Edge Case Fix: Check ARModeManager before defaulting back to marker phrase

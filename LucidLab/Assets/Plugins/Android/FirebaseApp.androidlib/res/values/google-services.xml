@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<resources xmlns:tools="http://schemas.android.com/tools" tools:keep="@string/firebase_database_url,@string/gcm_defaultSenderId,@string/google_storage_bucket,@string/project_id,@string/google_api_key,@string/google_crash_reporting_api_key,@string/google_app_id">
+<resources xmlns:tools="http://schemas.android.com/tools" tools:keep="@string/firebase_database_url,@string/gcm_defaultSenderId,@string/google_storage_bucket,@string/project_id,@string/google_api_key,@string/google_crash_reporting_api_key,@string/google_app_id,@string/default_android_client_id,@string/default_web_client_id">
   <string name="firebase_database_url" translatable="false">https://campuspulse0-default-rtdb.firebaseio.com</string>
   <string name="gcm_defaultSenderId" translatable="false">91092596944</string>
   <string name="google_storage_bucket" translatable="false">campuspulse0.firebasestorage.app</string>
@@ -7,4 +7,6 @@
   <string name="google_api_key" translatable="false">AIzaSyDIUSfiVd_qu2lYKsjgK4pZZbC4rHvN82M</string>
   <string name="google_crash_reporting_api_key" translatable="false">AIzaSyDIUSfiVd_qu2lYKsjgK4pZZbC4rHvN82M</string>
   <string name="google_app_id" translatable="false">1:91092596944:android:76b907a090988b501486d5</string>
+  <string name="default_android_client_id" translatable="false">91092596944-0n7rq9f1f3jcnp9gcb440e73032q49h7.apps.googleusercontent.com</string>
+  <string name="default_web_client_id" translatable="false">91092596944-r1u8d0oigkfdhlnadmcpj8gj88csati6.apps.googleusercontent.com</string>
 </resources>
