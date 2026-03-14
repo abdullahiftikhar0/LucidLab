@@ -31,4 +31,5 @@ export interface ExperimentState {
   name: string;
   title?: string;
   description?: string;
+  category?: string;
 }

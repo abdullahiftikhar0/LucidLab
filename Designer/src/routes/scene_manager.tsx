@@ -8,29 +8,34 @@ function ExperimentDetailsModal({
   onClose,
   initialTitle,
   initialDescription,
+  initialCategory,
   onSave,
 }: {
   isOpen: boolean;
   onClose: () => void;
   initialTitle: string;
   initialDescription: string;
-  onSave: (title: string, description: string) => void;
+  initialCategory: string;
+  onSave: (title: string, description: string, category: string) => void;
 }) {
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
+  const [category, setCategory] = useState(initialCategory || 'General Science');
+  const [categoryOpen, setCategoryOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setTitle(initialTitle);
       setDescription(initialDescription);
+      setCategory(initialCategory || 'General Science');
     }
-  }, [isOpen, initialTitle, initialDescription]);
+  }, [isOpen, initialTitle, initialDescription, initialCategory]);
 
   if (!isOpen) return null;
 
   const handleSave = () => {
     if (!title.trim()) return;
-    onSave(title.trim(), description.trim());
+    onSave(title.trim(), description.trim(), category);
     onClose();
   };
 
@@ -83,6 +88,36 @@ function ExperimentDetailsModal({
                 className="w-full px-4 py-3 bg-slate-800/80 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors text-sm resize-none"
               />
             </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-300 mb-2">
+                Category
+              </label>
+              <div className="relative">
+                <button
+                  onClick={() => setCategoryOpen(!categoryOpen)}
+                  className="w-full px-4 py-3 bg-slate-800/80 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors text-sm flex items-center justify-between"
+                >
+                  <span>{category}</span>
+                  <span className="material-symbols-outlined text-base">expand_more</span>
+                </button>
+                {categoryOpen && (
+                  <>
+                    <div className="fixed inset-0 z-30" onClick={() => setCategoryOpen(false)} />
+                    <div className="absolute mt-2 w-full bg-slate-900 rounded-xl border border-slate-700 shadow-xl z-40 py-1 max-h-60 overflow-y-auto overflow-x-hidden thin-scrollbar">
+                      {['Chemistry','Physics','Biology','Engineering','Geology','Environmental Science','General Science','Quantum'].map(opt => (
+                        <button
+                          key={opt}
+                          onClick={() => { setCategory(opt); setCategoryOpen(false); }}
+                          className={`w-full text-left px-4 py-2 text-sm ${category === opt ? 'text-primary' : 'text-slate-300'} hover:bg-slate-800`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Actions */}
@@ -124,8 +159,8 @@ export default function SceneManager() {
   }, [experiment, hasCheckedInitial]);
 
   const handleSaveDetails = useCallback(
-    (title: string, description: string) => {
-      updateExperiment({ title, description });
+    (title: string, description: string, category: string) => {
+      updateExperiment({ title, description, category });
     },
     [updateExperiment],
   );
@@ -288,6 +323,7 @@ export default function SceneManager() {
         onClose={() => setShowDetailsModal(false)}
         initialTitle={experiment?.title || ''}
         initialDescription={experiment?.description || ''}
+        initialCategory={(experiment?.category as string) || 'General Science'}
         onSave={handleSaveDetails}
       />
       
@@ -322,6 +358,16 @@ export default function SceneManager() {
         body::-webkit-scrollbar-thumb:hover {
           background-color: #475569;
         }
+        /* Dropdown thin scrollbar */
+        .thin-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+        .thin-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .thin-scrollbar::-webkit-scrollbar-thumb {
+          background-color: #334155;
+          border-radius: 9999px;
+          border: 2px solid transparent;
+        }
+        .thin-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #475569; }
+        .thin-scrollbar { scrollbar-width: thin; scrollbar-color: #334155 transparent; }
       `}</style>
     </div>
   );
