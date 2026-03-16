@@ -97,11 +97,8 @@ export default function ExperimentsList() {
   const [sortBy, setSortBy] = useState('newest');
   const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; id: string; title: string }>({ open: false, id: '', title: '' });
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-<<<<<<< HEAD
   const [isCreating, setIsCreating] = useState(false);
-=======
   const [openFilterId, setOpenFilterId] = useState<string | null>(null);
->>>>>>> 17a2f29380429581ac33813284ed091d15ab252f
 
   useEffect(() => { if (currentUser) loadExperiments(); }, [currentUser]);
   useEffect(() => {
