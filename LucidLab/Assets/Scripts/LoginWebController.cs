@@ -175,14 +175,32 @@ namespace LucidLab.UI
                     {
                         PlayerPrefs.SetString("expname", json.experimentId);
                         PlayerPrefs.SetString("experimentId", json.experimentId);
+                        PlayerPrefs.SetString("experimentTitle", string.IsNullOrEmpty(json.title) ? json.experimentId : json.title);
+                    }
+                    else if (!string.IsNullOrEmpty(json.title))
+                    {
+                        PlayerPrefs.SetString("experimentTitle", json.title);
                     }
                     if (!string.IsNullOrEmpty(json.classroomId))
                     {
                         PlayerPrefs.SetString("classroomId", json.classroomId);
                     }
+                    var modelUser = !string.IsNullOrEmpty(json.modelUsername)
+                        ? json.modelUsername
+                        : json.instructorId;
+                    if (!string.IsNullOrEmpty(modelUser))
+                    {
+                        PlayerPrefs.SetString("modelUsername", modelUser);
+                        PlayerPrefs.SetString("designerUsername", modelUser);
+                    }
+                    if (!string.IsNullOrEmpty(json.instructorId))
+                    {
+                        PlayerPrefs.SetString("instructorId", json.instructorId);
+                    }
                 } catch {
                     PlayerPrefs.SetString("expname", payload);
                     PlayerPrefs.SetString("experimentId", payload);
+                    PlayerPrefs.SetString("experimentTitle", payload);
                 }
                 PlayerPrefs.Save();
                 // Hide webview instead of destroying it so we can restore it later
@@ -211,6 +229,8 @@ namespace LucidLab.UI
             public string title;
             public string mode;
             public string classroomId;
+            public string instructorId;
+            public string modelUsername;
         }
 
         private void OnDestroy()

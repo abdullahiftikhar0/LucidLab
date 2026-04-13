@@ -214,11 +214,14 @@
       if (needsRevision) {
         card.querySelector(".retake-btn").addEventListener("click", function (e) {
           e.stopPropagation();
+          var modelUsername = sub.modelUsername || sub.instructorId || null;
           parent.postMessage("unity:start_ar:" + JSON.stringify({ 
             experimentId: sub.experimentId, 
             title: title, 
             mode: "retake",
-            classroomId: sub.classroomId 
+            classroomId: sub.classroomId,
+            instructorId: modelUsername,
+            modelUsername: modelUsername
           }), "*");
         });
       }

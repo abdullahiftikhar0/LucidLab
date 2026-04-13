@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Assets.Logic.Misc;
+using UnityEngine;
 
 namespace Assets.Logic.Instructions.Core {
     public class GotoSceneInstruction : ExecInstruction {
@@ -14,8 +15,14 @@ namespace Assets.Logic.Instructions.Core {
 
         protected override void ExecuteImpl() {
             var sceneManager = GetSceneManager();
-            var sceneData = sceneManager.sceneLoader.GetSceneWithName(inputs["sceneName"].GetValue().ToString());
-            GetSceneManager().SetCurrentScene(sceneData);
+            var sceneName = inputs["sceneName"].GetValue().ToString();
+            var sceneData = sceneManager.sceneLoader.GetSceneWithName(sceneName);
+            if (sceneData == null) {
+                Debug.LogWarning($"[GotoSceneInstruction] Scene '{sceneName}' was not found. Ignoring transition.");
+                return;
+            }
+
+            sceneManager.SetCurrentScene(sceneData);
         }
     }
 }

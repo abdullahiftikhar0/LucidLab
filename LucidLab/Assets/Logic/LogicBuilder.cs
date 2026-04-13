@@ -13,16 +13,19 @@ using Assets.Logic.Instructions.Properties;
 using Assets.Logic.Instructions.Variables;
 using Assets.Logic.Misc;
 using Assets.SceneManagement.Models;
+using UnityEngine;
 
 namespace Assets.Logic {
     public class LogicBuilder {
 
         private readonly Dictionary<string, SceneLogicData> _logicData;
         private readonly Dictionary<string, DataInstruction> _cache;
+        private readonly HashSet<string> _building;
 
         public LogicBuilder(Dictionary<string, SceneLogicData> logicData) {
-            _logicData = logicData;
+            _logicData = logicData ?? new Dictionary<string, SceneLogicData>();
             _cache = new Dictionary<string, DataInstruction>();
+            _building = new HashSet<string>();
         }
 
         private static DataInstruction CreateInstruction(string type, ref Dictionary<string, string> controls,
@@ -56,40 +59,69 @@ namespace Assets.Logic {
                 "SetColor" => new SetColorInstruction(inputs, controls, nextInstructs),
                 "SetColorRGB" => new SetColorRGBInstruction(inputs, controls, nextInstructs),
                 "GetDistanceBetween" => new GetDistanceBetweenInstruction(inputs, controls),
-                _ => throw new Exception("Unknown node type")
+                _ => null
             };
         }
 
-        private DataInstruction ConvertInstruction(string id, SceneLogicData logicNode) {
+        private DataInstruction ConvertInstruction(string id) {
+            if (string.IsNullOrWhiteSpace(id)) return null;
             if (_cache.TryGetValue(id, out var instruction)) return instruction;
 
-            var controls = logicNode.controls;
-
-            Dictionary<string, InputParam> inputs = new();
-            Dictionary<string, ExecInstruction> nextInstructs = new();
-
-            foreach (var pair in logicNode.execOutputs) {
-                nextInstructs[pair.Key] = (ExecInstruction)ConvertInstruction(pair.Value, _logicData[pair.Value]);
+            if (!_logicData.TryGetValue(id, out var logicNode) || logicNode == null) {
+                Debug.LogWarning($"[LogicBuilder] Node id '{id}' was referenced but not found. Skipping.");
+                return null;
             }
 
-            foreach (var pair in logicNode.inputValues) {
-                var inst = new ConstantValueInstruction(new Dictionary<string, InputParam>(),
-                    new Dictionary<string, string>() { { "value", pair.Value } });
-                inputs[pair.Key] = new InputParam(inst, "value");
+            if (_building.Contains(id)) {
+                Debug.LogWarning($"[LogicBuilder] Cycle detected while building node '{id}'. Skipping recursive edge.");
+                return null;
             }
 
-            foreach (var pair in logicNode.inputsFrom) {
-                var dtaInstruction = ConvertInstruction(pair.Value.nodeId, _logicData[pair.Value.nodeId]);
-                inputs[pair.Key] = new InputParam(dtaInstruction, pair.Value.outputName);
-            }
+            _building.Add(id);
+            try {
+                var controls = logicNode.controls ?? new Dictionary<string, string>();
 
-            _cache[id] = CreateInstruction(logicNode.name, ref controls, ref inputs, ref nextInstructs);
-            return _cache[id];
+                Dictionary<string, InputParam> inputs = new();
+                Dictionary<string, ExecInstruction> nextInstructs = new();
+
+                foreach (var pair in logicNode.execOutputs ?? new Dictionary<string, string>()) {
+                    var nextInstruction = ConvertInstruction(pair.Value);
+                    if (nextInstruction is ExecInstruction execInstruction) {
+                        nextInstructs[pair.Key] = execInstruction;
+                    }
+                }
+
+                foreach (var pair in logicNode.inputValues ?? new Dictionary<string, string>()) {
+                    var inst = new ConstantValueInstruction(new Dictionary<string, InputParam>(),
+                        new Dictionary<string, string>() { { "value", pair.Value } });
+                    inputs[pair.Key] = new InputParam(inst, "value");
+                }
+
+                foreach (var pair in logicNode.inputsFrom ?? new Dictionary<string, InputFromData>()) {
+                    if (pair.Value == null) continue;
+                    var dtaInstruction = ConvertInstruction(pair.Value.nodeId);
+                    if (dtaInstruction == null) continue;
+                    inputs[pair.Key] = new InputParam(dtaInstruction, pair.Value.outputName);
+                }
+
+                var built = CreateInstruction(logicNode.name, ref controls, ref inputs, ref nextInstructs);
+                if (built == null) {
+                    Debug.LogWarning($"[LogicBuilder] Unknown node type '{logicNode.name}' for node '{id}'. Skipping.");
+                    return null;
+                }
+
+                _cache[id] = built;
+                return built;
+            } finally {
+                _building.Remove(id);
+            }
         }
 
         public DataInstruction[] GetInstructions() {
+            if (_logicData.Count == 0) return Array.Empty<DataInstruction>();
+
             foreach (var logicItem in _logicData) {
-                ConvertInstruction(logicItem.Key, logicItem.Value);
+                ConvertInstruction(logicItem.Key);
             }
 
             return _cache.Values.ToArray();

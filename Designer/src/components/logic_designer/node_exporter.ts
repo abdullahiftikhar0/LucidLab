@@ -205,6 +205,9 @@ export async function importIntoEditor(
       case 'SetColorRGB':
         actualNode = new SetColorRGBNode();
         break;
+      default:
+        // Unknown node type (possibly from stale/invalid data). Skip safely.
+        continue;
     }
     actualNode.id = nodeId;
     nodeMap[nodeId] = actualNode;

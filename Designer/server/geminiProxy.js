@@ -13,6 +13,28 @@ function isPlainObject(v) {
   return v !== null && typeof v === "object" && !Array.isArray(v);
 }
 
+function hasNonEmptyString(v) {
+  return typeof v === "string" && v.trim().length > 0;
+}
+
+function hasObjectTarget(node) {
+  if (!isPlainObject(node)) return false;
+
+  if (isPlainObject(node.controls) && hasNonEmptyString(node.controls.object)) {
+    return true;
+  }
+
+  if (isPlainObject(node.inputValues) && hasNonEmptyString(node.inputValues.object)) {
+    return true;
+  }
+
+  if (isPlainObject(node.inputsFrom) && isPlainObject(node.inputsFrom.object)) {
+    return true;
+  }
+
+  return false;
+}
+
 const NODE_TYPES = new Set([
   "SceneLoad",
   "SceneLoop",
@@ -53,6 +75,21 @@ function validateExportedNodes(nodes) {
     if (!Array.isArray(n.position) || n.position.length !== 2) return { ok: false, error: `node '${id}' position invalid` };
     for (const k of ["controls", "execOutputs", "inputValues", "inputsFrom"]) {
       if (!isPlainObject(n[k])) return { ok: false, error: `node '${id}' ${k} invalid` };
+    }
+
+    // Prevent invalid color actions from reaching runtime.
+    if (n.name === "SetColor" && !hasObjectTarget(n)) {
+      return {
+        ok: false,
+        error: `node '${id}' (SetColor) is missing target object (controls.object or object input)`,
+      };
+    }
+
+    if (n.name === "SetColor" && !hasNonEmptyString(n.controls.color)) {
+      return {
+        ok: false,
+        error: `node '${id}' (SetColor) is missing controls.color`,
+      };
     }
   }
   return { ok: true };
@@ -142,6 +179,7 @@ function buildSystemPrompt({ objects, currentSceneLogic }) {
     "- Use execOutputs to chain execution; use inputsFrom for data connections.",
     "- Use GetDistanceBetween + Compare to detect 'touch' (distance threshold) if no collision node exists.",
     "- Use SetVisible (false) to 'disappear'. Use SetColor to change color (hex string, with or without '#').",
+    "- SetColor must always include a valid target object (controls.object) and controls.color.",
     "- Prefer simple logic that matches the user's intent.",
     "",
     "Object naming / reference rules:",

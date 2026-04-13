@@ -9,7 +9,7 @@ import { getFirestore } from '@firebase/firestore';
 import React, { lazy } from 'react';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import { FirestoreProvider, useFirebaseApp } from 'reactfire';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AuthGuard from './components/AuthGuard';
 import ExperimentRoot from './routes/experiment_root';
 const Scene = lazy(() => import('./routes/Scene/scene'));
@@ -45,6 +45,24 @@ export const LucidLabContext = React.createContext<{
   username: string;
 }>(null!);
 
+function AppShell() {
+  const { currentUser } = useAuth();
+  const username = currentUser?.uid || 'mainuser';
+
+  return (
+    <LucidLabContext.Provider value={{ username }}>
+      <ExperimentRoot>
+        <ColorModeScript />
+        <ChakraProvider theme={theme}>
+          <React.Suspense fallback={<div className="w-screen h-screen skeleton-shimmer" />}>
+            <RouterProvider router={router} />
+          </React.Suspense>
+        </ChakraProvider>
+      </ExperimentRoot>
+    </LucidLabContext.Provider>
+  );
+}
+
 export default function App() {
   const firebaseApp = useFirebaseApp();
   const firestoreInstance = getFirestore(firebaseApp);
@@ -52,18 +70,9 @@ export default function App() {
   return (
     <Container width="100vw" height="100vh">
       <AuthProvider>
-        <LucidLabContext.Provider value={{ username: 'mainuser' }}>
-          <FirestoreProvider sdk={firestoreInstance}>
-            <ExperimentRoot>
-              <ColorModeScript />
-              <ChakraProvider theme={theme}>
-                <React.Suspense fallback={<div className="w-screen h-screen skeleton-shimmer" />}>
-                  <RouterProvider router={router} />
-                </React.Suspense>
-              </ChakraProvider>
-            </ExperimentRoot>
-          </FirestoreProvider>
-        </LucidLabContext.Provider>
+        <FirestoreProvider sdk={firestoreInstance}>
+          <AppShell />
+        </FirestoreProvider>
       </AuthProvider>
     </Container>
   );

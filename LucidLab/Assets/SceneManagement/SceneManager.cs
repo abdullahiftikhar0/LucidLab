@@ -71,10 +71,12 @@ namespace Assets.SceneManagement {
 
         void StartSceneExecution() {
             if (currentScene == null) return;
-            var startInstructions = currentScene.Instructions
+            var instructions = currentScene.Instructions ?? System.Array.Empty<DataInstruction>();
+
+            var startInstructions = instructions
                 .Where(i => i is ExecInstruction exec && exec.IsStartInstruction)
                 .Cast<ExecInstruction>().ToArray();
-            var loopInstructions = currentScene.Instructions
+            var loopInstructions = instructions
                 .Where(i => i is ExecInstruction exec && exec.IsLoopInstruction)
                 .Cast<ExecInstruction>().ToArray();
 
