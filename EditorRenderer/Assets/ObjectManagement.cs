@@ -14,6 +14,24 @@ public class ObjectManagement : MonoBehaviour
         return sceneObjsDict.TryGetValue(objectName, out var obj) ? obj : null;
     }
 
+    /// <summary>
+    /// Resolve a scene object name from a hit GameObject by checking the object
+    /// and its parent chain against known logical scene object keys.
+    /// </summary>
+    public string ResolveSceneObjectName(GameObject hitObject)
+    {
+        var current = hitObject != null ? hitObject.transform : null;
+        while (current != null)
+        {
+            if (sceneObjsDict.ContainsKey(current.name))
+            {
+                return current.name;
+            }
+            current = current.parent;
+        }
+        return null;
+    }
+
     class SetModelObjectParams {
         public string objectModelName;
         public string objURL;

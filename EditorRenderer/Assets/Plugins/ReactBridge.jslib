@@ -4,6 +4,17 @@ mergeInto(LibraryManager.library, {
     var event = new CustomEvent('unityObjectSelected', { detail: objectName });
     window.dispatchEvent(event);
   },
+  SendObjectTransformChanged: function(ptr) {
+    var payload = UTF8ToString(ptr);
+    var detail = payload;
+    try {
+      detail = JSON.parse(payload);
+    } catch (e) {
+      // Keep raw string as fallback for malformed payloads.
+    }
+    var event = new CustomEvent('unityObjectTransformChanged', { detail: detail });
+    window.dispatchEvent(event);
+  },
   SendShowMessage: function(ptr) {
     var msg = UTF8ToString(ptr);
     var event = new CustomEvent('unityShowMessage', { detail: msg });

@@ -3,6 +3,15 @@ using RuntimeHandle;
 
 public class ToolController : MonoBehaviour
 {
+    [System.Serializable]
+    private class TransformSyncPayload
+    {
+        public string objectName;
+        public float[] position;
+        public float[] rotation;
+        public float[] scale;
+    }
+
     // These strings must exactly match the ToolMode enum in React
     public enum ToolMode
     {
@@ -21,6 +30,17 @@ public class ToolController : MonoBehaviour
     private ObjectManagement objectManager;
     private Camera mainCamera;
     private RuntimeTransformHandle runtimeHandle;
+    private Vector3 lastSyncedPosition;
+    private Vector3 lastSyncedRotation;
+    private Vector3 lastSyncedScale;
+    private bool hasSyncedTransform;
+
+    private const float XSceneMin = -0.438f;
+    private const float XSceneMax = 0.716f;
+    private const float ZSceneMin = -0.017f;
+    private const float ZSceneMax = -0.579f;
+    private const float Precision = 1000f;
+    private const float Epsilon = 0.0005f;
 
     void Start()
     {
@@ -71,10 +91,12 @@ public class ToolController : MonoBehaviour
                     return;
                 }
 
-                string hitObjectName = hit.collider.gameObject.name;
+                string hitObjectName = objectManager != null
+                    ? objectManager.ResolveSceneObjectName(hit.collider.gameObject)
+                    : null;
                 
                 // Exclude the ground from selection if needed, assuming ground has a specific name or layer
-                if (hitObjectName != "Ground" && hitObjectName != "Plane") 
+                if (!string.IsNullOrEmpty(hitObjectName) && hitObjectName != "Ground" && hitObjectName != "Plane") 
                 {
                     SelectObject(hitObjectName);
                 }
@@ -89,6 +111,87 @@ public class ToolController : MonoBehaviour
                 DeselectObject();
             }
         }
+
+        // Persist gizmo edits back to React/Firestore once drag is released.
+        if (Input.GetMouseButtonUp(0) &&
+            (currentTool == ToolMode.Move || currentTool == ToolMode.Rotate || currentTool == ToolMode.Scale))
+        {
+            BroadcastSelectedTransformIfChanged();
+        }
+    }
+
+    private static float RoundValue(float value)
+    {
+        return Mathf.Round(value * Precision) / Precision;
+    }
+
+    private static bool IsDifferent(Vector3 left, Vector3 right)
+    {
+        return Vector3.SqrMagnitude(left - right) > Epsilon * Epsilon;
+    }
+
+    private static Vector3 ToScenePosition(Vector3 worldPosition)
+    {
+        var x = (worldPosition.x - XSceneMin) / (XSceneMax - XSceneMin) * 10f;
+        var z = (worldPosition.z - ZSceneMin) / (ZSceneMax - ZSceneMin) * 10f;
+        return new Vector3(x, worldPosition.y, z);
+    }
+
+    private static Vector3 RoundVector(Vector3 value)
+    {
+        return new Vector3(
+            RoundValue(value.x),
+            RoundValue(value.y),
+            RoundValue(value.z)
+        );
+    }
+
+    private bool TryGetSelectedObject(out GameObject selectedGo)
+    {
+        selectedGo = null;
+        if (string.IsNullOrEmpty(selectedObjectName)) return false;
+        selectedGo = GameObject.Find(selectedObjectName);
+        return selectedGo != null;
+    }
+
+    private void CaptureTransformSnapshot(GameObject selectedGo)
+    {
+        lastSyncedPosition = RoundVector(ToScenePosition(selectedGo.transform.localPosition));
+        lastSyncedRotation = RoundVector(selectedGo.transform.eulerAngles);
+        lastSyncedScale = RoundVector(selectedGo.transform.localScale);
+        hasSyncedTransform = true;
+    }
+
+    private void BroadcastSelectedTransformIfChanged()
+    {
+        if (!TryGetSelectedObject(out var selectedGo)) return;
+
+        var scenePosition = RoundVector(ToScenePosition(selectedGo.transform.localPosition));
+        var sceneRotation = RoundVector(selectedGo.transform.eulerAngles);
+        var sceneScale = RoundVector(selectedGo.transform.localScale);
+
+        if (hasSyncedTransform &&
+            !IsDifferent(scenePosition, lastSyncedPosition) &&
+            !IsDifferent(sceneRotation, lastSyncedRotation) &&
+            !IsDifferent(sceneScale, lastSyncedScale))
+        {
+            return;
+        }
+
+        var payload = new TransformSyncPayload
+        {
+            objectName = selectedObjectName,
+            position = new[] { scenePosition.x, scenePosition.y, scenePosition.z },
+            rotation = new[] { sceneRotation.x, sceneRotation.y, sceneRotation.z },
+            scale = new[] { sceneScale.x, sceneScale.y, sceneScale.z },
+        };
+
+        ReactBridge.SendObjectTransformChanged(JsonUtility.ToJson(payload));
+
+        lastSyncedPosition = scenePosition;
+        lastSyncedRotation = sceneRotation;
+        lastSyncedScale = sceneScale;
+        hasSyncedTransform = true;
     }
 
     private void SelectObject(string objectName)
@@ -107,6 +210,7 @@ public class ToolController : MonoBehaviour
                 runtimeHandle.SetTarget(selectedGo);
                 runtimeHandle.gameObject.SetActive(true);
                 SyncHandleMode();
+                CaptureTransformSnapshot(selectedGo);
             }
         }
         
@@ -125,6 +229,8 @@ public class ToolController : MonoBehaviour
         {
             runtimeHandle.gameObject.SetActive(false);
         }
+
+        hasSyncedTransform = false;
         
         // Notify React (sending empty string)
         ReactBridge.SendObjectSelected("");

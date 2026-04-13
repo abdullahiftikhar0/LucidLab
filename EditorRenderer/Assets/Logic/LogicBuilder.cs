@@ -40,6 +40,7 @@ namespace Assets.Logic
                 "GetPosition" => new GetPositionInstruction(inputs, controls),
                 "GetRotation" => new GetRotationInstruction(inputs, controls),
                 "GetScale" => new GetScaleInstruction(inputs, controls),
+                "GetDistanceBetween" => new GetDistanceBetweenInstruction(inputs, controls),
                 "SetStaticFriction" => new SetStaticFrictionInstruction(inputs, controls, nextInstructs),
                 "SetDynamicFriction" => new SetDynamicFrictionInstruction(inputs, controls, nextInstructs),
                 _ => throw new Exception($"Unknown node type '{type}'. Copy the instruction from LucidLab into EditorRenderer/Assets/Logic.")
