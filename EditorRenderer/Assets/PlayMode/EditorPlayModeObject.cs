@@ -46,8 +46,14 @@ namespace Assets.PlayMode
             _sceneObject.UpdateColor();
         }
 
+        public void UpdateVisible(bool state) => _sceneObject.UpdateVisible(state);
+
         public void UpdateStaticFriction(float value) => _sceneObject.UpdateStaticFriction(value);
         public void UpdateDynamicFriction(float value) => _sceneObject.UpdateDynamicFriction(value);
+        public void UpdateBounciness(float value) => _sceneObject.UpdateBounciness(value);
+        public void UpdateMass(float value) => _sceneObject.UpdateMass(value);
+        public void SetDescription(string description) => _sceneObject.SetDescription(description);
+        public void ApplyForce(Vector3 force) => _sceneObject.ApplyForce(force);
 
         public Vector3 GetPosition()
         {
@@ -63,5 +69,7 @@ namespace Assets.PlayMode
         {
             return _sceneObject.GetCurrentScale();
         }
+
+        public float GetSpeed() => _sceneObject.GetSpeed();
     }
 }

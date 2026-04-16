@@ -37,13 +37,15 @@ import {
 import { DeleteIcon, DownloadIcon, AddIcon, SettingsIcon, EditIcon, ChevronUpIcon, ChevronDownIcon } from '@chakra-ui/icons';
 import * as React from 'react';
 import { useContext, useEffect, useState } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useRete } from 'rete-react-render-plugin';
+import { useFirestore, useFirestoreCollectionData } from 'reactfire';
 import { createEditor } from '../../components/logic_designer';
 import { ExportedNodes } from '../../components/logic_designer/node_exporter';
 import UnityViewer from '../../components/unity_viewer';
 import { ToolbarProvider, useToolbar } from '../../components/unity_toolbar/useToolbarStore';
 import useScene, { SceneObjectInterface } from '../../core/hooks/useScene';
+import { getScenesCollectionRef } from '../../core/states/references';
 import { ObjectTypesManagerContext } from '../experiment_root';
 import SceneObjectInspector from './object_comp';
 
@@ -151,10 +153,14 @@ function HierarchyItem({
 
 function SceneContent() {
   const { sceneName, expName } = useParams();
+  const navigate = useNavigate();
 
   if (!sceneName || !expName) {
     return <Navigate to="/" />;
   }
+
+  const fsapp = useFirestore();
+  const { data: experimentScenes } = useFirestoreCollectionData(getScenesCollectionRef(fsapp, expName));
 
   const sceneCore = useScene(expName, sceneName);
   const objectTypesManager = useContext(ObjectTypesManagerContext);
@@ -265,6 +271,19 @@ function SceneContent() {
       if (nextScale) sceneObjectApi.setScale(nextScale);
     },
     [sceneCore],
+  );
+
+  const handleUnityGotoSceneRequested = React.useCallback(
+    (targetSceneName: string) => {
+      const normalizedTarget = targetSceneName.trim();
+      if (!normalizedTarget || normalizedTarget === sceneName) return;
+
+      const targetSceneExists = (experimentScenes ?? []).some((scene: any) => scene?.name === normalizedTarget);
+      if (!targetSceneExists) return;
+
+      navigate(`/experiment/${expName}/scene/${normalizedTarget}`);
+    },
+    [expName, experimentScenes, navigate, sceneName],
   );
 
   const selectedSceneObject = selectedObjectName ? sceneCore.getObject(selectedObjectName) : null;
@@ -424,6 +443,7 @@ function SceneContent() {
               sceneLogic={sceneCore.scene?.sceneLogic ?? undefined}
               objects={sceneCore.objects}
               onObjectTransformChanged={handleUnityObjectTransformChanged}
+              onGotoSceneRequested={handleUnityGotoSceneRequested}
             />
           </React.Suspense>
           

@@ -25,6 +25,7 @@ type props = {
   sceneLogic?: ExportedNodes | null;
   objects?: SceneObjectState[] | undefined;
   onObjectTransformChanged?: (payload: UnityObjectTransformPayload) => void;
+  onGotoSceneRequested?: (targetSceneName: string) => void;
 };
 
 function UnityAndDbSyncComp({
@@ -54,6 +55,7 @@ export default function UnityViewer({
   sceneLogic,
   objects,
   onObjectTransformChanged,
+  onGotoSceneRequested,
 }: props) {
   const unityContext = useUnityContext({
     loaderUrl: '/renderer/Build/renderer.loader.js',
@@ -165,6 +167,23 @@ export default function UnityViewer({
     window.addEventListener('unityObjectTransformChanged', handleTransformChanged);
     return () => window.removeEventListener('unityObjectTransformChanged', handleTransformChanged);
   }, [onObjectTransformChanged]);
+
+  React.useEffect(() => {
+    if (!onGotoSceneRequested) return;
+
+    const handleGotoSceneRequested = (e: Event) => {
+      const customEvent = e as CustomEvent<unknown>;
+      if (typeof customEvent.detail !== 'string') return;
+      const targetSceneName = customEvent.detail.trim();
+      if (!targetSceneName) return;
+
+      setIsSimulating(false);
+      onGotoSceneRequested(targetSceneName);
+    };
+
+    window.addEventListener('unityGotoSceneRequested', handleGotoSceneRequested);
+    return () => window.removeEventListener('unityGotoSceneRequested', handleGotoSceneRequested);
+  }, [onGotoSceneRequested]);
 
   // Hierarchy double-click: focus camera on object in Unity.
   React.useEffect(() => {

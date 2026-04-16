@@ -19,5 +19,10 @@ mergeInto(LibraryManager.library, {
     var msg = UTF8ToString(ptr);
     var event = new CustomEvent('unityShowMessage', { detail: msg });
     window.dispatchEvent(event);
+  },
+  SendGotoSceneRequested: function(ptr) {
+    var sceneName = UTF8ToString(ptr);
+    var event = new CustomEvent('unityGotoSceneRequested', { detail: sceneName });
+    window.dispatchEvent(event);
   }
 });

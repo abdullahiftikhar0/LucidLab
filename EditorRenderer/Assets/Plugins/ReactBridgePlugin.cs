@@ -9,6 +9,8 @@ public static class ReactBridge
     public static extern void SendShowMessage(string message);
     [DllImport("__Internal")]
     public static extern void SendObjectTransformChanged(string payloadJson);
+    [DllImport("__Internal")]
+    public static extern void SendGotoSceneRequested(string sceneName);
 #else
     public static void SendObjectSelected(string objectName)
     {
@@ -21,6 +23,10 @@ public static class ReactBridge
     public static void SendObjectTransformChanged(string payloadJson)
     {
         UnityEngine.Debug.Log($"[ReactBridge Mock] ObjectTransformChanged: '{payloadJson}'");
+    }
+    public static void SendGotoSceneRequested(string sceneName)
+    {
+        UnityEngine.Debug.Log($"[ReactBridge Mock] GotoSceneRequested: '{sceneName}'");
     }
 #endif
 }

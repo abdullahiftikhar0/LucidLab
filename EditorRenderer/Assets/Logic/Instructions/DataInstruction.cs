@@ -20,5 +20,7 @@ namespace Assets.Logic.Instructions
         public abstract object GetOutput(string outputName);
 
         protected ILogicContext GetContext() => LogicContext.Current;
+
+        protected Assets.Logic.LogicManager GetLogicManager() => UnityEngine.Object.FindObjectOfType<Assets.Logic.LogicManager>();
     }
 }
