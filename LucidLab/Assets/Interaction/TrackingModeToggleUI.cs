@@ -31,6 +31,7 @@ namespace Assets.Interaction {
         public float knobRightX = 35f;
 
         public TrackingMode CurrentMode { get; private set; } = TrackingMode.Marker;
+        public bool MarkerModeEnabled { get; private set; } = true;
         private Coroutine _animCoroutine;
 
         public delegate void ModeChangedHandler(TrackingMode newMode);
@@ -49,20 +50,46 @@ namespace Assets.Interaction {
 
         public void Toggle() {
             TrackingMode newMode = CurrentMode == TrackingMode.Marker ? TrackingMode.Plane : TrackingMode.Marker;
+            SetMode(newMode, true);
+        }
 
-            Debug.Log($"[TrackingToggle] Toggling from {CurrentMode} to {newMode}. Dispatching OnModeChanged Event...");
+        public bool SetMode(TrackingMode mode, bool dispatchEvent = true) {
+            if (mode == TrackingMode.Marker && !MarkerModeEnabled) {
+                Debug.LogWarning("[TrackingToggle] Marker mode requested while disabled.");
+                return false;
+            }
 
-            CurrentMode = newMode;
+            if (CurrentMode == mode) {
+                SetStateImmediate(mode);
+                return true;
+            }
+
+            Debug.Log($"[TrackingToggle] Switching from {CurrentMode} to {mode}. Dispatching OnModeChanged={dispatchEvent}.");
+            CurrentMode = mode;
 
             if (_animCoroutine != null) StopCoroutine(_animCoroutine);
-            _animCoroutine = StartCoroutine(AnimateToState(newMode));
+            _animCoroutine = StartCoroutine(AnimateToState(mode));
 
-            // Null check and invoke
-            if (OnModeChanged != null) {
-                Debug.Log("[TrackingToggle] OnModeChanged has subscribers. Invoking!");
-                OnModeChanged.Invoke(newMode);
-            } else {
-                Debug.LogWarning("[TrackingToggle] OnModeChanged has NO SUBSCRIBERS. Something failed to bind to it!");
+            if (dispatchEvent) {
+                if (OnModeChanged != null) {
+                    OnModeChanged.Invoke(mode);
+                } else {
+                    Debug.LogWarning("[TrackingToggle] OnModeChanged has NO SUBSCRIBERS. Something failed to bind to it!");
+                }
+            }
+
+            return true;
+        }
+
+        public void SetMarkerModeEnabled(bool enabled) {
+            if (MarkerModeEnabled == enabled) return;
+
+            MarkerModeEnabled = enabled;
+            Debug.Log($"[TrackingToggle] Marker mode enabled set to {enabled}.");
+
+            if (!MarkerModeEnabled && CurrentMode == TrackingMode.Marker) {
+                // Move to plane mode immediately to keep UI/runtime policy consistent.
+                SetMode(TrackingMode.Plane, true);
             }
         }
 

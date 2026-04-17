@@ -5,9 +5,10 @@ import { AreaExtensions,AreaPlugin } from 'rete-area-plugin';
 
 import { ConnectionPlugin, Presets as ConnectionPresets } from 'rete-connection-plugin';
 import { Presets, ReactRenderPlugin } from 'rete-react-render-plugin';
-import { AreaExtra, Schemes } from './base_types';
+import { AreaExtra, BaseNode, Schemes } from './base_types';
 import { CustomNode } from './components/CustomNode';
 import { ExecSocket } from './components/ExecSocket';
+import { BaseCustomControl } from './controls/BaseCustomControl';
 import { ComboBoxControl, ComboBoxControlImpl } from './controls/ComboBoxControl';
 
 import { addCustomBackground } from './components/Background';
@@ -96,7 +97,30 @@ export async function createEditor(container: HTMLElement) {
   AreaExtensions.simpleNodesOrder(area);
   AreaExtensions.showInputControl(area);
 
-  let onChangeCallback: (nodes: ExportedNodes) => void;
+  let onChangeCallback: ((nodes: ExportedNodes) => void) | undefined;
+
+  const emitSceneStateChange = () => {
+    if (!onChangeCallback) return;
+    onChangeCallback(
+      getSceneJSON(editor.getNodes(), editor.getConnections(), area.nodeViews),
+    );
+  };
+
+  const bindControlChangeHandlers = (node: BaseNode | undefined) => {
+    if (!node) return;
+
+    Object.values(node.controls).forEach(control => {
+      if (control instanceof BaseCustomControl) {
+        control.onValueChange = emitSceneStateChange;
+      }
+    });
+
+    Object.values(node.inputs).forEach(input => {
+      if (input?.control instanceof BaseCustomControl) {
+        input.control.onValueChange = emitSceneStateChange;
+      }
+    });
+  };
 
   area.addPipe(context => {
     if (context.type === 'pointerdown') {
@@ -201,9 +225,11 @@ export async function createEditor(container: HTMLElement) {
         context.type == 'noderemoved' ||
         context.type == 'nodetranslated')
     ) {
-      onChangeCallback(
-        getSceneJSON(editor.getNodes(), editor.getConnections(), area.nodeViews),
-      );
+      emitSceneStateChange();
+    }
+
+    if (context.type === 'nodecreated') {
+      bindControlChangeHandlers(editor.getNode(context.data.id));
     }
 
     if (context.type === 'connectionremoved') {
@@ -223,10 +249,12 @@ export async function createEditor(container: HTMLElement) {
   return {
     onSceneStateChange(callback: (nodes: ExportedNodes) => void) {
       onChangeCallback = debounce(callback, 500);
+      editor.getNodes().forEach(node => bindControlChangeHandlers(node));
     },
     async importSceneState(nodes: ExportedNodes) {
       await editor.clear();
       await importIntoEditor(editor, area, nodes);
+      editor.getNodes().forEach(node => bindControlChangeHandlers(node));
     },
     destroy: () => area.destroy(),
   };

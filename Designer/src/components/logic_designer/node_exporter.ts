@@ -249,7 +249,7 @@ export async function importIntoEditor(
     for (let key in node.inputValues) {
       const input = nodeMap[nodeId].inputs[key];
       if (input?.control && input?.control instanceof BaseCustomControl) {
-        input.control.value = node.inputValues[key];
+        input.control.setValue(node.inputValues[key], false);
       }
     }
 
@@ -257,7 +257,7 @@ export async function importIntoEditor(
     for (let key in node.controls) {
       const control = nodeMap[nodeId].controls[key];
       if (control instanceof BaseCustomControl) {
-        control.value = node.controls[key];
+        control.setValue(node.controls[key], false);
       }
     }
   }

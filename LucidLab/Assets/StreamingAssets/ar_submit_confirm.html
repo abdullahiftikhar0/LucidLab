@@ -225,10 +225,10 @@
           <span class="material-symbols-outlined">assignment_turned_in</span>
         </div>
 
-        <div class="modal-title">Submit Experiment</div>
+        <div class="modal-title">Submit Current Scene</div>
         <p class="modal-desc">
-          This will submit your current session to your instructor for grading.
-          Make sure you have completed all required steps.
+          This submits only your current scene. You can continue working on
+          other scenes after this submission.
         </p>
 
         <div class="modal-details">
@@ -237,19 +237,27 @@
             <span class="d-value" id="modal-status-val">In Progress</span>
           </div>
           <div class="detail-row">
+            <span class="d-label">Scene</span>
+            <span class="d-value" id="modal-scene-val">—</span>
+          </div>
+          <div class="detail-row">
             <span class="d-label">Progress</span>
             <span class="d-value" id="modal-progress-val">—</span>
           </div>
           <div class="detail-row">
+            <span class="d-label">Total Scenes</span>
+            <span class="d-value" id="modal-total-scenes-val">—</span>
+          </div>
+          <div class="detail-row">
             <span class="d-label">Submission</span>
-            <span class="d-value">Final</span>
+            <span class="d-value">Current Scene</span>
           </div>
         </div>
 
         <div class="modal-actions">
           <button class="btn-confirm" id="btn-confirm" onclick="confirmSubmit()">
             <span class="material-symbols-outlined">send</span>
-            Submit Now
+            Submit Scene
           </button>
           <button class="btn-cancel" onclick="cancelSubmit()">Cancel</button>
         </div>
@@ -265,7 +273,7 @@
           </svg>
         </div>
         <div class="success-title">Success!</div>
-        <div class="success-subtitle">Your experiment has been submitted.</div>
+        <div class="success-subtitle" id="success-subtitle">Your current scene has been submitted.</div>
       </div>
 
     </div>
@@ -346,6 +354,105 @@
         .catch(function () { return null; });
     }
 
+    function sanitizeDocPart(value) {
+      var raw = value == null ? "unknown" : String(value);
+      var cleaned = raw.replace(/[^a-zA-Z0-9_-]/g, "_");
+      return cleaned || "unknown";
+    }
+
+    function buildSubmissionDocId(studentId, classroomId, experimentId) {
+      return [studentId, classroomId, experimentId]
+        .map(sanitizeDocPart)
+        .join("__");
+    }
+
+    function buildSceneKey(sceneName) {
+      var normalized = (sceneName == null ? "" : String(sceneName)).trim();
+      if (!normalized) normalized = "scene";
+      return encodeURIComponent(normalized).replace(/\./g, "%2E");
+    }
+
+    function normalizeSceneStatus(status) {
+      var s = status == null ? "" : String(status).trim().toLowerCase();
+      if (!s) return "in_progress";
+      if (s === "in progress") return "in_progress";
+      if (s === "needs revision") return "needs_revision";
+      return s;
+    }
+
+    function getSceneSubmissionsMap(rawMap) {
+      if (!rawMap || typeof rawMap !== "object" || Array.isArray(rawMap)) return {};
+      var out = {};
+      Object.keys(rawMap).forEach(function (key) {
+        var entry = rawMap[key];
+        if (entry && typeof entry === "object") {
+          out[key] = Object.assign({}, entry);
+        }
+      });
+      return out;
+    }
+
+    function computeSceneSummary(sceneSubmissions, totalSceneCountHint) {
+      var keys = Object.keys(sceneSubmissions || {});
+      var submittedWaitingCount = 0;
+      var gradedCount = 0;
+      var needsRevisionCount = 0;
+      var completionTotal = 0;
+      var completionCount = 0;
+
+      keys.forEach(function (key) {
+        var scene = sceneSubmissions[key] || {};
+        var status = normalizeSceneStatus(scene.status);
+        if (status === "submitted") {
+          submittedWaitingCount += 1;
+        } else if (status === "graded" || status === "correct" || status === "incorrect") {
+          gradedCount += 1;
+        } else if (status === "needs_revision") {
+          needsRevisionCount += 1;
+        }
+
+        var pct = scene.completionPct;
+        if (pct == null) pct = scene.completionPercentage;
+        var n = Number(pct);
+        if (isFinite(n)) {
+          completionTotal += Math.max(0, Math.min(100, n));
+          completionCount += 1;
+        }
+      });
+
+      var submittedOrDoneCount = submittedWaitingCount + gradedCount + needsRevisionCount;
+      var totalSceneCount = Number(totalSceneCountHint);
+      if (!isFinite(totalSceneCount) || totalSceneCount <= 0) {
+        totalSceneCount = Math.max(1, keys.length);
+      } else {
+        totalSceneCount = Math.round(totalSceneCount);
+      }
+
+      var inProgressCount = Math.max(0, totalSceneCount - submittedOrDoneCount);
+      var averageCompletionPct = completionCount > 0
+        ? Math.round(completionTotal / completionCount)
+        : 0;
+
+      return {
+        totalSceneCount: totalSceneCount,
+        submittedWaitingCount: submittedWaitingCount,
+        gradedCount: gradedCount,
+        needsRevisionCount: needsRevisionCount,
+        inProgressCount: inProgressCount,
+        submittedOrDoneCount: submittedOrDoneCount,
+        averageCompletionPct: averageCompletionPct
+      };
+    }
+
+    function computeAggregateStatus(summary) {
+      if (!summary) return "in_progress";
+      if (summary.needsRevisionCount > 0) return "needs_revision";
+      if (summary.submittedOrDoneCount < summary.totalSceneCount) return "in_progress";
+      if (summary.submittedWaitingCount > 0) return "submitted";
+      if (summary.gradedCount >= summary.totalSceneCount) return "graded";
+      return "submitted";
+    }
+
     function confirmSubmit() {
       if (!submissionData) {
         console.error("No submission data available");
@@ -365,69 +472,140 @@
           : submissionData.progress
       );
       var variables = buildVariablesMap(parsedState);
-      var sceneName = (parsedState && parsedState.sceneName) ? String(parsedState.sceneName) : "";
+      var sceneName = "";
+      if (submissionData.currentSceneName != null && String(submissionData.currentSceneName).trim()) {
+        sceneName = String(submissionData.currentSceneName).trim();
+      } else if (parsedState && parsedState.sceneName && String(parsedState.sceneName).trim()) {
+        sceneName = String(parsedState.sceneName).trim();
+      } else {
+        sceneName = "Scene";
+      }
 
-      var submissionPayload = {
-        studentId: submissionData.studentId || "unknown",
-        experimentId: submissionData.experimentId || "unknown",
-        classroomId: submissionData.classroomId || "unknown",
-        instructorId: submissionData.instructorId || null,
-        expname: submissionData.expname || "Untitled",
-        experimentName: submissionData.expname || "Untitled",
-        status: "submitted",
-        grade: null,
-        instructorFeedback: "",
-        stateJson: stateJson,
-        completionPct: completionPct,
-        completionPercentage: completionPct,
-        sceneName: sceneName,
-        variables: variables,
-        experimentState: {
-          completionPercentage: completionPct,
+      var totalSceneCount = Number(submissionData.totalSceneCount);
+      if (!isFinite(totalSceneCount) || totalSceneCount <= 0) {
+        totalSceneCount = 1;
+      } else {
+        totalSceneCount = Math.round(totalSceneCount);
+      }
+
+      var submissionDocId = buildSubmissionDocId(
+        submissionData.studentId || "unknown",
+        submissionData.classroomId || "unknown",
+        submissionData.experimentId || "unknown"
+      );
+      var submissionRef = db.collection("submissions").doc(submissionDocId);
+      var timestampNow = firebase.firestore.FieldValue.serverTimestamp();
+      var sceneKey = buildSceneKey(sceneName);
+
+      // Upsert one submission document per student/classroom/experiment with nested scene records.
+      submissionRef.get().then(function (doc) {
+        var existing = doc.exists ? (doc.data() || {}) : {};
+        var sceneSubmissions = getSceneSubmissionsMap(existing.sceneSubmissions);
+        var previousScene = sceneSubmissions[sceneKey] || {};
+
+        var sceneRecord = Object.assign({}, previousScene, {
+          sceneKey: sceneKey,
           sceneName: sceneName,
-          variables: variables
-        },
-        recordingUrl: "",
-        submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      };
+          status: "submitted",
+          completionPct: completionPct,
+          completionPercentage: completionPct,
+          stateJson: stateJson,
+          variables: variables,
+          experimentState: {
+            completionPercentage: completionPct,
+            sceneName: sceneName,
+            variables: variables
+          },
+          updatedAt: timestampNow
+        });
+        if (sceneRecord.grade == null) sceneRecord.grade = null;
+        if (sceneRecord.instructorFeedback == null) sceneRecord.instructorFeedback = "";
+        if (!previousScene.submittedAt) {
+          sceneRecord.submittedAt = timestampNow;
+        }
 
-      // Perform Firestore write
-      db.collection("submissions").add(submissionPayload)
-      .then(function(docRef) {
-        console.log("Submission successful ID:", docRef.id);
+        sceneSubmissions[sceneKey] = sceneRecord;
+        var sceneSummary = computeSceneSummary(sceneSubmissions, totalSceneCount);
+        var aggregateStatus = computeAggregateStatus(sceneSummary);
+
+        var submissionPayload = {
+          studentId: submissionData.studentId || "unknown",
+          experimentId: submissionData.experimentId || "unknown",
+          classroomId: submissionData.classroomId || "unknown",
+          instructorId: submissionData.instructorId || existing.instructorId || null,
+          expname: submissionData.expname || existing.expname || "Untitled",
+          experimentName: submissionData.expname || existing.experimentName || existing.expname || "Untitled",
+          status: aggregateStatus,
+          grade: existing.grade != null ? existing.grade : null,
+          instructorFeedback: existing.instructorFeedback || "",
+          sceneSubmissions: sceneSubmissions,
+          sceneSummary: sceneSummary,
+          totalSceneCount: sceneSummary.totalSceneCount,
+          latestSceneKey: sceneKey,
+          latestSceneName: sceneName,
+          stateJson: stateJson,
+          completionPct: sceneSummary.averageCompletionPct,
+          completionPercentage: sceneSummary.averageCompletionPct,
+          sceneName: sceneName,
+          variables: variables,
+          experimentState: {
+            completionPercentage: completionPct,
+            sceneName: sceneName,
+            variables: variables
+          },
+          recordingUrl: existing.recordingUrl || "",
+          updatedAt: timestampNow,
+          latestSubmittedAt: timestampNow
+        };
+
+        if (!existing.submittedAt) submissionPayload.submittedAt = timestampNow;
+        if (!doc.exists) submissionPayload.createdAt = timestampNow;
+
+        return submissionRef.set(submissionPayload, { merge: true }).then(function () {
+          return {
+            sceneSummary: sceneSummary,
+            submissionPayload: submissionPayload,
+            submissionId: submissionDocId,
+            docExists: doc.exists
+          };
+        });
+      })
+      .then(function (result) {
+        console.log("Scene submission upserted:", result.submissionId);
 
         Promise.all([
-          submissionData.instructorId
-            ? Promise.resolve(submissionData.instructorId)
-            : resolveInstructorId(submissionPayload.experimentId),
+          result.submissionPayload.instructorId
+            ? Promise.resolve(result.submissionPayload.instructorId)
+            : resolveInstructorId(result.submissionPayload.experimentId),
           submissionData.studentName
             ? Promise.resolve(submissionData.studentName)
-            : resolveStudentName(submissionPayload.studentId)
+            : resolveStudentName(result.submissionPayload.studentId)
         ])
         .then(function(values) {
           var instructorId = values[0];
           var studentName = values[1] || "A student";
           if (!instructorId) return;
 
-          if (!submissionPayload.instructorId) {
-            submissionPayload.instructorId = instructorId;
-            db.collection("submissions").doc(docRef.id).update({ instructorId: instructorId }).catch(function() {});
+          if (!result.submissionPayload.instructorId) {
+            result.submissionPayload.instructorId = instructorId;
+            db.collection("submissions").doc(result.submissionId).update({ instructorId: instructorId }).catch(function() {});
           }
 
           return db.collection("notifications").add({
             userId: instructorId,
             type: "submission_received",
-            title: "New Submission Received",
-            message: studentName + " submitted " + (submissionPayload.experimentName || "an experiment"),
-            link: "/evaluation/" + submissionPayload.classroomId + "/" + submissionPayload.experimentId,
+            title: "Scene Submission Received",
+            message: studentName + " submitted scene \"" + sceneName + "\" for " + (result.submissionPayload.experimentName || "an experiment"),
+            link: "/evaluation/" + result.submissionPayload.classroomId + "/" + result.submissionPayload.experimentId,
             isRead: false,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             data: {
-              classroomId: submissionPayload.classroomId,
-              experimentId: submissionPayload.experimentId,
-              submissionId: docRef.id,
-              studentId: submissionPayload.studentId
+              classroomId: result.submissionPayload.classroomId,
+              experimentId: result.submissionPayload.experimentId,
+              submissionId: result.submissionId,
+              studentId: result.submissionPayload.studentId,
+              sceneName: sceneName,
+              sceneKey: sceneKey
             }
           });
         })
@@ -438,11 +616,15 @@
         // Transition to success state
         document.getElementById("confirm-state").style.display = "none";
         document.getElementById("success-state").style.display = "flex";
+        var successSubtitle = document.getElementById("success-subtitle");
+        if (successSubtitle) {
+          successSubtitle.textContent = "Scene \"" + sceneName + "\" has been submitted.";
+        }
         
         // Wait for animation to play before notifying Unity
         setTimeout(function() {
           sendToUnity("submission_success");
-        }, 2500);
+        }, 2000);
       })
       .catch(function(error) {
         console.error("Submission failed:", error);
@@ -467,6 +649,14 @@
         if (d.progress != null) {
           var pEl = document.getElementById("modal-progress-val");
           if (pEl) pEl.textContent = Math.round(d.progress) + "%";
+        }
+        if (d.currentSceneName != null) {
+          var sceneEl = document.getElementById("modal-scene-val");
+          if (sceneEl) sceneEl.textContent = d.currentSceneName || "—";
+        }
+        if (d.totalSceneCount != null) {
+          var totalScenesEl = document.getElementById("modal-total-scenes-val");
+          if (totalScenesEl) totalScenesEl.textContent = String(Math.max(1, Math.round(Number(d.totalSceneCount) || 1)));
         }
         if (d.status != null) {
           var sEl = document.getElementById("modal-status-val");

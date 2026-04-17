@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import useExperiment from '../core/hooks/useExperiment';
 import ObjectModelManager from './object_model_manager';
+import { uploadExperimentThumbnail } from '../utils/storageHelpers';
 
 function ExperimentDetailsModal({
   isOpen,
@@ -9,6 +10,7 @@ function ExperimentDetailsModal({
   initialTitle,
   initialDescription,
   initialCategory,
+  initialThumbnailUrl,
   onSave,
 }: {
   isOpen: boolean;
@@ -16,40 +18,105 @@ function ExperimentDetailsModal({
   initialTitle: string;
   initialDescription: string;
   initialCategory: string;
-  onSave: (title: string, description: string, category: string) => void;
+  initialThumbnailUrl: string;
+  onSave: (title: string, description: string, category: string, thumbnailFile: File | null) => Promise<void>;
 }) {
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
   const [category, setCategory] = useState(initialCategory || 'General Science');
   const [categoryOpen, setCategoryOpen] = useState(false);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState(initialThumbnailUrl || '');
+  const [saveError, setSaveError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
+  const objectPreviewRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       setTitle(initialTitle);
       setDescription(initialDescription);
       setCategory(initialCategory || 'General Science');
+      setThumbnailFile(null);
+      setThumbnailPreview(initialThumbnailUrl || '');
+      setSaveError('');
+      if (objectPreviewRef.current) {
+        URL.revokeObjectURL(objectPreviewRef.current);
+        objectPreviewRef.current = null;
+      }
     }
-  }, [isOpen, initialTitle, initialDescription, initialCategory]);
+  }, [isOpen, initialTitle, initialDescription, initialCategory, initialThumbnailUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (objectPreviewRef.current) {
+        URL.revokeObjectURL(objectPreviewRef.current);
+        objectPreviewRef.current = null;
+      }
+    };
+  }, []);
 
   if (!isOpen) return null;
 
-  const handleSave = () => {
-    if (!title.trim()) return;
-    onSave(title.trim(), description.trim(), category);
+  const handleThumbnailSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (objectPreviewRef.current) {
+      URL.revokeObjectURL(objectPreviewRef.current);
+      objectPreviewRef.current = null;
+    }
+
+    const nextPreview = URL.createObjectURL(file);
+    objectPreviewRef.current = nextPreview;
+    setThumbnailFile(file);
+    setThumbnailPreview(nextPreview);
+    setSaveError('');
+  };
+
+  const handleClose = () => {
+    if (isSaving) return;
+    if (objectPreviewRef.current) {
+      URL.revokeObjectURL(objectPreviewRef.current);
+      objectPreviewRef.current = null;
+    }
+    setThumbnailFile(null);
+    setSaveError('');
     onClose();
   };
 
+  const handleSave = async () => {
+    if (!title.trim() || isSaving) return;
+
+    setIsSaving(true);
+    setSaveError('');
+    try {
+      await onSave(title.trim(), description.trim(), category, thumbnailFile);
+      if (objectPreviewRef.current) {
+        URL.revokeObjectURL(objectPreviewRef.current);
+        objectPreviewRef.current = null;
+      }
+      setThumbnailFile(null);
+      onClose();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to save experiment details.';
+      setSaveError(message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center">
+    <div className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center overflow-y-auto py-6">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg mx-4 bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden">
+      <div className="relative w-full max-w-lg max-h-[calc(100vh-3rem)] mx-4 bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden flex flex-col">
         {/* Decorative top gradient */}
         <div className="h-1 bg-gradient-to-r from-primary via-blue-400 to-primary" />
 
-        <div className="p-8">
+        <div className="p-8 overflow-y-auto custom-scrollbar">
           {/* Header */}
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
@@ -118,22 +185,58 @@ function ExperimentDetailsModal({
                 )}
               </div>
             </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-300 mb-2">
+                Thumbnail
+              </label>
+              <input
+                ref={thumbnailInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                onChange={handleThumbnailSelect}
+              />
+              <button
+                type="button"
+                onClick={() => thumbnailInputRef.current?.click()}
+                className="w-full h-40 rounded-xl border border-dashed border-slate-700 bg-slate-800/60 hover:bg-slate-800 transition-colors overflow-hidden relative"
+              >
+                {thumbnailPreview ? (
+                  <>
+                    <img src={thumbnailPreview} alt="Experiment thumbnail preview" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <span className="text-white text-sm font-semibold">Change Thumbnail</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="h-full w-full flex flex-col items-center justify-center gap-2 text-slate-400">
+                    <span className="material-symbols-outlined text-3xl">add_photo_alternate</span>
+                    <span className="text-sm font-medium">Upload Thumbnail</span>
+                  </div>
+                )}
+              </button>
+              <p className="text-xs text-slate-500 mt-2">JPEG, PNG, WebP, or GIF. Max size 2 MB.</p>
+            </div>
           </div>
+
+          {saveError && <p className="text-sm text-red-400 mt-4">{saveError}</p>}
 
           {/* Actions */}
           <div className="flex justify-end gap-3 mt-8">
             <button
-              onClick={onClose}
-              className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-colors"
+              onClick={handleClose}
+              disabled={isSaving}
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
-              disabled={!title.trim()}
+              disabled={!title.trim() || isSaving}
               className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-primary hover:brightness-110 shadow-lg shadow-primary/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              Save
+              {isSaving ? 'Saving...' : 'Save'}
             </button>
           </div>
         </div>
@@ -159,10 +262,23 @@ export default function SceneManager() {
   }, [experiment, hasCheckedInitial]);
 
   const handleSaveDetails = useCallback(
-    (title: string, description: string, category: string) => {
-      updateExperiment({ title, description, category });
+    async (title: string, description: string, category: string, thumbnailFile: File | null) => {
+      if (!expName) throw new Error('Missing experiment identifier.');
+
+      const fields: { title: string; description: string; category: string; thumbnailUrl?: string } = {
+        title,
+        description,
+        category,
+      };
+
+      if (thumbnailFile) {
+        const thumbnailUrl = await uploadExperimentThumbnail(expName, thumbnailFile);
+        fields.thumbnailUrl = thumbnailUrl;
+      }
+
+      await updateExperiment(fields);
     },
-    [updateExperiment],
+    [updateExperiment, expName],
   );
 
   const addScene = () => {
@@ -324,6 +440,7 @@ export default function SceneManager() {
         initialTitle={experiment?.title || ''}
         initialDescription={experiment?.description || ''}
         initialCategory={(experiment?.category as string) || 'General Science'}
+        initialThumbnailUrl={(experiment?.thumbnailUrl as string) || ''}
         onSave={handleSaveDetails}
       />
       

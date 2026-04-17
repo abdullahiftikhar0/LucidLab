@@ -1,21 +1,71 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { getFirestore, collection, query, where, orderBy, getDocs, doc, getDoc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs, doc, getDoc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { useFirebaseApp } from 'reactfire';
 import { useAuth } from '../../contexts/AuthContext';
 import TopBar from '../../components/TopBar';
 import { generateInitials } from '../../utils/storageHelpers';
 
-interface Submission {
-  id: string; studentId: string; studentName: string; studentEmail: string;
-  submittedAt: any; status: string; quizScore: number; quizTotal: number;
-  quizAnswers: { question: string; answer: string; correct: boolean; correctAnswer?: string }[];
-  completedSteps: number; totalSteps: number; completionPercentage: number;
+interface SceneSubmission {
+  sceneKey?: string;
+  sceneName?: string;
+  status?: string;
+  grade?: string;
+  instructorFeedback?: string;
   completionPct?: number;
-  variables: Record<string, string>; recordingUrl: string;
-  experimentState?: { completionPercentage?: number; variables?: Record<string, string> };
+  completionPercentage?: number;
+  variables?: Record<string, string>;
+  experimentState?: {
+    completionPercentage?: number;
+    variables?: Record<string, string>;
+    completedSteps?: number;
+    totalSteps?: number;
+  };
   stateJson?: string;
-  instructorFeedback: string; grade: string;
+  quizScore?: number;
+  quizTotal?: number;
+  submittedAt?: any;
+  updatedAt?: any;
+}
+
+interface SceneSummary {
+  totalSceneCount: number;
+  submittedWaitingCount: number;
+  gradedCount: number;
+  needsRevisionCount: number;
+  inProgressCount: number;
+  submittedOrDoneCount: number;
+  averageCompletionPct?: number;
+}
+
+interface Submission {
+  id: string;
+  studentId: string;
+  studentName: string;
+  studentEmail: string;
+  submittedAt: any;
+  status: string;
+  quizScore: number;
+  quizTotal: number;
+  quizAnswers: { question: string; answer: string; correct: boolean; correctAnswer?: string }[];
+  completedSteps: number;
+  totalSteps: number;
+  completionPercentage: number;
+  completionPct?: number;
+  variables: Record<string, string>;
+  recordingUrl: string;
+  experimentState?: {
+    completionPercentage?: number;
+    variables?: Record<string, string>;
+    completedSteps?: number;
+    totalSteps?: number;
+  };
+  stateJson?: string;
+  instructorFeedback: string;
+  grade: string;
+  sceneSubmissions?: Record<string, SceneSubmission>;
+  sceneSummary?: SceneSummary;
+  totalSceneCount?: number;
 }
 
 interface ClassroomData { name: string; subject: string; studentCount: number; }
@@ -30,6 +80,116 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }>
   needs_revision: { bg: 'bg-rose-50',    text: 'text-rose-600',    label: 'Needs Revision'},
   in_progress:    { bg: 'bg-blue-50',    text: 'text-blue-600',    label: 'In Progress'   },
 };
+
+function normalizeStatus(status?: string) {
+  const s = String(status || '').trim().toLowerCase();
+  if (!s) return 'in_progress';
+  if (s === 'in progress') return 'in_progress';
+  if (s === 'needs revision') return 'needs_revision';
+  return s;
+}
+
+function clampPct(value: any) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(100, Math.round(n)));
+}
+
+function createSyntheticScene(sub: Submission): { key: string; scene: SceneSubmission } {
+  const sceneName = ((sub as any).sceneName && String((sub as any).sceneName).trim()) || 'Scene';
+  return {
+    key: 'default_scene',
+    scene: {
+      sceneKey: 'default_scene',
+      sceneName,
+      status: sub.status || 'submitted',
+      grade: sub.grade || '',
+      instructorFeedback: sub.instructorFeedback || '',
+      completionPct: sub.completionPercentage ?? sub.completionPct ?? sub.experimentState?.completionPercentage ?? 0,
+      completionPercentage: sub.completionPercentage ?? sub.completionPct ?? sub.experimentState?.completionPercentage ?? 0,
+      variables: sub.variables || sub.experimentState?.variables || {},
+      experimentState: sub.experimentState,
+      stateJson: sub.stateJson,
+      quizScore: sub.quizScore,
+      quizTotal: sub.quizTotal,
+      submittedAt: sub.submittedAt,
+      updatedAt: sub.submittedAt,
+    },
+  };
+}
+
+function getSceneEntries(sub: Submission): Array<{ key: string; scene: SceneSubmission }> {
+  if (sub.sceneSubmissions && typeof sub.sceneSubmissions === 'object') {
+    const keys = Object.keys(sub.sceneSubmissions);
+    if (keys.length > 0) {
+      return keys
+        .map((key) => ({
+          key,
+          scene: {
+            ...sub.sceneSubmissions![key],
+            sceneKey: sub.sceneSubmissions![key]?.sceneKey || key,
+            sceneName: sub.sceneSubmissions![key]?.sceneName || decodeURIComponent(key),
+          },
+        }))
+        .sort((a, b) => String(a.scene.sceneName || '').localeCompare(String(b.scene.sceneName || '')));
+    }
+  }
+  return [createSyntheticScene(sub)];
+}
+
+function summarizeSceneEntries(entries: Array<{ key: string; scene: SceneSubmission }>, totalSceneCountHint?: number): SceneSummary {
+  let submittedWaitingCount = 0;
+  let gradedCount = 0;
+  let needsRevisionCount = 0;
+  let completionTotal = 0;
+  let completionCount = 0;
+
+  entries.forEach(({ scene }) => {
+    const status = normalizeStatus(scene.status);
+    if (status === 'submitted') submittedWaitingCount += 1;
+    else if (status === 'graded' || status === 'correct' || status === 'incorrect') gradedCount += 1;
+    else if (status === 'needs_revision') needsRevisionCount += 1;
+
+    const pct = scene.completionPct ?? scene.completionPercentage ?? scene.experimentState?.completionPercentage;
+    const num = Number(pct);
+    if (Number.isFinite(num)) {
+      completionTotal += Math.max(0, Math.min(100, num));
+      completionCount += 1;
+    }
+  });
+
+  const submittedOrDoneCount = submittedWaitingCount + gradedCount + needsRevisionCount;
+  const rawTotal = Number(totalSceneCountHint ?? entries.length);
+  const totalSceneCount = Number.isFinite(rawTotal) && rawTotal > 0 ? Math.round(rawTotal) : Math.max(1, entries.length);
+  const inProgressCount = Math.max(0, totalSceneCount - submittedOrDoneCount);
+
+  return {
+    totalSceneCount,
+    submittedWaitingCount,
+    gradedCount,
+    needsRevisionCount,
+    inProgressCount,
+    submittedOrDoneCount,
+    averageCompletionPct: completionCount > 0 ? Math.round(completionTotal / completionCount) : 0,
+  };
+}
+
+function deriveSubmissionStatus(sub: Submission, summary?: SceneSummary) {
+  const effectiveSummary = summary || summarizeSceneEntries(getSceneEntries(sub), sub.totalSceneCount);
+  if (effectiveSummary.needsRevisionCount > 0) return 'needs_revision';
+  if (effectiveSummary.submittedOrDoneCount < effectiveSummary.totalSceneCount) return 'in_progress';
+  if (effectiveSummary.submittedWaitingCount > 0) return 'submitted';
+  if (effectiveSummary.gradedCount >= effectiveSummary.totalSceneCount) return 'graded';
+  return normalizeStatus(sub.status);
+}
+
+function sceneSummaryText(summary: SceneSummary) {
+  const base = `${summary.submittedOrDoneCount}/${summary.totalSceneCount} scenes submitted`;
+  if (summary.needsRevisionCount > 0) return `${base} • ${summary.needsRevisionCount} need revision`;
+  if (summary.submittedWaitingCount > 0) return `${base} • awaiting review`;
+  if (summary.gradedCount >= summary.totalSceneCount) return `${base} • fully graded`;
+  return base;
+}
 
 export default function EvaluationPage() {
   const { classroomId, experimentId } = useParams<{ classroomId: string; experimentId: string }>();
@@ -56,11 +216,35 @@ export default function EvaluationPage() {
   });
   const [isResizing, setIsResizing] = useState(false);
 
+  const [selectedSceneKey, setSelectedSceneKey] = useState<string>('');
   const [gradeStatus, setGradeStatus] = useState('pending');
   const [feedback, setFeedback]       = useState('');
   const [gradeText, setGradeText]     = useState('');   // e.g. "85%" or "A"
 
   useEffect(() => { loadAll(); }, [classroomId, experimentId]);
+
+  function hydrateEditorFromSubmission(sub: Submission | null, preferredSceneKey?: string) {
+    if (!sub) {
+      setSelectedSceneKey('');
+      setGradeStatus('pending');
+      setFeedback('');
+      setGradeText('');
+      return;
+    }
+
+    const entries = getSceneEntries(sub);
+    const resolvedKey = preferredSceneKey && entries.some((entry) => entry.key === preferredSceneKey)
+      ? preferredSceneKey
+      : (entries[0]?.key || '');
+
+    const scene = entries.find((entry) => entry.key === resolvedKey)?.scene;
+    const status = normalizeStatus(scene?.status || sub.status || 'submitted');
+
+    setSelectedSceneKey(resolvedKey);
+    setGradeStatus(status);
+    setFeedback(scene?.instructorFeedback ?? sub.instructorFeedback ?? '');
+    setGradeText(scene?.grade ?? sub.grade ?? '');
+  }
 
   async function loadAll() {
     setLoading(true);
@@ -101,14 +285,30 @@ export default function EvaluationPage() {
             const normalizedCompletion = Number(
               raw.completionPercentage ?? raw.completionPct ?? raw.experimentState?.completionPercentage ?? 0
             );
-            return {
+
+            const baseSubmission = {
               id: d.id,
               ...raw,
               submittedAt: raw.submittedAt ?? raw.updatedAt ?? null,
+              status: normalizeStatus(raw.status || 'submitted'),
               studentName: raw.studentName || member?.displayName || 'Unknown Student',
               studentEmail: raw.studentEmail || member?.email || '',
               completionPercentage: Number.isFinite(normalizedCompletion) ? normalizedCompletion : 0,
               variables: raw.variables || raw.experimentState?.variables || {},
+              sceneSubmissions: raw.sceneSubmissions || undefined,
+              sceneSummary: raw.sceneSummary || undefined,
+              totalSceneCount: raw.totalSceneCount,
+            } as Submission;
+
+            const entries = getSceneEntries(baseSubmission);
+            const summary = summarizeSceneEntries(entries, raw.totalSceneCount ?? raw.sceneSummary?.totalSceneCount);
+
+            return {
+              ...baseSubmission,
+              status: deriveSubmissionStatus(baseSubmission, summary),
+              sceneSummary: summary,
+              totalSceneCount: summary.totalSceneCount,
+              completionPercentage: clampPct(summary.averageCompletionPct ?? baseSubmission.completionPercentage),
             } as Submission;
           });
           
@@ -122,8 +322,9 @@ export default function EvaluationPage() {
           setSubmissions(subs);
           if (subs.length > 0) {
             setSelectedId(subs[0].id);
-            setGradeStatus(subs[0].status || 'pending');
-            setFeedback(subs[0].instructorFeedback || '');
+            hydrateEditorFromSubmission(subs[0]);
+          } else {
+            hydrateEditorFromSubmission(null);
           }
         }
       }
@@ -138,47 +339,130 @@ export default function EvaluationPage() {
 
   function selectSubmission(sub: Submission) {
     setSelectedId(sub.id);
-    setGradeStatus(sub.status || 'pending');
-    setFeedback(sub.instructorFeedback || '');
-    setGradeText(sub.grade || '');
+    hydrateEditorFromSubmission(sub);
+  }
+
+  function selectScene(sceneKey: string) {
+    if (!selected) return;
+    hydrateEditorFromSubmission(selected, sceneKey);
   }
 
   async function saveGrade() {
     if (!selectedId || !selected) return;
+    const sceneEntries = getSceneEntries(selected);
+    const activeScene = sceneEntries.find((entry) => entry.key === selectedSceneKey) || sceneEntries[0];
+    if (!activeScene) return;
+
     setSaving(true);
     try {
-      // When explicitly grading, mark status as 'graded' so the student apps
-      // can distinguish a graded submission from one merely submitted.
-      const finalStatus = gradeStatus === 'pending' && gradeText ? 'graded' : gradeStatus;
-      await updateDoc(doc(db, 'submissions', selectedId), {
-        status:            finalStatus,
-        grade:             gradeText,            // instructor-authored grade text
-        instructorFeedback: feedback,
-        updatedAt:         serverTimestamp(),
+      const finalSceneStatus = gradeStatus === 'pending' && gradeText ? 'graded' : normalizeStatus(gradeStatus);
+
+      const sceneMapForWrite: Record<string, SceneSubmission> = {};
+      sceneEntries.forEach(({ key, scene }) => {
+        sceneMapForWrite[key] = { ...scene };
       });
 
+      const previousScene = sceneMapForWrite[activeScene.key] || activeScene.scene;
+      const updatedScene: SceneSubmission = {
+        ...previousScene,
+        sceneKey: activeScene.key,
+        sceneName: previousScene.sceneName || activeScene.scene.sceneName || 'Scene',
+        status: finalSceneStatus,
+        grade: gradeText,
+        instructorFeedback: feedback,
+        updatedAt: serverTimestamp(),
+      };
+
+      if (!previousScene?.submittedAt) {
+        updatedScene.submittedAt = selected.submittedAt || serverTimestamp();
+      }
+
+      sceneMapForWrite[activeScene.key] = updatedScene;
+
+      const updatedSceneEntries = Object.keys(sceneMapForWrite).map((key) => ({ key, scene: sceneMapForWrite[key] }));
+      const updatedSummary = summarizeSceneEntries(updatedSceneEntries, selected.totalSceneCount);
+      const aggregateStatus = deriveSubmissionStatus(
+        { ...selected, sceneSubmissions: sceneMapForWrite, sceneSummary: updatedSummary, totalSceneCount: updatedSummary.totalSceneCount },
+        updatedSummary
+      );
+      const aggregateCompletion = clampPct(updatedSummary.averageCompletionPct ?? selected.completionPercentage);
+
+      const updatePayload: Record<string, any> = {
+        sceneSubmissions: sceneMapForWrite,
+        sceneSummary: updatedSummary,
+        totalSceneCount: updatedSummary.totalSceneCount,
+        status: aggregateStatus,
+        completionPercentage: aggregateCompletion,
+        completionPct: aggregateCompletion,
+        latestSceneKey: activeScene.key,
+        latestSceneName: updatedScene.sceneName || activeScene.scene.sceneName || 'Scene',
+        updatedAt: serverTimestamp(),
+      };
+
+      if (updatedSummary.totalSceneCount <= 1) {
+        updatePayload.grade = gradeText;
+        updatePayload.instructorFeedback = feedback;
+      }
+
+      await updateDoc(doc(db, 'submissions', selectedId), updatePayload);
+
       // Create notification for the student
-      if (finalStatus === 'graded' || finalStatus === 'correct' || finalStatus === 'incorrect' || finalStatus === 'needs_revision') {
+      if (finalSceneStatus === 'graded' || finalSceneStatus === 'correct' || finalSceneStatus === 'incorrect' || finalSceneStatus === 'needs_revision') {
+        const sceneName = updatedScene.sceneName || activeScene.scene.sceneName || 'Scene';
         await addDoc(collection(db, 'notifications'), {
           userId: selected.studentId,
           type: 'grade_received',
-          title: 'Experiment Graded',
-          message: `Your submission for ${experiment?.title} has been graded: ${gradeText || finalStatus}`,
+          title: 'Scene Graded',
+          message: `Your scene "${sceneName}" for ${experiment?.title || 'this experiment'} has been graded: ${gradeText || finalSceneStatus}`,
           link: `/classroom/${classroomId}`, 
           isRead: false,
           createdAt: serverTimestamp(),
-          data: { classroomId, experimentId, submissionId: selectedId }
+          data: { classroomId, experimentId, submissionId: selectedId, sceneKey: activeScene.key, sceneName }
         });
       }
 
       setSubmissions(prev =>
         prev.map(s =>
           s.id === selectedId
-            ? { ...s, status: finalStatus, grade: gradeText, instructorFeedback: feedback }
+            ? (() => {
+                const nextSceneMap: Record<string, SceneSubmission> = {};
+                getSceneEntries(s).forEach(({ key, scene }) => {
+                  nextSceneMap[key] = { ...scene };
+                });
+                nextSceneMap[activeScene.key] = {
+                  ...nextSceneMap[activeScene.key],
+                  sceneKey: activeScene.key,
+                  sceneName: updatedScene.sceneName || activeScene.scene.sceneName || 'Scene',
+                  status: finalSceneStatus,
+                  grade: gradeText,
+                  instructorFeedback: feedback,
+                  updatedAt: new Date(),
+                };
+
+                const nextEntries = Object.keys(nextSceneMap).map((key) => ({ key, scene: nextSceneMap[key] }));
+                const nextSummary = summarizeSceneEntries(nextEntries, s.totalSceneCount);
+                const nextStatus = deriveSubmissionStatus(
+                  { ...s, sceneSubmissions: nextSceneMap, sceneSummary: nextSummary, totalSceneCount: nextSummary.totalSceneCount },
+                  nextSummary
+                );
+                const nextCompletion = clampPct(nextSummary.averageCompletionPct ?? s.completionPercentage);
+
+                return {
+                  ...s,
+                  sceneSubmissions: nextSceneMap,
+                  sceneSummary: nextSummary,
+                  totalSceneCount: nextSummary.totalSceneCount,
+                  status: nextStatus,
+                  completionPercentage: nextCompletion,
+                  completionPct: nextCompletion,
+                  grade: nextSummary.totalSceneCount <= 1 ? gradeText : s.grade,
+                  instructorFeedback: nextSummary.totalSceneCount <= 1 ? feedback : s.instructorFeedback,
+                } as Submission;
+              })()
             : s
         )
       );
-      setGradeStatus(finalStatus);
+      setGradeStatus(finalSceneStatus);
     } catch (e) { console.error(e); }
     setSaving(false);
   }
@@ -217,20 +501,44 @@ export default function EvaluationPage() {
   }
 
   const filteredSubmissions = submissions.filter(s => {
-    // 'pending' tab includes ungraded submissions and newly submitted ones
-    if (filterTab === 'pending') return s.status === 'pending' || s.status === 'submitted' || !s.status;
-    if (filterTab === 'graded')  return s.status === 'graded' || s.status === 'correct' || s.status === 'incorrect';
+    const summary = s.sceneSummary || summarizeSceneEntries(getSceneEntries(s), s.totalSceneCount);
+    const status = deriveSubmissionStatus(s, summary);
+    // 'pending' includes in-progress, submitted, and needs-revision scene sets.
+    if (filterTab === 'pending') return status === 'pending' || status === 'submitted' || status === 'in_progress' || status === 'needs_revision' || !status;
+    if (filterTab === 'graded')  return status === 'graded' || status === 'correct' || status === 'incorrect';
     return true;
   });
 
   const selected = submissions.find(s => s.id === selectedId) || null;
+  const selectedSceneEntries = useMemo(() => (selected ? getSceneEntries(selected) : []), [selected]);
+  const activeSceneEntry = selectedSceneEntries.find((entry) => entry.key === selectedSceneKey) || selectedSceneEntries[0] || null;
+  const selectedScene = activeSceneEntry?.scene || null;
+  const selectedSummary = selected
+    ? (selected.sceneSummary || summarizeSceneEntries(selectedSceneEntries, selected.totalSceneCount))
+    : null;
+
   const statusStyle = (s: string) => STATUS_STYLES[s?.toLowerCase()?.replace(/\s+/g, '_')] || STATUS_STYLES.pending;
-  const selectedCompletion = Number(
-    selected?.completionPercentage ?? selected?.completionPct ?? selected?.experimentState?.completionPercentage ?? 0
-  ) || 0;
-  const selectedVariables = selected?.variables && Object.keys(selected.variables).length > 0
-    ? selected.variables
-    : (selected?.experimentState?.variables || {});
+  const selectedCompletion = clampPct(
+    selectedScene?.completionPercentage
+      ?? selectedScene?.completionPct
+      ?? selectedScene?.experimentState?.completionPercentage
+      ?? selected?.completionPercentage
+      ?? selected?.completionPct
+      ?? selected?.experimentState?.completionPercentage
+      ?? 0
+  );
+  const selectedVariables = selectedScene?.variables && Object.keys(selectedScene.variables).length > 0
+    ? selectedScene.variables
+    : (selectedScene?.experimentState?.variables && Object.keys(selectedScene.experimentState.variables).length > 0
+      ? selectedScene.experimentState.variables
+      : (selected?.variables && Object.keys(selected.variables).length > 0
+        ? selected.variables
+        : (selected?.experimentState?.variables || {})));
+  const selectedCompletedSteps = selectedScene?.experimentState?.completedSteps ?? selected?.completedSteps ?? 0;
+  const selectedTotalSteps = selectedScene?.experimentState?.totalSteps ?? selected?.totalSteps ?? 0;
+  const selectedQuizScore = selectedScene?.quizScore ?? selected?.quizScore;
+  const selectedQuizTotal = selectedScene?.quizTotal ?? selected?.quizTotal;
+  const selectedStateJson = selectedScene?.stateJson ?? selected?.stateJson;
 
   if (loading) return (
     <div className="dark">
@@ -303,7 +611,9 @@ export default function EvaluationPage() {
                 <div className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">No submissions found.</div>
               ) : (
                 filteredSubmissions.map(sub => {
-                  const ss = statusStyle(sub.status);
+                  const summary = sub.sceneSummary || summarizeSceneEntries(getSceneEntries(sub), sub.totalSceneCount);
+                  const aggregateStatus = deriveSubmissionStatus(sub, summary);
+                  const ss = statusStyle(aggregateStatus);
                   return (
                     <div 
                       key={sub.id} 
@@ -319,10 +629,11 @@ export default function EvaluationPage() {
                         <span className={`text-[10px] font-bold uppercase tracking-wider ${ss.text} ${ss.bg} dark:bg-opacity-20 px-1.5 py-0.5 rounded`}>{ss.label}</span>
                       </div>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">{classroom?.name || 'Classroom'}</p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-2">{sceneSummaryText(summary)}</p>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1 text-slate-400 dark:text-slate-500">
                           <span className="material-symbols-outlined text-sm">quiz</span>
-                          <span className="text-xs font-medium">{sub.quizScore ?? '—'}/{sub.quizTotal ?? '—'}</span>
+                          <span className="text-xs font-medium">{summary.gradedCount}/{summary.totalSceneCount} graded</span>
                         </div>
                         <span className="text-[10px] text-slate-400 dark:text-slate-500">{formatDate(sub.submittedAt)}</span>
                       </div>
@@ -374,6 +685,9 @@ export default function EvaluationPage() {
                       <span className="text-primary font-medium">{selected.studentName}</span>
                     </div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Submission Review: {experiment?.title || 'Experiment'}</h1>
+                    {activeSceneEntry && (
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Scene: {activeSceneEntry.scene.sceneName || activeSceneEntry.key}</p>
+                    )}
                   </div>
                   <div className="flex items-center gap-3">
                     {(() => {
@@ -402,7 +716,7 @@ export default function EvaluationPage() {
                   {/* Row 1: The Workspace (Viewer / Recording) */}
                   <div className="space-y-6">
                     {/* WebGL Submission Preview — shown when stateJson is present */}
-                    {(selected as any).stateJson && (
+                    {selectedStateJson && (
                       <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900 shadow-xl" style={{ aspectRatio: '16/9' }}>
                         <div className="relative w-full h-full">
                           <iframe
@@ -415,7 +729,7 @@ export default function EvaluationPage() {
                               const frame = e.currentTarget as HTMLIFrameElement;
                               frame.contentWindow?.postMessage({
                                 type: 'load_submission_state',
-                                stateJson: (selected as any).stateJson,
+                                stateJson: selectedStateJson,
                               }, '*');
                             }}
                           />
@@ -453,6 +767,27 @@ export default function EvaluationPage() {
                           Evaluation
                         </h3>
                         <div className="space-y-4">
+                          {selectedSummary && (
+                            <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 px-3 py-2">
+                              <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">{sceneSummaryText(selectedSummary)}</p>
+                            </div>
+                          )}
+
+                          <div>
+                            <label className="block text-sm font-semibold mb-1.5 text-slate-700 dark:text-slate-300">Scene</label>
+                            <select
+                              value={activeSceneEntry?.key || ''}
+                              onChange={(e) => selectScene(e.target.value)}
+                              className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-primary focus:border-primary text-slate-900 dark:text-slate-100"
+                            >
+                              {selectedSceneEntries.map((entry, index) => (
+                                <option key={entry.key} value={entry.key}>
+                                  {(entry.scene.sceneName || `Scene ${index + 1}`)}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                               <label className="block text-sm font-semibold mb-1.5 text-slate-700 dark:text-slate-300">Status</label>
@@ -461,6 +796,8 @@ export default function EvaluationPage() {
                                 onChange={e => setGradeStatus(e.target.value)}
                                 className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-primary focus:border-primary text-slate-900 dark:text-slate-100"
                               >
+                                <option value="pending">Pending</option>
+                                <option value="in_progress">In Progress</option>
                                 <option value="submitted">Submitted — Awaiting Review</option>
                                 <option value="graded">Graded</option>
                                 <option value="correct">Correct</option>
@@ -553,19 +890,19 @@ export default function EvaluationPage() {
                           </div>
                           <div>
                             <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold">Quiz Score</p>
-                            <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{selected.quizScore ?? '—'}/{selected.quizTotal ?? '—'}</p>
+                            <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{selectedQuizScore ?? '—'}/{selectedQuizTotal ?? '—'}</p>
                           </div>
                         </div>
                       </div>
 
                       {/* Experiment State / Progress */}
-                      {(selected.completedSteps || selected.totalSteps || selectedCompletion > 0 || Object.keys(selectedVariables).length > 0) && (
+                      {(selectedCompletedSteps || selectedTotalSteps || selectedCompletion > 0 || Object.keys(selectedVariables).length > 0) && (
                         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
                           <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
                             <span className="material-symbols-outlined text-primary text-lg">analytics</span> Progress Details
                           </h3>
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs text-slate-600 dark:text-slate-400">{selected.completedSteps || 0} / {selected.totalSteps || 0} Steps</span>
+                            <span className="text-xs text-slate-600 dark:text-slate-400">{selectedCompletedSteps || 0} / {selectedTotalSteps || 0} Steps</span>
                             <span className="text-xs font-bold text-primary">{selectedCompletion}%</span>
                           </div>
                           <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden mb-4">

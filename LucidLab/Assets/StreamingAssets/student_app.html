@@ -192,6 +192,127 @@
     }
     .modal-footer a:hover { color: var(--primary); }
 
+    /* ===== Pre-AR Scene Picker ===== */
+    #scene-launch-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 95;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0, 0, 0, .68);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    #scene-launch-layer.open { display: flex; }
+
+    .scene-launch-modal {
+      width: 100%;
+      max-width: 480px;
+      max-height: calc(100vh - 40px);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background: rgba(15, 34, 35, .92);
+      border: 1px solid color-mix(in srgb, var(--primary) 28%, transparent);
+      border-radius: 14px;
+      box-shadow: 0 24px 50px rgba(0, 0, 0, .45);
+    }
+
+    .scene-launch-head {
+      padding: 16px 18px 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, .08);
+    }
+
+    .scene-launch-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -.01em;
+    }
+
+    .scene-launch-subtitle {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .scene-launch-list {
+      padding: 12px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .scene-launch-item {
+      border: 1px solid rgba(255, 255, 255, .1);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, .03);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .scene-launch-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: #e2e8f0;
+    }
+
+    .scene-launch-meta {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+
+    .scene-launch-select {
+      margin-top: 4px;
+      align-self: flex-end;
+      border: 0;
+      border-radius: 8px;
+      padding: 8px 12px;
+      background: var(--primary);
+      color: #072024;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .scene-launch-select:active { opacity: .86; }
+
+    .scene-launch-loading,
+    .scene-launch-empty {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      padding: 18px;
+    }
+
+    .scene-launch-actions {
+      padding: 10px 12px 12px;
+      border-top: 1px solid rgba(255, 255, 255, .08);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .scene-launch-cancel {
+      border: 1px solid rgba(255, 255, 255, .14);
+      border-radius: 8px;
+      background: transparent;
+      color: #cbd5e1;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+
+    .scene-launch-cancel:hover {
+      background: rgba(255, 255, 255, .05);
+    }
+
     /* ===== FAB (Join Class — home only) ===== */
     #fab {
       position: fixed;
@@ -261,13 +382,51 @@
       display: none;
     }
     .nav-btn.active .dot { display: block; }
+
+    /* ===== Shell Toast ===== */
+    #shell-toast {
+      position: fixed;
+      left: 50%;
+      bottom: calc(var(--nav-h) + 14px);
+      transform: translateX(-50%) translateY(16px);
+      z-index: 130;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease;
+      max-width: calc(100vw - 24px);
+      background: rgba(15, 34, 35, .92);
+      color: #e2f6f7;
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 12px;
+      box-shadow: 0 10px 24px rgba(0,0,0,.35);
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    #shell-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    #shell-toast.warning {
+      border-color: color-mix(in srgb, #f59e0b 45%, transparent);
+    }
+
+    #shell-toast.error {
+      border-color: color-mix(in srgb, #ef4444 45%, transparent);
+    }
   </style>
 </head>
 <body>
 
+  <div id="shell-toast" aria-live="polite"></div>
+
   <!-- ===== Screen iframes (pre-loaded, shown/hidden) ===== -->
   <div id="screens" class="auth-mode">
-    <iframe id="frame-login"       class="active" src="login_screen.html"></iframe>
+    <iframe id="frame-splash"      class="active" src="splash_screen.html"></iframe>
+    <iframe id="frame-login"                      src="login_screen.html"></iframe>
     <iframe id="frame-signup"                      src="signup_screen.html"></iframe>
     <iframe id="frame-home"                        src="dashboard.html"></iframe>
     <iframe id="frame-experiments"                  src="active_assignments.html"></iframe>
@@ -306,6 +465,22 @@
         <button class="btn-cancel" id="modal-cancel-btn">Cancel</button>
       </div>
       <p class="modal-footer">Need help? <a href="#">Contact instructor</a></p>
+    </div>
+  </div>
+
+  <!-- ===== Pre-AR Scene Launch Picker ===== -->
+  <div id="scene-launch-layer">
+    <div class="scene-launch-modal" role="dialog" aria-modal="true" aria-labelledby="scene-launch-title">
+      <div class="scene-launch-head">
+        <div id="scene-launch-title" class="scene-launch-title">Select Scene</div>
+        <div class="scene-launch-subtitle">Choose a scene before opening AR.</div>
+      </div>
+      <div id="scene-launch-list" class="scene-launch-list">
+        <div class="scene-launch-loading">Loading scenes...</div>
+      </div>
+      <div class="scene-launch-actions">
+        <button id="scene-launch-cancel" class="scene-launch-cancel" type="button">Cancel</button>
+      </div>
     </div>
   </div>
 
@@ -376,12 +551,19 @@
     /* ==========================================================
        State
        ========================================================== */
-    var current = "login";          // login | signup | home | experiments | completed | profile | classroom
+     var current = "splash";         // splash | login | signup | home | experiments | completed | profile | classroom
     var experimentsSub = "active";  // tracks last sub-tab under Experiments
     var unsubs = {};                // tracks Firestore listeners for cleanup
     var currentNotifications = [];
+    var pendingStartArLaunch = null;
+    var startArPromptRequestId = 0;
+    var initialAuthResolved = false;
+    var forceLogoutInProgress = false;
+    var offlineToastShownAt = 0;
+    var shellToastTimer = null;
 
     var frames = {
+      splash:           document.getElementById("frame-splash"),
       login:            document.getElementById("frame-login"),
       signup:           document.getElementById("frame-signup"),
       home:             document.getElementById("frame-home"),
@@ -404,6 +586,111 @@
     var fab        = document.getElementById("fab");
     var modalLayer = document.getElementById("modal-layer");
     var joinInput  = document.getElementById("join-code");
+    var sceneLaunchLayer = document.getElementById("scene-launch-layer");
+    var sceneLaunchList = document.getElementById("scene-launch-list");
+    var sceneLaunchCancel = document.getElementById("scene-launch-cancel");
+    var shellToast = document.getElementById("shell-toast");
+
+    function resolveInitialAuth(user) {
+      if (initialAuthResolved) return;
+      initialAuthResolved = true;
+
+      if (!user && current === "splash") {
+        navigate("login");
+      }
+    }
+
+    function showShellToast(message, tone) {
+      if (!shellToast || !message) return;
+      shellToast.textContent = message;
+      shellToast.classList.remove("warning", "error");
+      if (tone === "warning" || tone === "error") shellToast.classList.add(tone);
+      shellToast.classList.add("show");
+      if (shellToastTimer) clearTimeout(shellToastTimer);
+      shellToastTimer = setTimeout(function () {
+        if (shellToast) shellToast.classList.remove("show", "warning", "error");
+      }, 3200);
+    }
+
+    function isOfflineError(err) {
+      var code = err && err.code ? String(err.code) : "";
+      return code === "unavailable"
+        || code === "failed-precondition"
+        || code === "network-request-failed"
+        || code === "auth/network-request-failed";
+    }
+
+    function isUnauthorizedError(err) {
+      var code = err && err.code ? String(err.code) : "";
+      return code === "permission-denied"
+        || code === "unauthenticated"
+        || code === "auth/user-disabled"
+        || code === "auth/user-token-expired"
+        || code === "auth/invalid-user-token";
+    }
+
+    function ensureHomeForAuthenticatedUser(user) {
+      if (!user) return;
+      if (!currentUserData) {
+        currentUserData = {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName || "",
+          role: "student",
+          classroomIds: []
+        };
+      }
+
+      sendToUnity("set_student_id:" + user.uid);
+
+      if (current === "splash" || current === "login" || current === "signup") {
+        navigate("home");
+      }
+    }
+
+    function notifyOfflineOnce() {
+      var now = Date.now();
+      if (now - offlineToastShownAt < 5000) return;
+      offlineToastShownAt = now;
+      showShellToast("No internet connection. Working in offline mode.", "warning");
+    }
+
+    function forceLogoutWithToast(message) {
+      if (forceLogoutInProgress) return;
+      forceLogoutInProgress = true;
+
+      Object.keys(unsubs).forEach(function (k) {
+        if (unsubs[k]) unsubs[k]();
+        unsubs[k] = null;
+      });
+
+      showShellToast(message || "Session unauthorized. Please log in again.", "error");
+
+      auth.signOut().catch(function (err) {
+        console.error("[Shell] Force sign-out failed:", err);
+      }).finally(function () {
+        currentUserData = null;
+        if (current !== "login" && current !== "signup") {
+          navigate("login");
+        }
+        resolveInitialAuth(null);
+        forceLogoutInProgress = false;
+      });
+    }
+
+    function handleDataAccessError(err, source) {
+      console.error("[Shell] Data access error (" + source + "):", err);
+      if (isUnauthorizedError(err)) {
+        forceLogoutWithToast("Unauthorized. Please log in again.");
+        return;
+      }
+      if (isOfflineError(err)) {
+        if (auth.currentUser) ensureHomeForAuthenticatedUser(auth.currentUser);
+        notifyOfflineOnce();
+        return;
+      }
+      showShellToast("Some data could not be loaded.", "warning");
+    }
 
     /* ==========================================================
        Navigate between screens
@@ -412,7 +699,7 @@
       console.log("[Shell] navigate(", target, ") current=", current);
       if (target === current) return;
 
-      var isAuth = (target === "login" || target === "signup");
+      var isAuth = (target === "splash" || target === "login" || target === "signup");
 
       // Deactivate all
       Object.keys(frames).forEach(function (k) {
@@ -496,6 +783,200 @@
 
     fab.addEventListener("click", openJoinModal);
 
+    function escapeHtml(text) {
+      var div = document.createElement("div");
+      div.appendChild(document.createTextNode(text == null ? "" : String(text)));
+      return div.innerHTML;
+    }
+
+    function openSceneLaunchModalLoading() {
+      sceneLaunchList.innerHTML = '<div class="scene-launch-loading">Loading scenes...</div>';
+      sceneLaunchLayer.classList.add("open");
+    }
+
+    function closeSceneLaunchModal(clearPending) {
+      sceneLaunchLayer.classList.remove("open");
+      sceneLaunchList.innerHTML = "";
+      if (clearPending !== false) pendingStartArLaunch = null;
+    }
+
+    function shouldPromptForSceneBeforeLaunch(payload) {
+      if (!payload || typeof payload !== "object") return false;
+      if (payload.initialSceneName) return false;
+      var mode = String(payload.mode || "").toLowerCase();
+      return mode === "continue" || mode === "launch" || mode === "retake";
+    }
+
+    function fetchExperimentScenes(experimentId) {
+      return db.collection("experiments").doc(experimentId).collection("scenes").get().then(function (snap) {
+        var scenes = [];
+        snap.forEach(function (doc) {
+          var s = doc.data() || {};
+          scenes.push({
+            name: s.name || doc.id,
+            index: Number(s.index || 0),
+            markerCount: Array.isArray(s.markers) ? s.markers.length : 0
+          });
+        });
+        scenes.sort(function (a, b) {
+          if (a.index === b.index) return String(a.name).localeCompare(String(b.name));
+          return a.index - b.index;
+        });
+        return scenes;
+      });
+    }
+
+    function finalizePendingStartAr(sceneName) {
+      if (!pendingStartArLaunch) return;
+
+      var payload = pendingStartArLaunch.payload || {};
+      if (sceneName) payload.initialSceneName = sceneName;
+      else delete payload.initialSceneName;
+
+      closeSceneLaunchModal(false);
+      pendingStartArLaunch = null;
+      sendToUnity("start_ar:" + JSON.stringify(payload));
+    }
+
+    function renderSceneLaunchNoScenes() {
+      sceneLaunchList.innerHTML =
+        '<div class="scene-launch-empty">No scenes were found for this experiment.</div>' +
+        '<div class="scene-launch-item">' +
+          '<div class="scene-launch-meta">You can still open AR and use the default startup behavior.</div>' +
+          '<button type="button" class="scene-launch-select" id="scene-launch-start-anyway">Start AR Anyway</button>' +
+        '</div>';
+
+      var startAnywayBtn = document.getElementById("scene-launch-start-anyway");
+      if (startAnywayBtn) {
+        startAnywayBtn.addEventListener("click", function () {
+          finalizePendingStartAr("");
+        });
+      }
+    }
+
+    function renderSceneLaunchFetchError(err) {
+      var message = "Could not load scenes right now.";
+      if (err && err.code === "permission-denied") {
+        message = "You do not have permission to read scenes for this experiment.";
+      }
+
+      sceneLaunchList.innerHTML =
+        '<div class="scene-launch-empty">' + escapeHtml(message) + '</div>' +
+        '<div class="scene-launch-item">' +
+          '<div class="scene-launch-meta">Try again, or continue to AR without pre-selecting a scene.</div>' +
+          '<div style="display:flex;gap:8px;justify-content:flex-end;">' +
+            '<button type="button" class="scene-launch-cancel" id="scene-launch-retry">Retry</button>' +
+            '<button type="button" class="scene-launch-select" id="scene-launch-start-anyway">Start AR Anyway</button>' +
+          '</div>' +
+        '</div>';
+
+      var retryBtn = document.getElementById("scene-launch-retry");
+      if (retryBtn) {
+        retryBtn.addEventListener("click", function () {
+          loadScenesForPendingLaunch();
+        });
+      }
+
+      var startAnywayBtn = document.getElementById("scene-launch-start-anyway");
+      if (startAnywayBtn) {
+        startAnywayBtn.addEventListener("click", function () {
+          finalizePendingStartAr("");
+        });
+      }
+    }
+
+    function renderSceneLaunchList(scenes) {
+      if (!scenes || scenes.length === 0) {
+        renderSceneLaunchNoScenes();
+        return;
+      }
+
+      sceneLaunchList.innerHTML = scenes.map(function (scene) {
+        var markerLabel = scene.markerCount > 0
+          ? (scene.markerCount + " marker" + (scene.markerCount === 1 ? "" : "s"))
+          : "No markers";
+
+        return (
+          '<div class="scene-launch-item">' +
+            '<div class="scene-launch-name">' + escapeHtml(scene.name) + '</div>' +
+            '<div class="scene-launch-meta">Scene ' + escapeHtml(scene.index) + ' • ' + escapeHtml(markerLabel) + '</div>' +
+            '<button type="button" class="scene-launch-select" data-scene-name="' + encodeURIComponent(scene.name) + '">Start This Scene</button>' +
+          '</div>'
+        );
+      }).join("");
+
+      Array.prototype.forEach.call(sceneLaunchList.querySelectorAll(".scene-launch-select"), function (btn) {
+        btn.addEventListener("click", function () {
+          var encoded = btn.getAttribute("data-scene-name") || "";
+          finalizePendingStartAr(decodeURIComponent(encoded));
+        });
+      });
+    }
+
+    function loadScenesForPendingLaunch() {
+      if (!pendingStartArLaunch || !pendingStartArLaunch.payload) return;
+
+      var payload = pendingStartArLaunch.payload;
+      var requestId = ++startArPromptRequestId;
+      pendingStartArLaunch.requestId = requestId;
+
+      openSceneLaunchModalLoading();
+
+      fetchExperimentScenes(payload.experimentId)
+        .then(function (scenes) {
+          if (!pendingStartArLaunch || pendingStartArLaunch.requestId !== requestId) return;
+          renderSceneLaunchList(scenes);
+        })
+        .catch(function (err) {
+          if (!pendingStartArLaunch || pendingStartArLaunch.requestId !== requestId) return;
+          console.error("[SceneLaunch] Failed to load scenes before AR launch:", err);
+          renderSceneLaunchFetchError(err);
+        });
+    }
+
+    function handleUnityMessageFromIframe(msg) {
+      if (typeof msg !== "string") return;
+
+      if (msg.indexOf("start_ar:") !== 0) {
+        sendToUnity(msg);
+        return;
+      }
+
+      var payloadRaw = msg.substring("start_ar:".length);
+      var payload;
+      try {
+        payload = JSON.parse(payloadRaw);
+      } catch (err) {
+        sendToUnity(msg);
+        return;
+      }
+
+      if (!shouldPromptForSceneBeforeLaunch(payload) || !payload.experimentId) {
+        sendToUnity(msg);
+        return;
+      }
+
+      if (pendingStartArLaunch && sceneLaunchLayer.classList.contains("open")) {
+        // Ignore duplicate launch messages while selection UI is already open.
+        return;
+      }
+
+      pendingStartArLaunch = {
+        payload: payload,
+        rawMessage: msg
+      };
+
+      loadScenesForPendingLaunch();
+    }
+
+    sceneLaunchCancel.addEventListener("click", function () {
+      closeSceneLaunchModal(true);
+    });
+
+    sceneLaunchLayer.addEventListener("click", function (e) {
+      if (e.target === sceneLaunchLayer) closeSceneLaunchModal(true);
+    });
+
     /* ==========================================================
        postMessage listener — sub-pages communicate via postMessage
        since file:// protocol blocks cross-origin iframe access.
@@ -510,7 +991,7 @@
       // String messages
       if (typeof data === "string") {
         if (data.indexOf("navigate:") === 0)   return navigate(data.split(":")[1]);
-        if (data.indexOf("unity:") === 0)      return sendToUnity(data.substring(6));
+        if (data.indexOf("unity:") === 0)      return handleUnityMessageFromIframe(data.substring(6));
         if (data === "open_join_modal")         return openJoinModal();
         if (data === "close_join_modal")        return closeJoinModal();
       }
@@ -518,7 +999,7 @@
       // Object messages
       if (typeof data === "object") {
         if (data.type === "navigate" && data.target) navigate(data.target);
-        if (data.type === "unity" && data.msg)       sendToUnity(data.msg);
+        if (data.type === "unity" && data.msg)       handleUnityMessageFromIframe(data.msg);
         if (data.type === "modal") {
           if (data.action === "open")  openJoinModal();
           if (data.action === "close") closeJoinModal();
@@ -594,6 +1075,8 @@
     auth.onAuthStateChanged(function (user) {
       if (user) {
         console.log("[Shell] Auth: signed in as", user.email);
+        ensureHomeForAuthenticatedUser(user);
+        resolveInitialAuth(user);
         loadUserData(user);
       } else {
         console.log("[Shell] Auth: signed out");
@@ -601,6 +1084,7 @@
         if (current !== "login" && current !== "signup") {
           navigate("login");
         }
+        resolveInitialAuth(null);
       }
     });
 
@@ -749,6 +1233,15 @@
         loadClassrooms();
         loadSubmissions();
         loadNotifications();
+      }).catch(function (err) {
+        handleDataAccessError(err, "loadUserData");
+        if (isUnauthorizedError(err)) return;
+
+        // Keep signed-in users in app mode even when network is unavailable.
+        ensureHomeForAuthenticatedUser(user);
+        loadClassrooms();
+        loadSubmissions();
+        loadNotifications();
       });
     }
 
@@ -779,7 +1272,7 @@
           currentNotifications = all.slice(0, 20);
           document.getElementById("notif-badge").style.display = unread > 0 ? "block" : "none";
           broadcastToFrame("notifications", { type: "notifications", data: currentNotifications });
-        }, function(err) { console.error("Notif listener error:", err); });
+        }, function(err) { handleDataAccessError(err, "notifications_listener"); });
     }
 
     /* ==========================================================
@@ -820,7 +1313,7 @@
               });
               broadcastToFrame("home", { type: "classrooms", data: classrooms, user: currentUserData });
             });
-        }, function(err) { console.error("Classrooms listener error:", err); });
+        }, function(err) { handleDataAccessError(err, "classrooms_listener"); });
     }
 
     /* ==========================================================
@@ -874,7 +1367,11 @@
                   .where("classroomId", "==", classroomId)
                   .onSnapshot(function (subSnap) {
                     var subMap = {};
-                    subSnap.forEach(function (s) { var sd = s.data(); subMap[sd.experimentId] = sd; });
+                    subSnap.forEach(function (s) {
+                      var sd = s.data();
+                      enrichSubmission(sd);
+                      subMap[sd.experimentId] = sd;
+                    });
                     experiments.forEach(function (e) {
                       if (subMap[e.id]) {
                         var sub = subMap[e.id];
@@ -894,12 +1391,113 @@
               }
             });
         });
-      }, function(err) { console.error("Classroom detail listener error:", err); });
+      }, function(err) { handleDataAccessError(err, "classroom_detail_listener"); });
     }
 
     /* ==========================================================
        Load all submissions for the student
        ========================================================== */
+    function normalizeSubmissionStatus(status) {
+      var s = status == null ? "" : String(status).trim().toLowerCase();
+      if (!s) return "in_progress";
+      if (s === "in progress") return "in_progress";
+      if (s === "needs revision") return "needs_revision";
+      return s;
+    }
+
+    function getSceneSubmissionEntries(submission) {
+      if (!submission || !submission.sceneSubmissions || typeof submission.sceneSubmissions !== "object") return [];
+      return Object.keys(submission.sceneSubmissions).map(function (key) {
+        var item = submission.sceneSubmissions[key] || {};
+        item.sceneKey = item.sceneKey || key;
+        return item;
+      });
+    }
+
+    function parseSceneSummary(submission) {
+      if (!submission || typeof submission !== "object") return null;
+      var raw = submission.sceneSummary;
+      if (raw && typeof raw === "object") {
+        var total = Number(raw.totalSceneCount);
+        var submittedWaiting = Number(raw.submittedWaitingCount);
+        var graded = Number(raw.gradedCount);
+        var needsRevision = Number(raw.needsRevisionCount);
+        var inProgress = Number(raw.inProgressCount);
+        var submittedOrDone = Number(raw.submittedOrDoneCount);
+        if (isFinite(total) && total > 0) {
+          return {
+            totalSceneCount: Math.round(total),
+            submittedWaitingCount: isFinite(submittedWaiting) ? Math.max(0, Math.round(submittedWaiting)) : 0,
+            gradedCount: isFinite(graded) ? Math.max(0, Math.round(graded)) : 0,
+            needsRevisionCount: isFinite(needsRevision) ? Math.max(0, Math.round(needsRevision)) : 0,
+            inProgressCount: isFinite(inProgress) ? Math.max(0, Math.round(inProgress)) : 0,
+            submittedOrDoneCount: isFinite(submittedOrDone) ? Math.max(0, Math.round(submittedOrDone)) : 0
+          };
+        }
+      }
+
+      var scenes = getSceneSubmissionEntries(submission);
+      if (!scenes.length) return null;
+
+      var submittedWaitingCount = 0;
+      var gradedCount = 0;
+      var needsRevisionCount = 0;
+
+      scenes.forEach(function (scene) {
+        var status = normalizeSubmissionStatus(scene.status);
+        if (status === "submitted") submittedWaitingCount += 1;
+        else if (status === "graded" || status === "correct" || status === "incorrect") gradedCount += 1;
+        else if (status === "needs_revision") needsRevisionCount += 1;
+      });
+
+      var submittedOrDoneCount = submittedWaitingCount + gradedCount + needsRevisionCount;
+      var totalSceneCount = Number(submission.totalSceneCount);
+      if (!isFinite(totalSceneCount) || totalSceneCount <= 0) {
+        totalSceneCount = scenes.length;
+      } else {
+        totalSceneCount = Math.round(totalSceneCount);
+      }
+
+      return {
+        totalSceneCount: totalSceneCount,
+        submittedWaitingCount: submittedWaitingCount,
+        gradedCount: gradedCount,
+        needsRevisionCount: needsRevisionCount,
+        inProgressCount: Math.max(0, totalSceneCount - submittedOrDoneCount),
+        submittedOrDoneCount: submittedOrDoneCount
+      };
+    }
+
+    function deriveSubmissionStatus(submission, summary) {
+      if (summary) {
+        if (summary.needsRevisionCount > 0) return "needs_revision";
+        if (summary.submittedOrDoneCount < summary.totalSceneCount) return "in_progress";
+        if (summary.submittedWaitingCount > 0) return "submitted";
+        if (summary.gradedCount >= summary.totalSceneCount) return "graded";
+      }
+      return normalizeSubmissionStatus(submission && submission.status);
+    }
+
+    function enrichSubmission(submission) {
+      if (!submission || typeof submission !== "object") return submission;
+      var summary = parseSceneSummary(submission);
+      submission.sceneSummary = summary;
+      submission.effectiveStatus = deriveSubmissionStatus(submission, summary);
+      submission.hasSceneSubmissions = !!(summary && summary.totalSceneCount > 0);
+      return submission;
+    }
+
+    function isCompletedSubmission(submission) {
+      var status = normalizeSubmissionStatus(submission && (submission.effectiveStatus || submission.status));
+      var summary = submission && submission.sceneSummary;
+      if (summary && summary.totalSceneCount > 0) {
+        if (summary.needsRevisionCount > 0) return false;
+        if (summary.submittedOrDoneCount < summary.totalSceneCount) return false;
+      }
+      if (status === "needs_revision" || status === "in_progress") return false;
+      return status === "submitted" || status === "graded" || status === "correct" || status === "incorrect";
+    }
+
     function loadSubmissions() {
       if (!currentUserData) return;
       if (unsubs.submissions) unsubs.submissions();
@@ -912,8 +1510,8 @@
           snap.forEach(function (doc) {
             var s = doc.data();
             s.id = doc.id;
-            // "submitted" is considered completed by the user (it moves out of To Do)
-            if (s.status === "submitted" || s.status === "graded" || s.status === "correct" || s.status === "incorrect" || s.status === "needs_revision") {
+            enrichSubmission(s);
+            if (isCompletedSubmission(s)) {
               completed.push(s);
             } else {
               active.push(s);
@@ -922,7 +1520,7 @@
 
           // Also load experiments that are assigned to student's classrooms but not yet submitted
           loadAssignedExperiments(active, completed);
-        }, function(err) { console.error("Submissions listener error:", err); });
+        }, function(err) { handleDataAccessError(err, "submissions_listener"); });
     }
 
     function loadAssignedExperiments(existingActive, existingCompleted) {
@@ -979,7 +1577,7 @@
                   if (!sub.modelUsername && sub.instructorId) sub.modelUsername = sub.instructorId;
                   e.submission = sub;
                 }
-                var isCompleted = sub && (sub.status === "submitted" || sub.status === "graded" || sub.status === "correct" || sub.status === "incorrect" || sub.status === "needs_revision");
+                var isCompleted = !!(sub && isCompletedSubmission(sub));
                 // Only show published/active experiments to students
                 if (!isCompleted && e.status !== "draft") {
                   activeAssignments.push(e);
