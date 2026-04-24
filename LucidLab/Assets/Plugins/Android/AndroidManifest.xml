@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example.lucidlab" xmlns:tools="http://schemas.android.com/tools">
   <!-- This comment is to prevent AnalyticsFixPropertyRemover from re-adding problematic tags. -->
+  <uses-permission android:name="android.permission.RECORD_AUDIO" />
+  <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
   <application android:hardwareAccelerated="true" android:extractNativeLibs="true">
     <activity android:name="com.unity3d.player.UnityPlayerActivity" android:theme="@style/UnityThemeSelector">
       <intent-filter>
