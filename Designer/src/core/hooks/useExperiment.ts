@@ -1,8 +1,7 @@
-import { setDoc, updateDoc } from '@firebase/firestore';
 import { useFirestore, useFirestoreCollectionData, useFirestoreDocData } from 'reactfire';
+import { setDocument } from '../../api/firestore';
 import {
   getExperimentDocRef,
-  getSceneDocRef,
   getScenesCollectionRef,
 } from '../states/references';
 
@@ -14,20 +13,17 @@ export default function useExperiment(expName: string) {
   );
 
   async function createSelf() {
-    const experimentRef = getExperimentDocRef(fsapp, expName);
-    // Important: use merge so we don't wipe fields like instructorId/title/category/etc.
-    await setDoc(
-      experimentRef,
+    await setDocument(
+      `experiments/${expName}`,
       {
         name: expName,
       },
-      { merge: true },
+      true,
     );
   }
 
   async function updateExperiment(fields: { title?: string; description?: string; category?: string; thumbnailUrl?: string }) {
-    const experimentRef = getExperimentDocRef(fsapp, expName);
-    await setDoc(experimentRef, fields, { merge: true });
+    await setDocument(`experiments/${expName}`, fields, true);
   }
 
   async function createScene(name: string) {
@@ -35,12 +31,11 @@ export default function useExperiment(expName: string) {
 
     const scenesList = (scenes as any[]) ?? [];
     const nextIndex = scenesList.length + 1;
-    const sceneRef = getSceneDocRef(fsapp, expName, name);
-    await setDoc(sceneRef, {
+    await setDocument(`experiments/${expName}/scenes/${name}`, {
       name,
       description: '',
       index: nextIndex,
-    });
+    }, false);
   }
 
   return {

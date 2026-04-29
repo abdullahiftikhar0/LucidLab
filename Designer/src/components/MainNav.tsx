@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { doc, getDoc, getFirestore } from 'firebase/firestore';
 import { getAuth, signOut } from 'firebase/auth';
 import { useFirebaseApp } from 'reactfire';
 import { useAuth } from '../contexts/AuthContext';
+import { queryCollection } from '../api/firestore';
 
 const NAV_LINKS = [
   { to: '/dashboard',   label: 'Dashboard' },
@@ -14,7 +14,6 @@ export default function MainNav() {
   const app = useFirebaseApp();
 
   // Fix: memoize Firebase instances so they're not recreated on every render
-  const db   = useMemo(() => getFirestore(app), [app]);
   const auth = useMemo(() => getAuth(app),       [app]);
 
   const { currentUser } = useAuth();
@@ -30,8 +29,12 @@ export default function MainNav() {
     let mounted = true;
     (async () => {
       try {
-        const snap = await getDoc(doc(db, 'users', currentUser.uid));
-        const data = snap.exists() ? snap.data() : null;
+        const snap = await queryCollection<any>({
+          collection: 'users',
+          where: [{ field: 'uid', op: '==', value: currentUser.uid }],
+          limit: 1,
+        });
+        const data = snap.items?.[0] ?? null;
         const name =
           data?.displayName ||
           data?.name        ||
@@ -45,7 +48,7 @@ export default function MainNav() {
       }
     })();
     return () => { mounted = false; };
-  }, [currentUser, db]);
+  }, [currentUser]);
 
   // Fix: close mobile menu on route change
   useEffect(() => {

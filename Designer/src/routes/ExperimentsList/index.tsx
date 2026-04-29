@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getFirestore, collection, query, where, getDocs, deleteDoc, doc, serverTimestamp, updateDoc, arrayRemove, setDoc } from 'firebase/firestore';
-import { useFirebaseApp } from 'reactfire';
 import { useAuth } from '../../contexts/AuthContext';
 import { deleteExperimentThumbnail } from '../../utils/storageHelpers';
+import { deleteDocument, patchDocument, queryCollection, setDocument } from '../../api/firestore';
 import MainNav from '../../components/MainNav';
 import PatternPage from '../../components/layout/PatternPage';
 import AppFooter from '../../components/layout/AppFooter';
@@ -79,9 +78,7 @@ function toneForCategory(category: string | undefined, seed: string) {
 }
 
 export default function ExperimentsList() {
-  const app = useFirebaseApp();
-  const db = getFirestore(app);
-  const { currentUser } = useAuth();
+  const { currentUser, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const [experiments, setExperiments] = useState<Experiment[]>([]);
@@ -93,15 +90,18 @@ export default function ExperimentsList() {
   const [brokenThumbnailIds, setBrokenThumbnailIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (currentUser) loadExperiments();
-  }, [currentUser]);
+    if (authLoading || !currentUser) return;
+    loadExperiments();
+  }, [authLoading, currentUser]);
 
   async function loadExperiments() {
     setLoading(true);
     try {
-      const q = query(collection(db, 'experiments'), where('instructorId', '==', currentUser!.uid));
-      const snap = await getDocs(q);
-      const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as Experiment));
+      const snap = await queryCollection<Experiment>({
+        collection: 'experiments',
+        where: [{ field: 'instructorId', op: '==', value: currentUser!.uid }],
+      });
+      const all = (snap.items ?? []).map((d: any) => ({ id: d.id, ...d } as Experiment));
       all.sort((a, b) => {
         const aTime = a.updatedAt?.toMillis ? a.updatedAt.toMillis() : 0;
         const bTime = b.updatedAt?.toMillis ? b.updatedAt.toMillis() : 0;
@@ -117,9 +117,9 @@ export default function ExperimentsList() {
   async function createExperiment() {
     setIsCreating(true);
     try {
-      const expRef = doc(collection(db, 'experiments'));
-      await setDoc(expRef, {
-        name: expRef.id,
+      const id = crypto.randomUUID().replace(/-/g, '').slice(0, 20);
+      await setDocument(`experiments/${id}`, {
+        name: id,
         title: '',
         category: 'General Science',
         status: 'draft',
@@ -127,10 +127,10 @@ export default function ExperimentsList() {
         experimentCode: '',
         classroomIds: [],
         thumbnailUrl: '',
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       });
-      navigate(`/experiment/${expRef.id}/setup`);
+      navigate(`/experiment/${id}/setup`);
     } catch (e) {
       console.error(e);
       setIsCreating(false);
@@ -140,19 +140,13 @@ export default function ExperimentsList() {
   async function deleteExperiment(id: string) {
     try {
       const exp = experiments.find(e => e.id === id);
-      if (exp && exp.classroomIds && exp.classroomIds.length > 0) {
-        await Promise.all(
-          exp.classroomIds.map(cId =>
-            updateDoc(doc(db, 'classrooms', cId), { experimentIds: arrayRemove(id) }).catch((err: any) => console.warn('Failed to clean up classroom reference:', err))
-          )
-        );
-      }
+      // Classroom reverse-reference cleanup is handled server-side in later phase.
 
       if (exp?.thumbnailUrl) {
         await deleteExperimentThumbnail(id, exp.thumbnailUrl);
       }
 
-      await deleteDoc(doc(db, 'experiments', id));
+      await deleteDocument(`experiments/${id}`);
       setExperiments(prev => prev.filter(e => e.id !== id));
     } catch (e) {
       console.error(e);
@@ -163,7 +157,7 @@ export default function ExperimentsList() {
   async function togglePublish(exp: Experiment) {
     try {
       const newStatus = exp.status === 'published' ? 'draft' : 'published';
-      await updateDoc(doc(db, 'experiments', exp.id), { status: newStatus, updatedAt: serverTimestamp() });
+      await patchDocument(`experiments/${exp.id}`, { status: newStatus, updatedAt: new Date().toISOString() });
       await loadExperiments();
     } catch (e) {
       console.error('Failed to toggle publish state', e);

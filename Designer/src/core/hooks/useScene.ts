@@ -1,10 +1,9 @@
 import { useFirestore, useFirestoreCollectionData, useFirestoreDocData } from 'reactfire';
-import { deleteDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { supabase } from '../../supabaseClient';
 import { ExportedNodes } from '../../components/logic_designer/node_exporter';
+import { deleteDocument, patchDocument, setDocument } from '../../api/firestore';
+import { deleteStoragePathApi, listMarkersApi, uploadMarkerApi } from '../../api/storage';
 import {
   getSceneDocRef,
-  getSceneObjectDocRef,
   getSceneObjectsCollectionRef
 } from '../states/references';
 import { SceneMarker, SceneObjectState } from '../states/types';
@@ -67,7 +66,7 @@ export default function useScene(expName: string, sceneName: string) {
       showDesc: true,
     };
 
-    setDoc(getSceneObjectDocRef(fsapp, expName, sceneName, name), obj);
+    setDocument(`experiments/${expName}/scenes/${sceneName}/objects/${name}`, obj, false);
   }
 
   async function addMarker(name: string, file: File) {
@@ -85,22 +84,9 @@ export default function useScene(expName: string, sceneName: string) {
         console.log(`[useScene] Converted to PNG: ${uploadFile.size} bytes`);
       }
 
-      // Upload to Supabase
-      console.log(`[useScene] Uploading to Supabase bucket 'markers' as '${markerId}'...`);
-      const { data, error } = await supabase.storage
-        .from('markers')
-        .upload(`${markerId}`, uploadFile, { contentType: 'image/png' });
-
-      if (error) {
-        console.error('[useScene] Supabase upload FAILED:', error);
-        throw error;
-      }
-
-      console.log(`[useScene] Supabase upload OK, path='${data.path}'`);
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('markers')
-        .getPublicUrl(data.path);
+      console.log(`[useScene] Uploading marker through backend as '${markerId}'...`);
+      const upload = await uploadMarkerApi(markerId, uploadFile);
+      const publicUrl = upload.publicUrl;
 
       console.log(`[useScene] Supabase public URL: ${publicUrl}`);
 
@@ -112,7 +98,7 @@ export default function useScene(expName: string, sceneName: string) {
 
       // Update Firestore with marker metadata
       console.log(`[useScene] Writing marker to Firestore: experiments/${expName}/scenes/${sceneName}`, newMarker);
-      await updateDoc(getSceneDocRef(fsapp, expName, sceneName), {
+      await patchDocument(`experiments/${expName}/scenes/${sceneName}`, {
         markers: [...defaultMarkers, newMarker],
       });
       
@@ -124,38 +110,26 @@ export default function useScene(expName: string, sceneName: string) {
   }
 
   async function listMarkers() {
-    const { data, error } = await supabase.storage
-      .from('markers')
-      .list();
-
-    if (error) {
-      console.error('Error listing markers from Supabase:', error);
+    const result = await listMarkersApi().catch((error) => {
+      console.error('Error listing markers from backend:', error);
+      return null;
+    });
+    if (!result) {
       return [];
     }
-
-    return data.map(item => ({
-      id: item.name,
-      name: item.name,
-      imageUrl: supabase.storage.from('markers').getPublicUrl(item.name).data.publicUrl
-    }));
+    return result.items ?? [];
   }
 
   async function deleteMarker(markerId: string) {
     try {
-      // Delete from Supabase Storage
-      const { error: storageError } = await supabase.storage
-        .from('markers')
-        .remove([markerId]);
-
-      if (storageError) {
-        console.error('Error deleting marker from Supabase:', storageError);
-        // Continue to update Firestore even if storage deletion fails
-      }
+      await deleteStoragePathApi('markers', markerId).catch((error) => {
+        console.error('Error deleting marker from backend storage:', error);
+      });
 
       // Update Firestore to remove marker metadata
       const currentMarkers: SceneMarker[] = scene?.markers ?? [];
       const updatedMarkers = currentMarkers.filter(m => m.id !== markerId);
-      await updateDoc(getSceneDocRef(fsapp, expName, sceneName), {
+      await patchDocument(`experiments/${expName}/scenes/${sceneName}`, {
         markers: updatedMarkers,
       });
       
@@ -167,14 +141,14 @@ export default function useScene(expName: string, sceneName: string) {
   }
 
   function setSceneLogic(nodes: ExportedNodes) {
-    updateDoc(getSceneDocRef(fsapp, expName, sceneName), {
+    patchDocument(`experiments/${expName}/scenes/${sceneName}`, {
       // @ts-ignore
       sceneLogic: nodes,
     });
   }
 
   function setDescription(description: string) {
-    updateDoc(getSceneDocRef(fsapp, expName, sceneName), {
+    patchDocument(`experiments/${expName}/scenes/${sceneName}`, {
       description: description,
     });
   }
@@ -189,37 +163,37 @@ export default function useScene(expName: string, sceneName: string) {
         objectName,
         position,
       });
-      updateDoc(getSceneObjectDocRef(fsapp, expName, sceneName, objectName), {
+      patchDocument(`experiments/${expName}/scenes/${sceneName}/objects/${objectName}`, {
         position: position,
       });
     }
 
     function setScale(scale: [number, number, number]) {
-      updateDoc(getSceneObjectDocRef(fsapp, expName, sceneName, objectName), {
+      patchDocument(`experiments/${expName}/scenes/${sceneName}/objects/${objectName}`, {
         scale: scale,
       });
     }
 
     function setRotation(rotation: [number, number, number]) {
-      updateDoc(getSceneObjectDocRef(fsapp, expName, sceneName, objectName), {
+      patchDocument(`experiments/${expName}/scenes/${sceneName}/objects/${objectName}`, {
         rotation: rotation,
       });
     }
 
     function setHasGravity(hasGravity: boolean) {
-      updateDoc(getSceneObjectDocRef(fsapp, expName, sceneName, objectName), {
+      patchDocument(`experiments/${expName}/scenes/${sceneName}/objects/${objectName}`, {
         hasGravity: hasGravity,
       });
     }
 
     function setGrabbable(isGrabbable: boolean) {
-      updateDoc(getSceneObjectDocRef(fsapp, expName, sceneName, objectName), {
+      patchDocument(`experiments/${expName}/scenes/${sceneName}/objects/${objectName}`, {
         isGrabbable: isGrabbable,
       });
     }
 
     function setShowDesc(showDesc: boolean) {
-      updateDoc(getSceneObjectDocRef(fsapp, expName, sceneName, objectName), {
+      patchDocument(`experiments/${expName}/scenes/${sceneName}/objects/${objectName}`, {
         showDesc: showDesc,
       });
     }
@@ -231,19 +205,19 @@ export default function useScene(expName: string, sceneName: string) {
         objectName,
         color,
       });
-      updateDoc(getSceneObjectDocRef(fsapp, expName, sceneName, objectName), {
+      patchDocument(`experiments/${expName}/scenes/${sceneName}/objects/${objectName}`, {
         color: color,
       });
     }
 
     function setMarkerId(markerId: string) {
-      updateDoc(getSceneObjectDocRef(fsapp, expName, sceneName, objectName), {
+      patchDocument(`experiments/${expName}/scenes/${sceneName}/objects/${objectName}`, {
         markerId: markerId,
       });
     }
 
     function deleteSelf() {
-      deleteDoc(getSceneObjectDocRef(fsapp, expName, sceneName, objectName));
+      deleteDocument(`experiments/${expName}/scenes/${sceneName}/objects/${objectName}`);
     }
 
     return {
@@ -262,7 +236,7 @@ export default function useScene(expName: string, sceneName: string) {
 
   function addMarkerManual(marker: SceneMarker) {
     const defaultMarkers = scene?.markers ?? [];
-    updateDoc(getSceneDocRef(fsapp, expName, sceneName), {
+    patchDocument(`experiments/${expName}/scenes/${sceneName}`, {
       markers: [...defaultMarkers, marker],
     });
   }

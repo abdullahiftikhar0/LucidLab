@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
-  getFirestore, doc, getDoc, updateDoc, deleteDoc,
+  doc, getDoc, updateDoc, deleteDoc,
   collection, query, where, getDocs, addDoc,
   serverTimestamp, arrayUnion, arrayRemove, increment,
-} from 'firebase/firestore';
+} from '../../api/firestoreCompat';
 import { useFirebaseApp } from 'reactfire';
 import { useAuth } from '../../contexts/AuthContext';
 import StatusBadge from '../../components/StatusBadge';
@@ -47,8 +47,8 @@ export default function ClassroomDetail() {
   const { classroomId } = useParams<{ classroomId: string }>();
   const app = useFirebaseApp();
   // Fix: memoize Firebase instance — was being recreated on every render
-  const db = useMemo(() => getFirestore(app), [app]);
-  const { currentUser } = useAuth();
+  const db = useMemo(() => app, [app]);
+  const { currentUser, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const [classroom, setClassroom]               = useState<ClassroomData | null>(null);
@@ -126,8 +126,9 @@ export default function ClassroomDetail() {
 
   // Fix: added loadAll to deps array
   useEffect(() => {
-    if (classroomId) loadAll();
-  }, [classroomId, loadAll]);
+    if (authLoading || !classroomId) return;
+    loadAll();
+  }, [authLoading, classroomId, loadAll]);
 
   // Fix: revoke object URLs on unmount to prevent memory leaks
   useEffect(() => {

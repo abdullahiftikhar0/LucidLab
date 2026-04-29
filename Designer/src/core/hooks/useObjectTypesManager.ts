@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from 'react';
 import { LucidLabContext } from '../../app';
-import { supabase } from '../../supabaseClient';
+import { listObjectTypesApi, uploadObjectTypeApi } from '../../api/storage';
 
 export type ObjectType = {
   name: string;
@@ -14,36 +14,24 @@ export type ObjectTypesManager = {
 };
 
 export function useObjectTypesManager(): ObjectTypesManager {
-  const { username } = useContext(LucidLabContext);
+  const { username, loading } = useContext(LucidLabContext);
   const [objects, setObjects] = useState<ObjectType[]>([]);
 
   async function getObjects() {
-    if (!username) return {} as Record<string, ObjectType>;
-
-    const { data, error } = await supabase.storage
-      .from('object-types')
-      .list(username + '/');
-
-    if (error) {
-      console.error('Error fetching objects from Supabase:', error);
-      return {};
-    }
+    if (loading || !username) return {} as Record<string, ObjectType>;
+    const result = await listObjectTypesApi().catch((error) => {
+      console.error('Error fetching objects from backend:', error);
+      return { items: [] };
+    });
 
     const ret = {} as Record<string, ObjectType>;
-
-    for (const item of data) {
-      const name = item.name.split('.')[0];
-      const ext = item.name.split('.')[1];
-      if (ext !== 'glb') continue;
-
-      const { data: urlData } = supabase.storage
-        .from('object-types')
-        .getPublicUrl(`${username}/${item.name}`);
-
+    for (const item of result.items ?? []) {
+      const name = item.name ?? item.id;
+      if (!item.url) continue;
       ret[name] = {
-        name: name,
-        objFile: urlData.publicUrl,
-      } as ObjectType;
+        name,
+        objFile: item.url,
+      };
     }
 
     return ret;
@@ -61,7 +49,7 @@ export function useObjectTypesManager(): ObjectTypesManager {
 
   useEffect(() => {
     updateObjectsList();
-  }, [username]);
+  }, [username, loading]);
 
   async function uploadObject(objName: string, objFile: Blob) {
     if (!username) {
@@ -69,20 +57,13 @@ export function useObjectTypesManager(): ObjectTypesManager {
       return false;
     }
 
-    const filePath = `${username}/${objName}.glb`;
-
-    // Upload the file
-    const { error: uploadError } = await supabase.storage
-      .from('object-types')
-      .upload(filePath, objFile, {
-        upsert: true,
-      });
-
-    if (uploadError) {
-      console.error('Error uploading to Supabase:', uploadError);
+    const upload = await uploadObjectTypeApi(objName, objFile).catch((error) => {
+      console.error('Error uploading object to backend:', error);
+      return null;
+    });
+    if (!upload?.publicUrl) {
       return false;
     }
-
     updateObjectsList();
     return true;
   }

@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, updateProfile } from 'firebase/auth';
-import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirebaseApp } from 'reactfire';
 import { useAuth } from '../../contexts/AuthContext';
+import { queryCollection, setDocument } from '../../api/firestore';
 import '../../styles/pages/login.css';
 
 export default function LoginPage() {
   const app = useFirebaseApp();
   const auth = getAuth(app);
-  const db = getFirestore(app);
   const navigate = useNavigate();
   const { currentUser, loading: authLoading } = useAuth();
 
@@ -42,19 +41,22 @@ export default function LoginPage() {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
-      if (!userDoc.exists()) {
-        await setDoc(userDocRef, {
+      const userDoc = await queryCollection<any>({
+        collection: 'users',
+        where: [{ field: 'uid', op: '==', value: user.uid }],
+        limit: 1,
+      });
+      if ((userDoc.items ?? []).length === 0) {
+        await setDocument(`users/${user.uid}`, {
           uid: user.uid,
           email: user.email,
           displayName: user.displayName || '',
           role: 'instructor',
           institution: '',
           classroomIds: [],
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }, true);
       }
       navigate('/dashboard');
     } catch (err: any) {
@@ -74,9 +76,13 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const { user } = await signInWithEmailAndPassword(auth, email, password);
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (userDoc.exists()) {
-        const data = userDoc.data();
+      const userDoc = await queryCollection<any>({
+        collection: 'users',
+        where: [{ field: 'uid', op: '==', value: user.uid }],
+        limit: 1,
+      });
+      const data = userDoc.items?.[0];
+      if (data) {
         const firestoreName = data?.displayName?.trim?.();
         if (firestoreName && !user.displayName) {
           await updateProfile(user, { displayName: firestoreName });

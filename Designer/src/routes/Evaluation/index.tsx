@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { getFirestore, collection, query, where, getDocs, doc, getDoc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, updateDoc, serverTimestamp, addDoc } from '../../api/firestoreCompat';
 import { useFirebaseApp } from 'reactfire';
 import { useAuth } from '../../contexts/AuthContext';
 import MainNav from '../../components/MainNav';
@@ -197,7 +197,7 @@ function sceneSummaryText(summary: SceneSummary) {
 export default function EvaluationPage() {
   const { classroomId, experimentId } = useParams<{ classroomId: string; experimentId: string }>();
   const app = useFirebaseApp();
-  const db = getFirestore(app);
+  const db = app;
   const { currentUser } = useAuth();
 
   const [classroom, setClassroom] = useState<ClassroomData | null>(null);
