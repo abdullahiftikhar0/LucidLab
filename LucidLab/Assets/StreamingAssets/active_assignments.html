@@ -546,6 +546,8 @@
         var empty = document.getElementById("empty-state");
         if (skeletons) skeletons.remove();
 
+        list.innerHTML = "";
+
         var countEl = document.getElementById("total-count");
 
         if (!experiments || experiments.length === 0) {

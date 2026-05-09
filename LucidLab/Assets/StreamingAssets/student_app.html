@@ -875,6 +875,7 @@
     <iframe id="frame-privacy"                       src="privacy_policy.html"></iframe>
     <iframe id="frame-app_settings"                   src="app_settings.html"></iframe>
     <iframe id="frame-notifications"                 src="notifications.html"></iframe>
+    <iframe id="frame-demo_experiments"              src="demo_experiments.html"></iframe>
   </div>
 
   <!-- ===== Join-Class Modal (inline) ===== -->
@@ -1078,7 +1079,8 @@
       help:             document.getElementById("frame-help"),
       privacy:          document.getElementById("frame-privacy"),
       app_settings:     document.getElementById("frame-app_settings"),
-      notifications:    document.getElementById("frame-notifications")
+      notifications:    document.getElementById("frame-notifications"),
+      demo_experiments: document.getElementById("frame-demo_experiments")
     };
 
     var screensDiv = document.getElementById("screens");
@@ -1597,6 +1599,7 @@
           var isActive = (t === target) ||
                          (target === "completed" && t === "experiments") ||
                          (target === "classroom" && t === "home") ||
+                         (target === "demo_experiments" && t === "home") ||
                          (profileSubScreens.indexOf(target) !== -1 && t === "profile");
           btn.classList.toggle("active", isActive);
         });
@@ -1765,10 +1768,14 @@
       if (sceneName) payload.initialSceneName = sceneName;
       else delete payload.initialSceneName;
 
-      closeSceneLaunchModal(false);
+      sceneLaunchList.innerHTML = '<div class="scene-launch-loading"><span class="material-symbols-outlined animate-spin" style="display:block; font-size: 24px; margin-bottom: 8px;">progress_activity</span>Downloading models and markers...</div>';
+
       pendingStartArLaunch = null;
       sendToUnity("start_ar:" + JSON.stringify(payload));
     }
+    
+    // Expose for Unity to close it after loading completes
+    window.closeSceneLaunchModal = closeSceneLaunchModal;
 
     function renderSceneLaunchNoScenes() {
       sceneLaunchList.innerHTML =
@@ -2317,11 +2324,21 @@
                         e.submission = sub;
                       }
                     });
+                    experiments.sort(function(a, b) {
+                      var t1 = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime()) : 0;
+                      var t2 = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime()) : 0;
+                      return t2 - t1;
+                    });
                     broadcastToFrame("classroom", { type: "classroom_detail", classroom: classroom, experiments: experiments, selectedExperimentId: selectedExperimentId });
                     // Only use selectedExperimentId once
                     selectedExperimentId = null; 
                   });
               } else {
+                experiments.sort(function(a, b) {
+                  var t1 = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime()) : 0;
+                  var t2 = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime()) : 0;
+                  return t2 - t1;
+                });
                 broadcastToFrame("classroom", { type: "classroom_detail", classroom: classroom, experiments: experiments, selectedExperimentId: selectedExperimentId });
                 selectedExperimentId = null;
               }
@@ -2532,6 +2549,18 @@
                 if (!s.modelUsername && s.instructorId) s.modelUsername = s.instructorId;
                 s.experimentTitle = expNameMap[s.experimentId] || "Experiment";
                 s.classroomName = classNameMap[s.classroomId] || (fallbackClass && fallbackClass.name) || "";
+              });
+
+              activeAssignments.sort(function(a, b) {
+                var t1 = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime()) : 0;
+                var t2 = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime()) : 0;
+                return t2 - t1;
+              });
+
+              existingCompleted.sort(function(a, b) {
+                var t1 = a.updatedAt ? (a.updatedAt.toDate ? a.updatedAt.toDate().getTime() : new Date(a.updatedAt).getTime()) : (a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime()) : 0);
+                var t2 = b.updatedAt ? (b.updatedAt.toDate ? b.updatedAt.toDate().getTime() : new Date(b.updatedAt).getTime()) : (b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime()) : 0);
+                return t2 - t1;
               });
 
               broadcastToFrame("experiments", { type: "assignments", data: activeAssignments, user: currentUserData });

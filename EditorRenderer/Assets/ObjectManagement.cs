@@ -44,6 +44,13 @@ public class ObjectManagement : MonoBehaviour
 
     void CreateObject(string objectJson) {
         var obj = JsonUtility.FromJson<SceneObject>(objectJson);
+        
+        // If object already exists, dispose it first to ensure a clean sync
+        if (sceneObjsDict.TryGetValue(obj.objectName, out var existing)) {
+            existing.Dispose();
+            sceneObjsDict.Remove(obj.objectName);
+        }
+
         if (sceneObjsDict.TryAdd(obj.objectName, obj)) {
             obj.InitGameobject();
         }

@@ -126,6 +126,7 @@ namespace Assets.Interaction {
 
             Debug.Log($"[ARExperimentManager] Downloading {markers.Count} dynamic markers...");
 
+            var jobTasks = new List<Task>();
             foreach (var marker in markers) {
                 if (string.IsNullOrEmpty(marker.imageUrl)) {
                     Debug.LogWarning($"[ARExperimentManager] Marker '{marker.id}' has no imageUrl, skipping.");
@@ -170,7 +171,11 @@ namespace Assets.Interaction {
 
                 Debug.LogWarning($"[ARExperimentManager] Adding marker '{marker.id}' ({texture.width}x{texture.height}) to AR Library...");
                 var jobState = mutableLibrary.ScheduleAddImageWithValidationJob(texture, marker.id, 0.15f);
-                _ = WaitForImageJobAsync(jobState, mutableLibrary, marker.id);
+                jobTasks.Add(WaitForImageJobAsync(jobState, mutableLibrary, marker.id));
+            }
+
+            if (jobTasks.Count > 0) {
+                await Task.WhenAll(jobTasks);
             }
 
             // Apply new library — scheduled jobs complete asynchronously after assignment

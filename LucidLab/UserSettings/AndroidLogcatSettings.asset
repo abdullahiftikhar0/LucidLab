@@ -1,12 +1,12 @@
 {
-    "m_SelectedDeviceId": "3414636581000C3",
+    "m_SelectedDeviceId": "ZF6523HFKG",
     "m_SelectedProcess": {
-        "deviceId": "3414636581000C3",
+        "deviceId": "ZF6523HFKG",
         "name": "com.example.lucidlab",
-        "processId": 12497,
+        "processId": 27286,
         "exited": false
     },
-    "m_SelectedPriority": 3,
+    "m_SelectedPriority": 0,
     "m_KnownProcessesForSerialization": [
         {
             "deviceId": "3414636581000C3",
@@ -107,61 +107,49 @@
         {
             "deviceId": "ZF6523HFKG",
             "name": "com.example.lucidlab",
-            "processId": 25600,
-            "exited": true
-        },
-        {
-            "deviceId": "ZF6523HFKG",
-            "name": "com.motorola.launcher3",
-            "processId": 32155,
-            "exited": false
-        },
-        {
-            "deviceId": "ZF6523HFKG",
-            "name": "com.example.lucidlab",
-            "processId": 19334,
+            "processId": 18629,
             "exited": true
         },
         {
             "deviceId": "ZF6523HFKG",
             "name": "com.example.lucidlab",
-            "processId": 23038,
+            "processId": 19871,
             "exited": true
         },
         {
             "deviceId": "ZF6523HFKG",
             "name": "com.example.lucidlab",
-            "processId": 24387,
+            "processId": 24976,
             "exited": true
         },
         {
             "deviceId": "ZF6523HFKG",
             "name": "com.example.lucidlab",
-            "processId": 30211,
+            "processId": 26888,
+            "exited": true
+        },
+        {
+            "deviceId": "ZF6523HFKG",
+            "name": "com.example.lucidlab",
+            "processId": 10576,
             "exited": false
         },
         {
             "deviceId": "ZF6523HFKG",
             "name": "com.example.lucidlab",
-            "processId": 5064,
+            "processId": 18035,
             "exited": false
         },
         {
             "deviceId": "ZF6523HFKG",
             "name": "com.example.lucidlab",
-            "processId": 12106,
+            "processId": 23178,
             "exited": false
         },
         {
             "deviceId": "ZF6523HFKG",
             "name": "com.example.lucidlab",
-            "processId": 16791,
-            "exited": false
-        },
-        {
-            "deviceId": "ZF6523HFKG",
-            "name": "com.example.lucidlab",
-            "processId": 21108,
+            "processId": 27286,
             "exited": false
         },
         {
@@ -303,7 +291,7 @@
         "AutoCapture": true
     },
     "m_FilterOptions": {
-        "m_Filter": "",
+        "m_Filter": "sce",
         "m_UseRegularExpressions": false,
         "m_MatchCase": false
     },

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Linq;
 using Assets.Logic;
 using Assets.Logic.Instructions;
@@ -6,6 +8,7 @@ using Assets.SceneManagement.Models;
 using Assets.Interaction;
 using Firebase.Extensions;
 using TMPro;
+using LucidLab.UI;
 using UnityEngine;
 
 namespace Assets.SceneManagement {
@@ -22,7 +25,7 @@ namespace Assets.SceneManagement {
         private bool _hasLaunchSceneSelection;
         private readonly bool _lockSceneToSelectedScene = true;
 
-        public async void SetCurrentScene(SceneData sceneData) {
+        public async Task SetCurrentScene(SceneData sceneData) {
             if (sceneData == null) {
                 Debug.LogWarning("[SceneManager] SetCurrentScene called with null sceneData.");
                 return;
@@ -128,7 +131,7 @@ namespace Assets.SceneManagement {
 
             _hasLaunchSceneSelection = true;
             HideDescription();
-            SetCurrentScene(selectedScene);
+            _ = SetCurrentScene(selectedScene);
         }
 
         private void OnMarkerDetected(string markerId, Transform markerTransform) {
@@ -146,7 +149,7 @@ namespace Assets.SceneManagement {
                     SceneOwnsMarker(s, markerId));
                 if (sceneWithMarker != null) {
                     HideDescription();
-                    SetCurrentScene(sceneWithMarker);
+                    _ = SetCurrentScene(sceneWithMarker);
                 }
                 return;
             }
@@ -158,7 +161,7 @@ namespace Assets.SceneManagement {
             var newScene = sceneLoader.Scenes.FirstOrDefault(s =>
                 SceneOwnsMarker(s, markerId));
             if (newScene != null) {
-                SetCurrentScene(newScene);
+                _ = SetCurrentScene(newScene);
             }
         }
 
@@ -229,7 +232,7 @@ namespace Assets.SceneManagement {
             if (!_hasLaunchSceneSelection) return;
             if (currentScene == null && sceneLoader.Scenes != null && sceneLoader.Scenes.Count > 0) {
                 Debug.Log("[SceneManager] Loading default scene for Plane Mode.");
-                SetCurrentScene(sceneLoader.Scenes[0]);
+                _ = SetCurrentScene(sceneLoader.Scenes[0]);
             }
         }
 
@@ -244,65 +247,89 @@ namespace Assets.SceneManagement {
                 return;
             }
 
-            Debug.Log($"[SceneManager] {sceneLoader.Scenes.Count} scene(s) loaded. Collecting markers...");
+            Debug.Log($"[SceneManager] {sceneLoader.Scenes.Count} scene(s) loaded. Collecting markers and models...");
 
-            // Global Marker Discovery Setup
-            var allMarkers = sceneLoader.Scenes
-                .Where(s => s.markers != null)
-                .SelectMany(s => s.markers).ToList();
-
-            Debug.LogWarning($"[SceneManager] Found {allMarkers.Count} total marker(s) across all scenes.");
-            foreach (var m in allMarkers) {
-                Debug.LogWarning($"[SceneManager]   → Marker id='{m.id}', name='{m.name}', imageUrl='{(string.IsNullOrEmpty(m.imageUrl) ? "<EMPTY>" : m.imageUrl)}'");
-            }
-
-            var arManager = FindObjectOfType<ARExperimentManager>();
-            if (arManager != null) {
-                Debug.Log("[SceneManager] ARExperimentManager found. Subscribing to events.");
-                ARExperimentManager.OnMarkerTracked += OnMarkerDetected;
-                ARExperimentManager.OnMarkerLost += OnMarkerLost;
-                if (allMarkers.Count > 0) {
-                    Debug.Log($"[SceneManager] Calling InitializeDynamicMarkersAsync with {allMarkers.Count} marker(s)...");
-                    await arManager.InitializeDynamicMarkersAsync(allMarkers);
-                    Debug.Log("[SceneManager] InitializeDynamicMarkersAsync returned.");
-                } else {
-                    Debug.LogWarning("[SceneManager] No markers to initialize — allMarkers is empty.");
-                }
-            } else {
-                Debug.LogError("[SceneManager] ARExperimentManager NOT FOUND in scene!");
-            }
-
-            var preselectedSceneName = PlayerPrefs.GetString("initialSceneName", "");
-            if (!string.IsNullOrWhiteSpace(preselectedSceneName)) {
-                PlayerPrefs.DeleteKey("initialSceneName");
-                PlayerPrefs.Save();
-
-                var preselectedScene = sceneLoader.GetSceneWithName(preselectedSceneName);
-                if (preselectedScene != null) {
-                    Debug.Log($"[SceneManager] Using preselected launch scene '{preselectedSceneName}'.");
-                    HandleScenePickerSelection(preselectedScene.name);
-                    return;
+            try {
+                Debug.Log("[SceneManager] Entering preloading block.");
+                // Preload Custom Models
+                var modelManager = FindObjectOfType<ModelManager>();
+                if (modelManager != null) {
+                    var customModels = sceneLoader.Scenes
+                        .Where(s => s.objects != null)
+                        .SelectMany(s => s.objects)
+                        .Where(o => !string.IsNullOrEmpty(o.objectType) && o.objectType != "cube" && o.objectType != "sphere" && o.objectType != "cylinder" && o.objectType != "capsule")
+                        .Select(o => o.objectType)
+                        .Distinct()
+                        .ToList();
+                    
+                    if (customModels.Count > 0) {
+                        Debug.Log($"[SceneManager] Preloading {customModels.Count} custom models...");
+                        var preloadTasks = customModels.Select(m => modelManager.GetModelBytes(m));
+                        await Task.WhenAll(preloadTasks); // Wait for models
+                        Debug.Log("[SceneManager] Finished preloading all custom models.");
+                    } else {
+                        Debug.Log("[SceneManager] No custom models found to preload.");
+                    }
                 }
 
-                Debug.LogWarning($"[SceneManager] Preselected launch scene '{preselectedSceneName}' not found. Falling back to picker.");
-            }
+                // Global Marker Discovery Setup
+                var allMarkers = sceneLoader.Scenes
+                    .Where(s => s.markers != null)
+                    .SelectMany(s => s.markers).ToList();
 
-            // Edge Case Fix: Check ARModeManager before defaulting back to marker phrase
-            var modeManager = FindObjectOfType<ARModeManager>();
-            if (modeManager != null && modeManager.currentMode == TrackingModeToggleUI.TrackingMode.Plane) {
-                // If the user already switched the mode while loading, respect the plane state.
-                // The Mode Manager's OnPlanesChanged will soon override this if a plane is already visible.
-                ShowDescription("Select a scene to start the experiment");
-            } else {
-                ShowDescription("Select a scene to start the experiment");
-            }
+                Debug.LogWarning($"[SceneManager] Found {allMarkers.Count} total marker(s) across all scenes.");
 
-            var hud = FindObjectOfType<ARHudController>();
-            if (hud != null) {
-                hud.ShowScenePicker(BuildScenePickerPayloadJson());
-            } else if (sceneLoader.Scenes != null && sceneLoader.Scenes.Count > 0) {
-                // Fallback: if no HUD is found, still let students start.
-                HandleScenePickerSelection(sceneLoader.Scenes[0].name);
+                var arManager = FindObjectOfType<ARExperimentManager>();
+                if (arManager != null) {
+                    Debug.Log("[SceneManager] Subscribing to AR marker events.");
+                    ARExperimentManager.OnMarkerTracked += OnMarkerDetected;
+                    ARExperimentManager.OnMarkerLost += OnMarkerLost;
+                    if (allMarkers.Count > 0) {
+                        Debug.Log("[SceneManager] Starting InitializeDynamicMarkersAsync...");
+                        await arManager.InitializeDynamicMarkersAsync(allMarkers); // Wait for markers
+                        Debug.Log("[SceneManager] InitializeDynamicMarkersAsync finished successfully.");
+                    }
+                }
+                Debug.Log("[SceneManager] Preloading sequence complete.");
+
+                // NEW: Load the initial scene BEFORE hiding the loading screen
+                var preselectedSceneName = PlayerPrefs.GetString("initialSceneName", "");
+                if (!string.IsNullOrWhiteSpace(preselectedSceneName)) {
+                    PlayerPrefs.DeleteKey("initialSceneName");
+                    PlayerPrefs.Save();
+
+                    var preselectedScene = sceneLoader.GetSceneWithName(preselectedSceneName);
+                    if (preselectedScene != null) {
+                        Debug.Log($"[SceneManager] Loading preselected launch scene '{preselectedSceneName}' behind the loading screen...");
+                        _hasLaunchSceneSelection = true;
+                        HideDescription();
+                        await SetCurrentScene(preselectedScene);
+                    }
+                } else if (sceneLoader.Scenes != null && sceneLoader.Scenes.Count > 0) {
+                    // Default to first scene if nothing preselected
+                    Debug.Log("[SceneManager] No scene preselected. Defaulting to first scene loading behind screen.");
+                    _hasLaunchSceneSelection = true;
+                    HideDescription();
+                    await SetCurrentScene(sceneLoader.Scenes[0]);
+                }
+            } finally {
+                Debug.Log("[SceneManager] Entering finally block - attempting to hide loading UI and show AR HUD.");
+                // ASSETS LOADED AND SCENE BUILT: Hide the loading webview and reveal AR HUD
+                var loginWebController = LoginWebController.Instance;
+                if (loginWebController != null) {
+                    Debug.Log("[SceneManager] Calling HideWebView on LoginWebController Instance.");
+                    loginWebController.HideWebView();
+                }
+
+                var hudController = FindObjectOfType<ARHudController>();
+                if (hudController != null) {
+                    Debug.Log("[SceneManager] Calling SetHudVisibility(true) on ARHudController.");
+                    hudController.SetHudVisibility(true);
+                    
+                    // Show scene picker context if needed
+                    hudController.ShowScenePicker(BuildScenePickerPayloadJson());
+                }
+                Debug.Log("[SceneManager] AR Scene is now fully ready and visible.");
             }
         }
 

@@ -61,11 +61,13 @@ namespace Assets.SceneManagement {
             await request.SendWebRequest();
 
             if (request.result != UnityWebRequest.Result.Success) {
+                Debug.LogWarning($"[ModelManager] Download failed for URL: {url} | Error: {request.error}");
                 return null;
             }
 
             var data = request.downloadHandler?.data;
             if (data == null || data.Length == 0) {
+                Debug.LogWarning($"[ModelManager] Download succeeded but data is empty for URL: {url}");
                 return null;
             }
 
@@ -78,9 +80,9 @@ namespace Assets.SceneManagement {
             }
 
             var baseUrl = supabaseBaseUrl.TrimEnd('/');
-            var safeBucket = UnityWebRequest.EscapeURL(supabaseBucket);
-            var safeUser = UnityWebRequest.EscapeURL(userName);
-            var safeModel = UnityWebRequest.EscapeURL(modelName + ".glb");
+            var safeBucket = Uri.EscapeDataString(supabaseBucket);
+            var safeUser = Uri.EscapeDataString(userName);
+            var safeModel = Uri.EscapeDataString(modelName + ".glb");
             var url = $"{baseUrl}/storage/v1/object/public/{safeBucket}/{safeUser}/{safeModel}";
 
             return await DownloadBytesFromUrl(url);
@@ -91,7 +93,7 @@ namespace Assets.SceneManagement {
 
             var segments = storagePath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
             for (int i = 0; i < segments.Length; i++) {
-                segments[i] = UnityWebRequest.EscapeURL(segments[i]);
+                segments[i] = Uri.EscapeDataString(segments[i]);
             }
 
             return string.Join("/", segments);
@@ -103,7 +105,7 @@ namespace Assets.SceneManagement {
             }
 
             var baseUrl = supabaseBaseUrl.TrimEnd('/');
-            var safeBucket = UnityWebRequest.EscapeURL(supabaseBucket);
+            var safeBucket = Uri.EscapeDataString(supabaseBucket);
             var safePath = BuildEncodedStoragePath(storagePath);
             if (string.IsNullOrWhiteSpace(safePath)) {
                 return null;
