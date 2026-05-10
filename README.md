@@ -158,6 +158,35 @@ The central API server that powers both the Designer and the mobile app.
 
 ---
 
+## 🚀 Platform Workflow
+
+The LucidLab ecosystem follows a structured pedagogical lifecycle:
+
+### 1. Instructor Workflow (The Designer Studio)
+1.  **Classroom Setup:** Create a virtual classroom and generate a unique join code for students.
+2.  **Experiment Authoring:** 
+    *   Place 3D assets (atoms, glassware, tools) onto AR marker targets in the 3D scene editor.
+    *   **AI Logic Generation:** Provide a prompt (e.g., *"Make the sodium atom turn green when it hits the burner"*) to the AI Logic Builder to auto-generate the VPL graph.
+    *   **Manual Refinement:** Use the node editor to fine-tune triggers, variables, and physics events.
+3.  **Live Preview:** Verify the logic immediately in the browser via the embedded Unity WebGL renderer.
+4.  **Publish:** Assign the experiment to a specific classroom.
+
+### 2. Student Workflow (The Mobile AR App)
+1.  **Access:** Log in and enter the classroom join code to see assigned experiments.
+2.  **Launch:** Select a scene and initialize the AR camera.
+3.  **Interaction:** 
+    *   Scan physical markers to instantiate 3D elements.
+    *   Follow on-screen instructions and interact with objects (e.g., merging chemical markers).
+    *   **AI Guidance:** Use the voice assistant for real-time help or conceptual explanations.
+4.  **Submission:** Complete the task and submit the session data (score, state, and completion status) to the cloud.
+
+### 3. Evaluation Workflow
+1.  **Review:** Instructors view a list of student submissions in the Designer dashboard.
+2.  **Playback:** Replay the student's final experiment state in the 3D previewer to verify accuracy.
+3.  **Feedback:** Provide grades and conceptual feedback directly to the student's inbox.
+
+---
+
 ## 🏗️ Full Tech Stack
 
 | Layer | Technology |
