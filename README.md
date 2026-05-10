@@ -87,8 +87,7 @@ LucidLab/                          # Root repository
 │       ├── services/              # Firebase Admin, Supabase client setup
 │       └── middleware/            # Auth verification, error handling
 │
-├── Chemistr-AR-Unity-main/        # Source chemistry AR project (integrated as demo)
-├── docs/                          # Architecture specs & workflow documentation
+├── report/                        # Technical documentation & LaTeX source
 ├── tests/                         # End-to-end and unit testing suites
 └── README.md                      # This file
 ```
@@ -279,7 +278,7 @@ Create a folder containing the following items, then zip it:
 | Semester | Spring 2026 |
 | Instructor | Dr. Ibrahim Ghaznavi |
 | TA | Muhammad Qasim |
-| Submission Date | May 2, 2026 |
+| Submission Date | May 10, 2026 |
 
 ---
 
