@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<QCARConfig>
+  <Tracking>
+    <ImageTarget name="clsym" size="1.000000 0.825397" />
+    <ImageTarget name="nasym" size="1.000000 0.929494" />
+    <ImageTarget name="h2" size="0.100000 0.100000" />
+    <ImageTarget name="sulfours_acid" size="0.100000 0.100000" />
+    <ImageTarget name="ch4" size="0.100000 0.100000" />
+    <ImageTarget name="lactic_acid" size="0.100000 0.100000" />
+    <ImageTarget name="na" size="0.100000 0.100000" />
+    <ImageTarget name="o" size="0.100000 0.100000" />
+    <ImageTarget name="ozone" size="0.100000 0.100000" />
+    <ImageTarget name="sulfur" size="0.100000 0.100000" />
+    <ImageTarget name="h" size="0.100000 0.100000" />
+    <ImageTarget name="flame" size="0.100000 0.100000" />
+    <ImageTarget name="fe" size="0.100000 0.100000" />
+    <ImageTarget name="cl" size="0.100000 0.100000" />
+    <ImageTarget name="benzene" size="0.100000 0.100000" />
+    <ImageTarget name="au" size="0.100000 0.133333" />
+  </Tracking>
+</QCARConfig>
