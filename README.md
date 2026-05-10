@@ -245,31 +245,6 @@ The EditorRenderer is a Unity WebGL project that is embedded inside the Designer
 
 ---
 
----
-
-## 📦 Complete Submission Instructions
-
-Follow these instructions for the final project submission (`Group_No_Project_Report.zip`):
-
-### 1. Folder Structure
-Create a folder containing the following items, then zip it:
-- `LucidLab_Project_Report.pdf` (The generated PDF from `report/main.tex`)
-- `Scanned_Prototypes/` (A folder containing your hand-drawn paper prototypes)
-- `Complete_Project_Source.zip` (Or a link in a notepad file if the size exceeds limits)
-- `LucidLab_Unity_Package.unitypackage` (Exported Unity package of the core project)
-- `LucidLab_Demo_Video.mp4` (Video of the running application from start to end)
-- `README.md` (This file)
-
-### 2. Submission Checklist
-- [x] **Project Report:** PDF format, 1-inch margins, justified text, APA style references.
-- [x] **Title Page:** Includes Project Name, Team Names, Reg. Numbers, Course Name, Instructor, and Date.
-- [x] **Storyboard:** At least 6 hand-drawn frames using the Vincent sketch template.
-- [x] **Development Evidence:** At least 5 screenshots of the working application.
-- [x] **Running State:** Verified AR deployment on mobile device.
-- [x] **Naming Convention:** `Group_No_Project_Report.zip` (Replace `Group_No` with your group number).
-
----
-
 ## 📄 Course Information
 
 | Field | Details |
@@ -282,4 +257,4 @@ Create a folder containing the following items, then zip it:
 
 ---
 
-*LucidLab — Spring 2026 — FAST NUCES*
+*LucidLab — Spring 2026 — ITU*
