@@ -1,5 +1,5 @@
 const express = require("express");
-const { env } = require("../config/env");
+const { chatJson } = require("../services/openai");
 const { requireAuth } = require("../middleware/auth");
 
 const router = express.Router();
@@ -108,7 +108,7 @@ function sanitizeJsonText(text) {
   return cleaned;
 }
 
-// Fix common small mismatches in Gemini's output so it better matches our node graph.
+// Fix common small mismatches in model output so it better matches our node graph.
 function normalizeExportedNodes(nodes) {
   if (!isPlainObject(nodes)) return;
   for (const [id, n] of Object.entries(nodes)) {
@@ -194,12 +194,6 @@ function buildSystemPrompt({ objects, currentSceneLogic }) {
 router.post("/scene-logic", requireAuth, async (req, res) => {
   const requestId = Date.now().toString(36) + "-" + Math.random().toString(16).slice(2, 8);
   try {
-    if (!env.geminiApiKey) {
-      console.error(`[ai][${requestId}] Missing GEMINI_API_KEY on server`);
-      return res.status(500).json({ error: "Missing GEMINI_API_KEY on server" });
-    }
-
-    const model = env.geminiModel || "gemini-2.5-flash";
     const prompt = typeof req.body?.prompt === "string" ? req.body.prompt : "";
     const objects = req.body?.objects;
     const currentSceneLogic = req.body?.currentSceneLogic;
@@ -209,7 +203,6 @@ router.post("/scene-logic", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "prompt is required" });
     }
 
-    console.log(`[ai][${requestId}] Model: ${model}`);
     console.log(`[ai][${requestId}] Prompt: ${prompt}`);
     console.log(
       `[ai][${requestId}] Objects: ${
@@ -221,52 +214,35 @@ router.post("/scene-logic", requireAuth, async (req, res) => {
 
     const system = buildSystemPrompt({ objects, currentSceneLogic });
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
-      model,
-    )}:generateContent?key=${encodeURIComponent(env.geminiApiKey)}`;
-    const body = {
-      systemInstruction: { parts: [{ text: system }] },
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.2,
-        responseMimeType: "application/json",
-      },
-    };
-
-    const r = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    if (!r.ok) {
-      const text = await r.text().catch(() => "");
-      console.error(`[ai][${requestId}] Gemini request failed (${r.status}): ${text}`);
-      return res
-        .status(502)
-        .json({ error: "Gemini request failed", status: r.status, details: text });
+    let model;
+    let text;
+    try {
+      const result = await chatJson({
+        system,
+        user: prompt,
+        requestId,
+      });
+      model = result.model;
+      text = result.text;
+    } catch (e) {
+      const status = Number(e?.status) || 500;
+      if (status === 500) {
+        return res.status(500).json({ error: e.message || "Missing OPENAI_API_KEY on server" });
+      }
+      return res.status(status).json({
+        error: e.message || "OpenAI request failed",
+        status: e.httpStatus,
+        details: e.details,
+        raw: e.raw,
+      });
     }
 
-    const data = await r.json().catch((e) => {
-      console.error(`[ai][${requestId}] Failed to parse Gemini JSON:`, e);
-      return null;
-    });
-    if (!data) {
-      return res.status(502).json({ error: "Gemini returned non-JSON response" });
-    }
-
-    let text =
-      data?.candidates?.[0]?.content?.parts?.map((p) => p?.text).filter(Boolean).join("\n") || "";
-    if (!text) {
-      console.error(`[ai][${requestId}] Gemini returned empty content`, data);
-      return res.status(502).json({ error: "Gemini returned empty response", raw: data });
-    }
-
+    console.log(`[ai][${requestId}] Model: ${model}`);
     console.log(
-      `[ai][${requestId}] Raw Gemini text (first 400 chars):\n${text.slice(0, 400)}`,
+      `[ai][${requestId}] Raw OpenAI text (first 400 chars):\n${text.slice(0, 400)}`,
     );
-    console.log(`[ai][${requestId}] Raw Gemini text length: ${text.length}`);
-    console.log(`[ai][${requestId}] Raw Gemini text (full) START\n${text}\n[ai][${requestId}] Raw Gemini text (full) END`);
+    console.log(`[ai][${requestId}] Raw OpenAI text length: ${text.length}`);
+    console.log(`[ai][${requestId}] Raw OpenAI text (full) START\n${text}\n[ai][${requestId}] Raw OpenAI text (full) END`);
 
     // Apply small, known-safe sanitizations before parsing.
     text = sanitizeJsonText(text);
@@ -276,14 +252,14 @@ router.post("/scene-logic", requireAuth, async (req, res) => {
       parsed = JSON.parse(text);
     } catch (e) {
       console.error(
-        `[ai][${requestId}] Failed to JSON.parse Gemini output:`,
+        `[ai][${requestId}] Failed to JSON.parse model output:`,
         e,
         "\nRaw text (first 4000 chars):\n",
         text.slice(0, 4000),
       );
       return res
         .status(502)
-        .json({ error: "Gemini did not return valid JSON", raw: text.slice(0, 4000) });
+        .json({ error: "Model did not return valid JSON", raw: text.slice(0, 4000) });
     }
 
     // Normalize common issues (e.g. execOutputs key "0" instead of "exec").

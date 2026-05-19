@@ -11,6 +11,7 @@ export type ObjectType = {
 export type ObjectTypesManager = {
   objects: ObjectType[];
   uploadObject: (objName: string, objFile: Blob) => Promise<boolean>;
+  refreshObjects: () => void;
 };
 
 export function useObjectTypesManager(): ObjectTypesManager {
@@ -71,5 +72,6 @@ export function useObjectTypesManager(): ObjectTypesManager {
   return {
     objects,
     uploadObject,
+    refreshObjects: updateObjectsList,
   };
 }

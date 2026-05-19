@@ -65,5 +65,5 @@ EduARPlayer/Assets/Firebase/Plugins/x86_64/*.so
 LucidLab/Assets/Firebase/Plugins/x86_64/*.so
 . e n v 
 LucidLab/Packages/com.ptc.vuforia.engine/Vuforia/Plugins/iOS/Vuforia.framework/Vuforia
- 
- 
+.env
+backend/.env
