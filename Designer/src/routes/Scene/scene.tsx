@@ -48,7 +48,9 @@ import useScene, { SceneObjectInterface } from '../../core/hooks/useScene';
 import { getScenesCollectionRef } from '../../core/states/references';
 import { ObjectTypesManagerContext } from '../experiment_root';
 import SceneObjectInspector from './object_comp';
-import { generateSceneLogic } from '../../api/ai';
+import AiLogicChat from '../../components/ai/AiLogicChat';
+import SceneAssetsPanel from '../../components/assets/SceneAssetsPanel';
+import { AiChatMessage } from '../../core/states/types';
 
 type UnityObjectTransformPayload = {
   objectName: string;
@@ -185,17 +187,12 @@ function SceneContent() {
   };
 
   const [isLogicOpen, setIsLogicOpen] = useState(false);
+  const [activeLeftTabKey, setActiveLeftTabKey] = useState<'hierarchy' | 'assets'>('hierarchy');
   const [activeRightTabKey, setActiveRightTabKey] = useState<'inspector' | 'settings' | 'ai'>('inspector');
   
   const [sceneDesc, setSceneDesc] = useState(sceneCore.scene?.description || '');
   const [markerName, setMarkerName] = useState('');
   const [markerFile, setMarkerFile] = useState<File | null>(null);
-
-  // AI logic builder
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [aiError, setAiError] = useState<string | null>(null);
-  const [aiIsLoading, setAiIsLoading] = useState(false);
-  const [aiModel, setAiModel] = useState<string | null>(null);
 
   React.useEffect(() => {
     if (sceneCore.scene?.description) {
@@ -341,7 +338,7 @@ function SceneContent() {
   return (
     <Flex h="100vh" w="100vw" bg="gray.900" color="gray.100" overflow="hidden">
       
-      {/* LEFT SIDEBAR: HIERARCHY */}
+      {/* LEFT SIDEBAR: HIERARCHY / ASSETS */}
       <Box 
         w={`${leftWidth}px`} 
         bg="gray.800" 
@@ -351,72 +348,106 @@ function SceneContent() {
         flexDirection="column"
         zIndex={10}
       >
-        <Box p={4} borderBottom="1px solid" borderColor="gray.700">
-          <Heading size="sm" color="white" mb={4}>Hierarchy</Heading>
-          
-          <VStack spacing={3}>
-            <FormControl>
-              <Input
-                size="sm"
-                value={newObjectName}
-                onChange={e => setNewObjectName(e.target.value)}
-                placeholder="New Object Name"
-                bg="gray.900"
-                border="none"
-                _focus={{ boxShadow: 'outline' }}
-              />
-            </FormControl>
-            <HStack w="100%">
-              <Select
-                size="sm"
-                value={selectedObjectType}
-                onChange={e => setSelectedObjectType(e.target.value)}
-                bg="gray.900"
-                border="none"
-              >
-                <option value="cube">Cube</option>
-                <option value="sphere">Sphere</option>
-                <option value="capsule">Capsule</option>
-                <option value="cylinder">Cylinder</option>
-                {objectTypesManager.objects.map(type => (
-                  <option key={type.name} value={type.name}>{type.name}</option>
-                ))}
-              </Select>
-              <IconButton 
-                aria-label="Add Object" 
-                icon={<AddIcon />} 
-                size="sm" 
-                colorScheme="blue"
-                onClick={createObject}
-                isDisabled={!newObjectName}
-              />
-            </HStack>
-          </VStack>
-        </Box>
+        <Flex borderBottom="1px solid" borderColor="gray.700" flexShrink={0}>
+          <Button
+            flex={1}
+            variant="ghost"
+            borderRadius={0}
+            isActive={activeLeftTabKey === 'hierarchy'}
+            _active={{ bg: 'gray.700', borderBottom: '2px solid', borderColor: 'blue.400' }}
+            onClick={() => setActiveLeftTabKey('hierarchy')}
+            py={4}
+            fontSize="sm"
+          >
+            Hierarchy
+          </Button>
+          <Button
+            flex={1}
+            variant="ghost"
+            borderRadius={0}
+            isActive={activeLeftTabKey === 'assets'}
+            _active={{ bg: 'gray.700', borderBottom: '2px solid', borderColor: 'teal.400' }}
+            onClick={() => setActiveLeftTabKey('assets')}
+            py={4}
+            fontSize="sm"
+          >
+            Assets
+          </Button>
+        </Flex>
 
-        <Box flex={1} overflowY="auto" p={2}>
-          {sceneCore.objects?.map(obj => (
-            <HierarchyItem
-              key={obj.objectName}
-              obj={obj}
-              isSelected={selectedObjectName === obj.objectName}
-              onSelect={() =>
-                setSelectedObject(selectedObjectName === obj.objectName ? null : obj.objectName)
-              }
-              onDoubleClick={() => {
-                // Notify Unity (via UnityViewer) to focus camera on this object
-                window.dispatchEvent(
-                  new CustomEvent('designerFocusObject', { detail: obj.objectName }),
-                );
-              }}
-            />
-          ))}
-          {(!sceneCore.objects || sceneCore.objects.length === 0) && (
-            <Text fontSize="sm" color="gray.500" textAlign="center" mt={4}>
-              No objects in scene
-            </Text>
-          )}
-        </Box>
+        {activeLeftTabKey === 'hierarchy' && (
+          <>
+            <Box p={4} borderBottom="1px solid" borderColor="gray.700" flexShrink={0}>
+              <VStack spacing={3}>
+                <FormControl>
+                  <Input
+                    size="sm"
+                    value={newObjectName}
+                    onChange={e => setNewObjectName(e.target.value)}
+                    placeholder="New object name"
+                    bg="gray.900"
+                    border="none"
+                    _focus={{ boxShadow: 'outline' }}
+                  />
+                </FormControl>
+                <HStack w="100%">
+                  <Select
+                    size="sm"
+                    value={selectedObjectType}
+                    onChange={e => setSelectedObjectType(e.target.value)}
+                    bg="gray.900"
+                    border="none"
+                  >
+                    <option value="cube">Cube</option>
+                    <option value="sphere">Sphere</option>
+                    <option value="capsule">Capsule</option>
+                    <option value="cylinder">Cylinder</option>
+                    {objectTypesManager.objects.map(type => (
+                      <option key={type.name} value={type.name}>{type.name}</option>
+                    ))}
+                  </Select>
+                  <IconButton 
+                    aria-label="Add Object" 
+                    icon={<AddIcon />} 
+                    size="sm" 
+                    colorScheme="blue"
+                    onClick={createObject}
+                    isDisabled={!newObjectName}
+                  />
+                </HStack>
+              </VStack>
+            </Box>
+
+            <Box flex={1} minH={0} overflowY="auto" p={2}>
+              {sceneCore.objects?.map(obj => (
+                <HierarchyItem
+                  key={obj.objectName}
+                  obj={obj}
+                  isSelected={selectedObjectName === obj.objectName}
+                  onSelect={() =>
+                    setSelectedObject(selectedObjectName === obj.objectName ? null : obj.objectName)
+                  }
+                  onDoubleClick={() => {
+                    window.dispatchEvent(
+                      new CustomEvent('designerFocusObject', { detail: obj.objectName }),
+                    );
+                  }}
+                />
+              ))}
+              {(!sceneCore.objects || sceneCore.objects.length === 0) && (
+                <Text fontSize="sm" color="gray.500" textAlign="center" mt={4}>
+                  No objects in scene
+                </Text>
+              )}
+            </Box>
+          </>
+        )}
+
+        {activeLeftTabKey === 'assets' && (
+          <Box flex={1} minH={0} display="flex" flexDirection="column" overflow="hidden">
+            <SceneAssetsPanel />
+          </Box>
+        )}
       </Box>
 
       {/* Vertical divider between Hierarchy and Viewport */}
@@ -583,7 +614,14 @@ function SceneContent() {
           </Button>
         </Flex>
 
-        <Box flex={1} overflowY="auto" p={0}>
+        <Box
+          flex={1}
+          minH={0}
+          display="flex"
+          flexDirection="column"
+          overflow={activeRightTabKey === 'ai' ? 'hidden' : 'auto'}
+          p={0}
+        >
           {activeRightTabKey === 'inspector' && (
             <Box p={4}>
               {selectedSceneObject ? (
@@ -708,69 +746,21 @@ function SceneContent() {
           )}
 
           {activeRightTabKey === 'ai' && (
-            <VStack spacing={4} align="stretch" p={4}>
-              <Box>
-                <Heading size="xs" textTransform="uppercase" color="gray.500" mb={2}>
-                  AI Logic Builder
-                </Heading>
-                <Text fontSize="sm" color="gray.400">
-                  Describe the behavior you want. The AI will generate the same visual logic graph you can build manually.
-                </Text>
-              </Box>
-              <Textarea
-                value={aiPrompt}
-                onChange={(e) => setAiPrompt(e.target.value)}
-                bg="gray.900"
-                border="1px solid"
-                borderColor="gray.700"
-                fontSize="sm"
-                placeholder={`Example:\nWhen scene starts, egg moves toward human. When egg touches human, egg disappears and human color changes.`}
-                rows={8}
-              />
-              {aiError && (
-                <Box p={3} border="1px solid" borderColor="red.500" borderRadius="md" bg="red.900/20">
-                  <Text fontSize="sm" color="red.200">{aiError}</Text>
-                </Box>
-              )}
-              {aiModel && (
-                <Text fontSize="xs" color="gray.500">Model: {aiModel}</Text>
-              )}
-              <Button
-                colorScheme="purple"
-                isLoading={aiIsLoading}
-                isDisabled={!aiPrompt.trim()}
-                onClick={async () => {
-                  setAiError(null);
-                  setAiIsLoading(true);
-                  try {
-                    const data = await generateSceneLogic({
-                      prompt: aiPrompt,
-                      // Provide current graph so the AI can modify/extend it.
-                      currentSceneLogic: sceneCore.scene?.sceneLogic ?? null,
-                      objects: (sceneCore.objects ?? []).map((o: any) => ({
-                        objectName: o.objectName,
-                        objectType: o.objectType,
-                      })),
-                    });
-                    if (!data?.sceneLogic) {
-                      setAiError('AI returned no scene logic.');
-                      return;
-                    }
-                    setAiModel(data.model ?? null);
-                    setLogicImportPayload(data.sceneLogic);
-                    sceneCore.setSceneLogic(data.sceneLogic);
-                    setIsLogicOpen(true);
-                    setLogicImportVersion(v => v + 1);
-                  } catch (e: any) {
-                    setAiError(e?.message || 'AI request failed');
-                  } finally {
-                    setAiIsLoading(false);
-                  }
-                }}
-              >
-                Generate & Apply Logic
-              </Button>
-            </VStack>
+            <AiLogicChat
+              messages={(sceneCore.scene?.aiChat ?? []) as AiChatMessage[]}
+              objects={(sceneCore.objects ?? []).map((o: { objectName: string; objectType: string }) => ({
+                objectName: o.objectName,
+                objectType: o.objectType,
+              }))}
+              currentSceneLogic={sceneCore.scene?.sceneLogic ?? null}
+              onPersistMessages={(msgs) => sceneCore.setAiChat(msgs)}
+              onLogicApplied={(sceneLogic) => {
+                setLogicImportPayload(sceneLogic);
+                sceneCore.setSceneLogic(sceneLogic);
+                setIsLogicOpen(true);
+                setLogicImportVersion((v) => v + 1);
+              }}
+            />
           )}
         </Box>
       </Box>

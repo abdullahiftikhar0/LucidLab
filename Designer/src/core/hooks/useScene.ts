@@ -6,7 +6,9 @@ import {
   getSceneDocRef,
   getSceneObjectsCollectionRef
 } from '../states/references';
-import { SceneMarker, SceneObjectState } from '../states/types';
+import { AiChatMessage, SceneMarker, SceneObjectState } from '../states/types';
+
+const MAX_AI_CHAT_MESSAGES = 40;
 
 /** Rasterise an SVG File to a PNG Blob at the given pixel size. */
 async function svgToPng(svgFile: File, size: number): Promise<Blob> {
@@ -153,6 +155,25 @@ export default function useScene(expName: string, sceneName: string) {
     });
   }
 
+  function trimAiChat(messages: AiChatMessage[]): AiChatMessage[] {
+    if (messages.length <= MAX_AI_CHAT_MESSAGES) return messages;
+    return messages.slice(-MAX_AI_CHAT_MESSAGES);
+  }
+
+  function appendAiChatMessages(newMessages: AiChatMessage[]) {
+    const current = (scene?.aiChat ?? []) as AiChatMessage[];
+    const merged = trimAiChat([...current, ...newMessages]);
+    patchDocument(`experiments/${expName}/scenes/${sceneName}`, {
+      aiChat: merged,
+    });
+  }
+
+  function setAiChat(messages: AiChatMessage[]) {
+    patchDocument(`experiments/${expName}/scenes/${sceneName}`, {
+      aiChat: trimAiChat(messages),
+    });
+  }
+
   function getObject(objectName: string): SceneObjectInterface {
     const object = objects?.find(object => object.objectName === objectName);
 
@@ -252,5 +273,7 @@ export default function useScene(expName: string, sceneName: string) {
     setSceneLogic,
     getObject,
     setDescription,
+    appendAiChatMessages,
+    setAiChat,
   };
 }

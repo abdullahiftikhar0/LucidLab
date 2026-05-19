@@ -2,6 +2,7 @@ import { useToast } from '@chakra-ui/react';
 import { debounce } from 'debounce';
 import { motion } from 'framer-motion';
 import React from 'react';
+import { createPortal } from 'react-dom';
 import {
   importSketchfabModel,
   sanitizeAssetName,
@@ -174,8 +175,8 @@ export default function SketchfabSearchModal({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto py-4 px-4">
+  const modal = (
+    <motion.div className="fixed inset-0 z-[10000] flex items-start justify-center overflow-y-auto py-4 px-4">
       <div className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={onClose} />
 
       <div className="relative w-full max-w-5xl max-h-[calc(100dvh-1rem)] bg-white border border-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col my-2">
@@ -372,6 +373,8 @@ export default function SketchfabSearchModal({
           </p>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
+
+  return createPortal(modal, document.body);
 }

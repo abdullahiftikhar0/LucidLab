@@ -6,6 +6,14 @@ export interface SceneMarker {
   imageUrl: string;
 }
 
+export type AiChatMessage = {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  createdAt: number;
+  appliedLogic?: boolean;
+};
+
 export interface SceneObjectState {
   objectName: string;
   objectType: string;
@@ -25,6 +33,7 @@ export interface SceneState {
   description: string;
   sceneLogic?: ExportedNodes;
   markers?: SceneMarker[];
+  aiChat?: AiChatMessage[];
 }
 
 export interface ExperimentState {
