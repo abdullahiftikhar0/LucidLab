@@ -30,6 +30,6 @@ public/renderer/Build/renderer.wasm
 
 .vscode
 
-src/firebaseConfig.ts
+
 .env
 *.env
