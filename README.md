@@ -158,35 +158,6 @@ The central API server that powers both the Designer and the mobile app.
 
 ---
 
-## 🚀 Platform Workflow
-
-The LucidLab ecosystem follows a structured pedagogical lifecycle:
-
-### 1. Instructor Workflow (The Designer Studio)
-1.  **Classroom Setup:** Create a virtual classroom and generate a unique join code for students.
-2.  **Experiment Authoring:** 
-    *   Place 3D assets (atoms, glassware, tools) onto AR marker targets in the 3D scene editor.
-    *   **AI Logic Generation:** Provide a prompt (e.g., *"Make the sodium atom turn green when it hits the burner"*) to the AI Logic Builder to auto-generate the VPL graph.
-    *   **Manual Refinement:** Use the node editor to fine-tune triggers, variables, and physics events.
-3.  **Live Preview:** Verify the logic immediately in the browser via the embedded Unity WebGL renderer.
-4.  **Publish:** Assign the experiment to a specific classroom.
-
-### 2. Student Workflow (The Mobile AR App)
-1.  **Access:** Log in and enter the classroom join code to see assigned experiments.
-2.  **Launch:** Select a scene and initialize the AR camera.
-3.  **Interaction:** 
-    *   Scan physical markers to instantiate 3D elements.
-    *   Follow on-screen instructions and interact with objects (e.g., merging chemical markers).
-    *   **AI Guidance:** Use the voice assistant for real-time help or conceptual explanations.
-4.  **Submission:** Complete the task and submit the session data (score, state, and completion status) to the cloud.
-
-### 3. Evaluation Workflow
-1.  **Review:** Instructors view a list of student submissions in the Designer dashboard.
-2.  **Playback:** Replay the student's final experiment state in the 3D previewer to verify accuracy.
-3.  **Feedback:** Provide grades and conceptual feedback directly to the student's inbox.
-
----
-
 ## 🏗️ Full Tech Stack
 
 | Layer | Technology |
@@ -225,6 +196,9 @@ cp .env.example .env   # Fill in Firebase, Supabase, and Gemini credentials
 npm start              # Runs at http://localhost:4000 (or configured port)
 ```
 
+For Render, point the service at `backend/Dockerfile`. The container listens on `PORT` so Render can inject its runtime port automatically.
+The repo also includes [render.yaml](render.yaml) so you can create or sync the backend service as a Docker web service from the repository root.
+
 ---
 
 ### 2. Designer Web App (Instructor)
@@ -232,9 +206,14 @@ npm start              # Runs at http://localhost:4000 (or configured port)
 ```bash
 cd Designer
 npm install
-# Ensure backend URL is set in .env
-npm start              # Runs at http://localhost:3000
+# For local development, leave REACT_APP_API_BASE_URL unset and start the backend separately in another terminal.
+npm start              # Runs only the frontend at http://localhost:3000
 ```
+
+For Vercel deployment, set `REACT_APP_API_BASE_URL` to your Render backend URL so the frontend can call the API directly.
+The frontend config lives in [Designer/vercel.json](Designer/vercel.json), so point the Vercel project root at `Designer/` when importing the repo.
+
+If you want the old combined local workflow, use `npm run start:all` inside `Designer/`.
 
 ---
 

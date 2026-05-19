@@ -10,6 +10,8 @@
 \usepackage{booktabs}
 \usepackage{longtable}
 \usepackage{enumitem}
+\usepackage[style=apa,backend=biber]{biblatex}
+\addbibresource{references.bib}
 \usepackage{hyperref}
 \usepackage{ragged2e}
 \usepackage{xcolor}
@@ -33,18 +35,19 @@
 \titlespacing*{\subsection}{0pt}{10pt}{4pt}
 
 % ─── Headers / page numbers ─────────────────────────────────────────────────
+% FIX: removed left header text; only page number at top-right as required
 \setlength{\headheight}{15pt}
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[R]{\small\thepage}
-\fancyhead[L]{\small\textit{LucidLab AR Science Learning Platform}}
+\fancyhead[R]{\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
 
 % ─── Hyperref ───────────────────────────────────────────────────────────────
+% FIX: all link colours set to black for formal academic submission
 \hypersetup{
   colorlinks=true,
   linkcolor=black,
-  urlcolor=blue!60!black,
+  urlcolor=black,
   citecolor=black
 }
 
@@ -70,9 +73,6 @@
 \newcommand{\submissiondate}{May 10, 2026}
 
 % ─── App screenshot macro ────────────────────────────────────────────────────
-% Uniform width for landscape-oriented web and AR screenshots.
-% Portrait-mode phone screenshots use a narrower width to reflect natural
-% phone proportions while remaining visually consistent with the others.
 \newcommand{\appscreenshotLandscape}[2]{%
   \begin{figure}[H]
     \centering
@@ -89,8 +89,6 @@
 }
 
 % ─── Storyboard 2-column grid ────────────────────────────────────────────────
-% All storyboard frames are 1024×1024 (square). Six frames are arranged as
-% three rows of two subfigures each for a balanced, uniform grid.
 \newcommand{\storyboardgrid}[6]{%
   \begin{figure}[H]
     \centering
@@ -148,6 +146,9 @@
 
 % ────────────────────────────────────────────────────────────────────────────
 \begin{document}
+
+% FIX: force full justification throughout the document
+\AtBeginDocument{\justifying}
 
 % ══════════════════════════════════════════════════════════════════════════════
 %  TITLE PAGE
@@ -679,42 +680,7 @@ production-hardening of backend and media pipelines.
 % ══════════════════════════════════════════════════════════════════════════════
 \section{References}
 % ══════════════════════════════════════════════════════════════════════════════
-
-\begin{thebibliography}{99}
-
-\bibitem{azuma1997}
-Azuma, R.\ T.\ (1997).
-A survey of augmented reality.
-\textit{Presence: Teleoperators and Virtual Environments, 6}(4), 355--385.
-\url{https://doi.org/10.1162/pres.1997.6.4.355}
-
-\bibitem{billinghurst2015}
-Billinghurst, M., Clark, A., \& Lee, G.\ (2015).
-A survey of augmented reality.
-\textit{Foundations and Trends in Human--Computer Interaction, 8}(2--3), 73--272.
-\url{https://doi.org/10.1561/1100000049}
-
-\bibitem{labster}
-Labster.\ (2026).
-\textit{Virtual labs for science education}.
-Retrieved May 1, 2026, from \url{https://www.labster.com}
-
-\bibitem{hololab}
-Schell Games.\ (2026).
-\textit{HoloLAB Champions}.
-Retrieved May 1, 2026, from \url{https://www.hololabchampions.com}
-
-\bibitem{unityarfoundation}
-Unity Technologies.\ (2026).
-\textit{AR Foundation documentation}.
-Retrieved May 1, 2026, from
-\url{https://docs.unity3d.com/Packages/com.unity.xr.arfoundation@latest}
-
-\bibitem{lucidlabrepo}
-LucidLab Team.\ (2026).
-\textit{LucidLab project repository and implementation artefacts}.
-Internal course project source, Spring 2026.
-
-\end{thebibliography}
+\nocite{*}
+\printbibliography
 
 \end{document}

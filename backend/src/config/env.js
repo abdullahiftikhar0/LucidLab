@@ -19,7 +19,7 @@ function readInt(name, fallback) {
 
 const env = {
   nodeEnv: read("NODE_ENV", "development"),
-  port: readInt("BACKEND_PORT", 5055),
+  port: readInt("PORT", readInt("BACKEND_PORT", 5055)),
   geminiApiKey: read("GEMINI_API_KEY", ""),
   geminiModel: read("GEMINI_MODEL", "gemini-2.5-flash"),
   firebaseProjectId: read("FIREBASE_PROJECT_ID", ""),
