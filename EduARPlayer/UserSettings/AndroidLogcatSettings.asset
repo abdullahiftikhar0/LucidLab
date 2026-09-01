@@ -1,12 +1,12 @@
 {
-    "m_SelectedDeviceId": "ZF6523HFKG",
+    "m_SelectedDeviceId": "R5CX13YGXCJ",
     "m_SelectedProcess": {
-        "deviceId": "ZF6523HFKG",
+        "deviceId": "R5CX13YGXCJ",
         "name": "com.example.campuspulse",
-        "processId": 19676,
+        "processId": 14434,
         "exited": false
     },
-    "m_SelectedPriority": 3,
+    "m_SelectedPriority": 0,
     "m_KnownProcessesForSerialization": [
         {
             "deviceId": "3414636581000C3",
@@ -171,6 +171,54 @@
             "exited": false
         },
         {
+            "deviceId": "ZF6523HFKG",
+            "name": "com.example.campuspulse",
+            "processId": 12087,
+            "exited": false
+        },
+        {
+            "deviceId": "ZF6523HFKG",
+            "name": "com.example.campuspulse",
+            "processId": 13959,
+            "exited": false
+        },
+        {
+            "deviceId": "ZF6523HFKG",
+            "name": "com.example.campuspulse",
+            "processId": 18356,
+            "exited": false
+        },
+        {
+            "deviceId": "ZF6523HFKG",
+            "name": "com.example.campuspulse",
+            "processId": 20883,
+            "exited": false
+        },
+        {
+            "deviceId": "ZF6523HFKG",
+            "name": "com.example.campuspulse",
+            "processId": 21842,
+            "exited": false
+        },
+        {
+            "deviceId": "ZF6523HFKG",
+            "name": "com.example.campuspulse",
+            "processId": 25789,
+            "exited": false
+        },
+        {
+            "deviceId": "ZF6523HFKG",
+            "name": "com.example.campuspulse",
+            "processId": 28013,
+            "exited": false
+        },
+        {
+            "deviceId": "ZF6523HFKG",
+            "name": "com.example.campuspulse",
+            "processId": 28683,
+            "exited": false
+        },
+        {
             "deviceId": "SGY5EEX4OVV8LJDI",
             "name": "com.miui.home",
             "processId": 2642,
@@ -204,6 +252,36 @@
             "deviceId": "SGY5EEX4OVV8LJDI",
             "name": "com.whatsapp",
             "processId": 26636,
+            "exited": false
+        },
+        {
+            "deviceId": "R5CX13YGXCJ",
+            "name": "com.example.campuspulse",
+            "processId": 20447,
+            "exited": true
+        },
+        {
+            "deviceId": "R5CX13YGXCJ",
+            "name": "com.example.campuspulse",
+            "processId": 25612,
+            "exited": true
+        },
+        {
+            "deviceId": "R5CX13YGXCJ",
+            "name": "com.example.campuspulse",
+            "processId": 29813,
+            "exited": false
+        },
+        {
+            "deviceId": "R5CX13YGXCJ",
+            "name": "com.example.campuspulse",
+            "processId": 3016,
+            "exited": false
+        },
+        {
+            "deviceId": "R5CX13YGXCJ",
+            "name": "com.example.campuspulse",
+            "processId": 14434,
             "exited": false
         }
     ],
@@ -299,5 +377,5 @@
             "exited": false
         }
     },
-    "m_AutoScroll": 0
+    "m_AutoScroll": 1
 }
