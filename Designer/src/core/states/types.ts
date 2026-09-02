@@ -29,12 +29,4 @@ export interface SceneState {
 
 export interface ExperimentState {
   name: string;
-  title?: string;
-  category?: string;
-  status?: string;
-  instructorId?: string;
-  classroomIds?: string[];
-  thumbnailUrl?: string;
-  createdAt?: any;
-  updatedAt?: any;
 }
