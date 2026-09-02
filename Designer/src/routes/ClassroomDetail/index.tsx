@@ -44,7 +44,7 @@ export default function ClassroomDetail() {
   // Modals
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
-  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void }>({ open: false, title: '', message: '', onConfirm: () => {} });
+  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void }>({ open: false, title: '', message: '', onConfirm: () => { } });
   const [editForm, setEditForm] = useState({ name: '', subject: '', description: '' });
 
   // Assign modal state
@@ -110,13 +110,23 @@ export default function ClassroomDetail() {
   }
 
   async function archiveClassroom() {
-    await updateDoc(doc(db, 'classrooms', classroomId!), { archived: true, updatedAt: serverTimestamp() });
+    await updateDoc(doc(db, 'classrooms', classroomId!), {
+      archived: true,
+      joinCodeActive: false,
+      updatedAt: serverTimestamp()
+    });
     navigate('/dashboard');
   }
 
   async function removeMember(member: Member) {
     await deleteDoc(doc(db, 'classrooms', classroomId!, 'members', member.id));
     await updateDoc(doc(db, 'classrooms', classroomId!), { studentCount: increment(-1), updatedAt: serverTimestamp() });
+
+    // Also remove the classroom from the student's personal user document
+    await updateDoc(doc(db, 'users', member.id), {
+      classroomIds: arrayRemove(classroomId)
+    }).catch(e => console.warn('Could not update user doc', e)); // Catch if permissions restrict this
+
     loadMembers(); loadClassroom();
   }
 
