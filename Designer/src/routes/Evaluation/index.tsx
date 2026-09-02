@@ -4,6 +4,7 @@ import { getFirestore, collection, query, where, orderBy, getDocs, doc, getDoc, 
 import { useFirebaseApp } from 'reactfire';
 import { useAuth } from '../../contexts/AuthContext';
 import TopBar from '../../components/TopBar';
+import { generateInitials } from '../../utils/storageHelpers';
 
 interface Submission {
   id: string; studentId: string; studentName: string; studentEmail: string;
@@ -278,7 +279,7 @@ export default function EvaluationPage() {
                     <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Student Info</h3>
                     <div className="flex items-center gap-3 mb-4">
                       <div className="size-12 rounded-full bg-slate-100 flex items-center justify-center text-sm font-bold">
-                        {(selected.studentName || 'U').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                        {generateInitials(selected.studentName || '', selected.studentEmail)}
                       </div>
                       <div>
                         <p className="font-bold">{selected.studentName || 'Unknown'}</p>

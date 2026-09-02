@@ -7,7 +7,7 @@ import TopBar from '../../components/TopBar';
 import StatusBadge from '../../components/StatusBadge';
 import EmptyState from '../../components/EmptyState';
 import ConfirmDialog from '../../components/ConfirmDialog';
-import { uploadCoverImage } from '../../utils/storageHelpers';
+import { uploadCoverImage, generateInitials } from '../../utils/storageHelpers';
 
 interface ClassroomData {
   name: string; subject: string; description: string; instructorId: string;
@@ -134,7 +134,7 @@ export default function ClassroomDetail() {
     const updates: any = { name: editForm.name, subject: editForm.subject, description: editForm.description, updatedAt: serverTimestamp() };
     if (editCoverFile) {
       try {
-        const url = await uploadCoverImage(app, classroomId!, editCoverFile);
+        const url = await uploadCoverImage(classroomId!, editCoverFile);
         updates.coverImageURL = url;
       } catch (e) { console.warn('Cover upload failed:', e); }
     }
@@ -319,7 +319,7 @@ export default function ClassroomDetail() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-3">
                             <div className="size-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold">
-                              {(m.displayName || 'U').slice(0, 2).toUpperCase()}
+                              {generateInitials(m.displayName || '', m.email)}
                             </div>
                             <span className="font-semibold text-slate-900 text-sm">{m.displayName || 'Unknown'}</span>
                           </div>

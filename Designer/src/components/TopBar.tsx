@@ -4,6 +4,7 @@ import { getAuth, signOut } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { useFirebaseApp } from 'reactfire';
 import { useAuth } from '../contexts/AuthContext';
+import { getAvatarDisplay } from '../utils/storageHelpers';
 
 export default function TopBar() {
   const app = useFirebaseApp();
@@ -14,6 +15,8 @@ export default function TopBar() {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
   const [photoURL, setPhotoURL] = useState<string | null>(null);
+  const [userData, setUserData] = useState<any>(null);
+  const [avatarImageFailed, setAvatarImageFailed] = useState(false);
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
 
@@ -24,7 +27,11 @@ export default function TopBar() {
         const snap = await getDoc(doc(db, 'users', currentUser.uid));
         if (snap.exists()) {
           const data = snap.data();
-          if (data.photoURL) setPhotoURL(data.photoURL);
+          setUserData(data);
+          if (data.photoURL) {
+            setPhotoURL(data.photoURL);
+            setAvatarImageFailed(false); // Reset when we get new photoURL
+          }
         }
       } catch (e) { /* ignore */ }
     })();
@@ -35,9 +42,10 @@ export default function TopBar() {
     navigate('/login');
   }
 
-  const initials = currentUser?.displayName
-    ? currentUser.displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-    : currentUser?.email?.slice(0, 2).toUpperCase() || 'U';
+  const displayName = userData?.displayName || userData?.name || currentUser?.displayName || currentUser?.email || 'Instructor';
+  const emailFallback = currentUser?.email || 'Instructor';
+  const useImage = photoURL && !avatarImageFailed;
+  const avatarDisplay = getAvatarDisplay(useImage ? photoURL : null, displayName, 'md', emailFallback);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/80 backdrop-blur-md px-6 lg:px-20 py-3">
@@ -71,12 +79,17 @@ export default function TopBar() {
           <div className="relative">
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="size-10 rounded-full overflow-hidden flex items-center justify-center border border-primary/20 text-primary font-bold text-sm bg-primary/10"
+              className="size-10 rounded-full overflow-hidden flex items-center justify-center border border-primary/20 font-bold text-sm bg-primary/10"
             >
-              {photoURL ? (
-                <img src={photoURL} alt="Avatar" className="w-full h-full object-cover" />
+              {avatarDisplay.type === 'image' ? (
+                <img
+                  src={avatarDisplay.src}
+                  alt="Avatar"
+                  className="w-full h-full object-cover"
+                  onError={() => setAvatarImageFailed(true)}
+                />
               ) : (
-                initials
+                <span className={avatarDisplay.className}>{avatarDisplay.initials}</span>
               )}
             </button>
             {showMenu && (
@@ -85,14 +98,19 @@ export default function TopBar() {
                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-200 z-50 py-2">
                   <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-3">
                     <div className="size-9 rounded-full overflow-hidden flex items-center justify-center bg-primary/10 text-primary font-bold text-xs shrink-0">
-                      {photoURL ? (
-                        <img src={photoURL} alt="" className="w-full h-full object-cover" />
+                      {avatarDisplay.type === 'image' ? (
+                        <img
+                          src={avatarDisplay.src}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          onError={() => setAvatarImageFailed(true)}
+                        />
                       ) : (
-                        initials
+                        <span className={getAvatarDisplay(useImage ? photoURL : null, displayName, 'sm', emailFallback).className}>{avatarDisplay.initials}</span>
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-900 truncate">{currentUser?.displayName || 'Instructor'}</p>
+                      <p className="text-sm font-semibold text-slate-900 truncate">{displayName || 'Instructor'}</p>
                       <p className="text-xs text-slate-500 truncate">{currentUser?.email}</p>
                     </div>
                   </div>
