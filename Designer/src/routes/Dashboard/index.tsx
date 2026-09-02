@@ -133,7 +133,7 @@ export default function DashboardHome() {
       // Upload cover image if selected
       if (coverFile) {
         try {
-          const url = await uploadCoverImage(app, docRef.id, coverFile);
+          const url = await uploadCoverImage(docRef.id, coverFile);
           await setDoc(doc(db, 'classrooms', docRef.id), { coverImageURL: url }, { merge: true });
         } catch (e) { console.warn('Cover upload failed:', e); }
       }
