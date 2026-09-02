@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getFirestore, collection, query, where, getDocs, addDoc, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirebaseApp } from 'reactfire';
@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import TopBar from '../../components/TopBar';
 import StatusBadge from '../../components/StatusBadge';
 import EmptyState from '../../components/EmptyState';
+import { uploadCoverImage } from '../../utils/storageHelpers';
 
 interface Classroom {
   id: string;
@@ -15,6 +16,7 @@ interface Classroom {
   joinCode: string;
   studentCount: number;
   experimentIds: string[];
+  coverImageURL?: string;
 }
 
 interface Experiment {
@@ -58,6 +60,9 @@ export default function DashboardHome() {
   const [creating, setCreating] = useState(false);
   const [newClassroom, setNewClassroom] = useState({ name: '', subject: 'Chemistry', description: '' });
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -120,10 +125,18 @@ export default function DashboardHome() {
         joinCodeActive: true,
         studentCount: 0,
         experimentIds: [],
+        coverImageURL: '',
         archived: false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
+      // Upload cover image if selected
+      if (coverFile) {
+        try {
+          const url = await uploadCoverImage(app, docRef.id, coverFile);
+          await setDoc(doc(db, 'classrooms', docRef.id), { coverImageURL: url }, { merge: true });
+        } catch (e) { console.warn('Cover upload failed:', e); }
+      }
       // Use setDoc with merge:true so it creates the user doc if it doesn't exist yet
       await setDoc(doc(db, 'users', currentUser!.uid), {
         classroomIds: [docRef.id],
@@ -131,6 +144,7 @@ export default function DashboardHome() {
       }, { merge: true });
       setShowCreateModal(false);
       setNewClassroom({ name: '', subject: 'Chemistry', description: '' });
+      setCoverFile(null); setCoverPreview(null);
       loadClassrooms();
     } catch (e) { console.error(e); }
     setCreating(false);
@@ -196,17 +210,25 @@ export default function DashboardHome() {
                   key={c.id}
                   className="group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md"
                 >
-                  <div className="flex flex-col p-5">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <span className={`inline-flex rounded-full ${subjectColor(c.subject).bg} px-2.5 py-0.5 text-xs font-semibold ${subjectColor(c.subject).text}`}>
-                          {c.subject}
-                        </span>
-                        <h3 className="mt-2 text-lg font-bold">{c.name}</h3>
+                  {/* Cover Image Banner */}
+                  <div className={`h-28 relative overflow-hidden ${c.coverImageURL ? '' : 'bg-gradient-to-br from-primary/20 to-primary/5'}`}>
+                    {c.coverImageURL ? (
+                      <img src={c.coverImageURL} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center opacity-20">
+                        <span className="material-symbols-outlined text-6xl text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>science</span>
                       </div>
-                      <span className="material-symbols-outlined text-slate-400 group-hover:text-slate-600">chevron_right</span>
+                    )}
+                    <div className="absolute top-3 left-3">
+                      <span className={`inline-flex rounded-full ${subjectColor(c.subject).bg} px-2.5 py-0.5 text-xs font-semibold ${subjectColor(c.subject).text} shadow-sm`}>
+                        {c.subject}
+                      </span>
                     </div>
-                    <div className="mt-4 flex items-center gap-4 text-sm text-slate-500">
+                    <span className="absolute top-3 right-3 material-symbols-outlined text-white/60 group-hover:text-white/90 drop-shadow">chevron_right</span>
+                  </div>
+                  <div className="flex flex-col p-5">
+                    <h3 className="text-lg font-bold">{c.name}</h3>
+                    <div className="mt-3 flex items-center gap-4 text-sm text-slate-500">
                       <div className="flex items-center gap-1">
                         <span className="material-symbols-outlined text-base text-slate-400">groups</span>
                         <span>{c.studentCount} Students</span>
@@ -216,7 +238,7 @@ export default function DashboardHome() {
                         <span>{c.experimentIds?.length || 0} Experiments</span>
                       </div>
                     </div>
-                    <div className="mt-6 flex items-center justify-between rounded-lg bg-slate-50 p-3">
+                    <div className="mt-4 flex items-center justify-between rounded-lg bg-slate-50 p-3">
                       <code className="font-mono text-sm font-bold text-slate-700 tracking-wider">{c.joinCode}</code>
                       <button
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); copyCode(c.joinCode); }}
@@ -293,7 +315,7 @@ export default function DashboardHome() {
       <footer className="mt-auto border-t border-slate-200 bg-white px-6 py-8">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 md:flex-row">
           <div className="flex items-center gap-2 text-slate-400">
-            <span className="material-symbols-outlined text-xl">view_in_ar</span>
+            <span className="material-symbols-outlined text-xl">science</span>
             <span className="text-sm font-medium">© 2026 EduAR. All rights reserved.</span>
           </div>
           <div className="flex gap-8 text-sm font-medium text-slate-500">
@@ -337,6 +359,39 @@ export default function DashboardHome() {
                   rows={3}
                   value={newClassroom.description}
                   onChange={e => setNewClassroom({ ...newClassroom, description: e.target.value })}
+                />
+              </div>
+              {/* Cover Image Upload */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Cover Image <span className="text-slate-400 font-normal">(Optional)</span></label>
+                <button
+                  type="button"
+                  onClick={() => coverInputRef.current?.click()}
+                  className="w-full h-32 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 hover:border-primary/50 hover:bg-primary/5 transition-all flex flex-col items-center justify-center gap-2 overflow-hidden relative"
+                >
+                  {coverPreview ? (
+                    <>
+                      <img src={coverPreview} alt="Cover" className="w-full h-full object-cover absolute inset-0" />
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                        <span className="text-white text-sm font-semibold">Change Image</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined text-slate-400 text-2xl">add_photo_alternate</span>
+                      <span className="text-xs text-slate-400">Click to upload cover image</span>
+                    </>
+                  )}
+                </button>
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={e => {
+                    const f = e.target.files?.[0];
+                    if (f) { setCoverFile(f); setCoverPreview(URL.createObjectURL(f)); }
+                  }}
                 />
               </div>
             </div>
