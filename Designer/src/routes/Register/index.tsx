@@ -21,19 +21,16 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // If already authenticated, redirect to dashboard
-  if (!authLoading && currentUser) {
-    return <Navigate to="/dashboard" replace />;
-  }
+  if (!authLoading && currentUser) return <Navigate to="/dashboard" replace />;
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background-light">
+      <div className="dark min-h-screen flex items-center justify-center bg-background-dark">
         <div className="flex flex-col items-center gap-4">
           <div className="size-12 bg-primary rounded-lg flex items-center justify-center text-white animate-pulse">
             <span className="material-symbols-outlined text-3xl">view_in_ar</span>
           </div>
-          <p className="text-slate-500 text-sm font-medium">Loading...</p>
+          <p className="text-slate-400 text-sm font-medium">Loading...</p>
         </div>
       </div>
     );
@@ -87,7 +84,6 @@ export default function RegisterPage() {
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       const user = result.user;
-      // Create Firestore user document
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
         email: user.email,
@@ -106,7 +102,7 @@ export default function RegisterPage() {
       } else if (code === 'auth/invalid-email') {
         setError('Please enter a valid email address.');
       } else if (code === 'auth/weak-password') {
-        setError('Password is too weak. Please use at least 6 characters with a mix of letters and numbers.');
+        setError('Password is too weak. Please use at least 6 characters.');
       } else if (code === 'auth/operation-not-allowed') {
         setError('Email/password registration is not enabled. Please contact support.');
       } else if (code === 'auth/too-many-requests') {
@@ -121,240 +117,234 @@ export default function RegisterPage() {
     }
   }
 
+  const glassStyle = { background: 'rgba(26, 34, 51, 0.7)', backdropFilter: 'blur(12px)' };
+
   return (
-    <div
-      className="bg-background-light font-display text-slate-900 min-h-screen flex flex-col"
-      style={{ fontFamily: "'Inter', sans-serif" }}
+    <div className="dark bg-background-dark font-display text-slate-100 min-h-screen flex flex-col"
+      style={{
+        fontFamily: "'Inter', sans-serif",
+        backgroundImage: 'radial-gradient(at 0% 0%, rgba(36, 99, 235, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(36, 99, 235, 0.1) 0px, transparent 50%)',
+      }}
     >
-      {/* Top Navigation Bar */}
-      <header className="w-full flex items-center justify-between px-8 py-4 bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
-        <div className="flex items-center gap-2">
-          <div className="size-8 bg-primary rounded-lg flex items-center justify-center text-white">
-            <span className="material-symbols-outlined text-xl">view_in_ar</span>
+      {/* Header */}
+      <header className="w-full px-6 lg:px-20 py-6 flex items-center justify-between z-50">
+        <div className="flex items-center gap-3">
+          <div className="bg-primary p-2 rounded-lg">
+            <span className="material-symbols-outlined text-white text-2xl">science</span>
           </div>
-          <h1 className="text-slate-900 text-xl font-bold tracking-tight">
-            EduAR <span className="text-primary">Designer</span>
-          </h1>
+          <h2 className="text-xl font-bold tracking-tight text-white">EduAR</h2>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-slate-500 hidden sm:block">Already have an account?</span>
-          <Link
-            to="/login"
-            className="flex min-w-[84px] cursor-pointer items-center justify-center rounded-lg h-10 px-4 border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-colors"
-          >
-            Log In
+          <span className="hidden md:inline text-slate-400 text-sm">Already have an account?</span>
+          <Link to="/login" className="px-5 py-2 text-sm font-semibold text-primary border border-primary/30 rounded-lg hover:bg-primary/10 transition-colors">
+            Login
           </Link>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-grow flex items-center justify-center p-6 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-background-light to-background-light">
-        <div className="w-full max-w-[460px] bg-white rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 p-8">
-          {/* Form Header */}
-          <div className="mb-8">
-            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 mb-2">
-              Create your account
-            </h2>
-            <p className="text-slate-500 text-base">
-              Join the community of instructors designing the future of science education.
-            </p>
+      <main className="flex-1 flex items-center justify-center px-4 py-12 relative overflow-hidden">
+        <div className="absolute top-1/4 -left-20 w-64 h-64 bg-primary/20 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
+
+        <div className="w-full max-w-5xl flex flex-col lg:flex-row items-center gap-12 z-10">
+          {/* Left illustration */}
+          <div className="hidden lg:flex flex-col flex-1 space-y-8">
+            <div className="space-y-4">
+              <span className="px-4 py-1.5 bg-primary/20 text-primary text-xs font-bold uppercase tracking-widest rounded-full inline-block">New Era of Education</span>
+              <h1 className="text-5xl font-extrabold leading-tight text-white">
+                Build immersive <br />
+                <span className="text-primary">AR experiences</span> <br />
+                in minutes.
+              </h1>
+              <p className="text-lg text-slate-400 max-w-md">
+                Empower your students with interactive 3D lessons. No coding required. Join educators worldwide.
+              </p>
+            </div>
+            <div className="relative w-full aspect-square max-w-sm">
+              <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent rounded-3xl transform rotate-3" />
+              <div className="absolute inset-0 rounded-3xl flex items-center justify-center p-8 overflow-hidden border border-white/10" style={glassStyle}>
+                <div className="relative w-full h-full flex items-center justify-center">
+                  <div className="absolute w-48 h-48 border-2 border-primary/40 border-dashed rounded-full" style={{ animation: 'spin 20s linear infinite' }} />
+                  <div className="absolute w-32 h-32 border border-primary/60 rounded-xl transform rotate-45" />
+                  <span className="material-symbols-outlined text-primary opacity-80" style={{ fontSize: '7rem' }}>deployed_code</span>
+                  <div className="absolute top-4 left-4 px-3 py-2 rounded-lg flex items-center gap-2 border border-white/10" style={glassStyle}>
+                    <span className="material-symbols-outlined text-primary text-sm">lightbulb</span>
+                    <span className="text-[10px] font-bold">INTERACTIVE</span>
+                  </div>
+                  <div className="absolute bottom-10 right-0 px-3 py-2 rounded-lg flex items-center gap-2 border border-white/10" style={glassStyle}>
+                    <span className="material-symbols-outlined text-green-400 text-sm">check_circle</span>
+                    <span className="text-[10px] font-bold">READY TO DEPLOY</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Error Alert */}
-          {error && (
-            <div className="mb-4">
-              <div className="bg-red-50 border border-red-100 p-3 rounded flex items-center gap-3">
-                <span className="material-symbols-outlined text-red-500 text-sm">error</span>
-                <p className="text-xs text-red-700 font-medium">{error}</p>
+          {/* Right: Register Card */}
+          <div className="w-full max-w-md">
+            <div className="p-8 lg:p-10 rounded-3xl shadow-2xl space-y-6 border border-white/10" style={glassStyle}>
+              <div className="space-y-1">
+                <h3 className="text-2xl font-bold text-white">Create Account</h3>
+                <p className="text-slate-400">Step into the future of learning</p>
               </div>
-            </div>
-          )}
 
-          {/* Registration Form */}
-          <form className="space-y-5" onSubmit={handleSubmit}>
-            {/* Full Name */}
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700 ml-1">Full Name</label>
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">
-                  person
-                </span>
-                <input
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-slate-900 placeholder:text-slate-400"
-                  placeholder="Dr. Jane Smith"
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Email */}
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700 ml-1">Work Email</label>
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">
-                  mail
-                </span>
-                <input
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-slate-900 placeholder:text-slate-400"
-                  placeholder="jane.smith@institution.edu"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Institution */}
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700 ml-1">
-                Institution{' '}
-                <span className="font-normal text-slate-400 text-xs uppercase ml-1">(Optional)</span>
-              </label>
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">
-                  school
-                </span>
-                <input
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-slate-900 placeholder:text-slate-400"
-                  placeholder="University of Science &amp; Tech"
-                  type="text"
-                  value={institution}
-                  onChange={(e) => setInstitution(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Password Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Password</label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">
-                    lock
-                  </span>
-                  <input
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-slate-900 placeholder:text-slate-400"
-                    placeholder="••••••••"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                  />
+              {/* Error */}
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-xl flex items-center gap-3">
+                  <span className="material-symbols-outlined text-red-400 text-sm">error</span>
+                  <p className="text-xs text-red-300 font-medium">{error}</p>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Confirm</label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">
-                    lock_reset
-                  </span>
-                  <input
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-slate-900 placeholder:text-slate-400"
-                    placeholder="••••••••"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    minLength={6}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Terms */}
-            <div className="flex items-start gap-3 py-2">
-              <input
-                className="mt-1 size-4 rounded border-slate-300 text-primary focus:ring-primary"
-                id="terms"
-                type="checkbox"
-                checked={agreedToTerms}
-                onChange={(e) => setAgreedToTerms(e.target.checked)}
-              />
-              <label className="text-xs text-slate-500 leading-relaxed" htmlFor="terms">
-                By creating an account, you agree to our{' '}
-                <a className="text-primary hover:underline font-medium" href="#">
-                  Terms of Service
-                </a>{' '}
-                and{' '}
-                <a className="text-primary hover:underline font-medium" href="#">
-                  Privacy Policy
-                </a>
-                .
-              </label>
-            </div>
-
-            {/* Action Button */}
-            <button
-              className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3.5 px-6 rounded-lg transition-all shadow-lg shadow-primary/25 flex items-center justify-center gap-2 group disabled:opacity-60 disabled:cursor-not-allowed"
-              type="submit"
-              disabled={loading}
-            >
-              {loading ? (
-                <span className="material-symbols-outlined text-xl animate-spin">
-                  progress_activity
-                </span>
-              ) : (
-                <>
-                  <span>Create Account</span>
-                  <span className="material-symbols-outlined text-xl transition-transform group-hover:translate-x-1">
-                    arrow_forward
-                  </span>
-                </>
               )}
-            </button>
-          </form>
 
-          {/* Social/Other Options */}
-          <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col items-center gap-4">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-              Or register with
-            </p>
-            <div className="flex gap-4 w-full">
+              <form className="space-y-4" onSubmit={handleSubmit}>
+                {/* Full Name */}
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1 mb-1 block">Full Name</label>
+                  <div className="flex items-center bg-slate-800/50 border border-slate-700/50 rounded-xl focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all px-4">
+                    <span className="material-symbols-outlined text-slate-400 text-xl">person</span>
+                    <input
+                      className="w-full bg-transparent border-none focus:ring-0 text-white py-4 placeholder:text-slate-500 outline-none"
+                      placeholder="John Doe"
+                      type="text"
+                      value={fullName}
+                      onChange={e => setFullName(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1 mb-1 block">Email Address</label>
+                  <div className="flex items-center bg-slate-800/50 border border-slate-700/50 rounded-xl focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all px-4">
+                    <span className="material-symbols-outlined text-slate-400 text-xl">mail</span>
+                    <input
+                      className="w-full bg-transparent border-none focus:ring-0 text-white py-4 placeholder:text-slate-500 outline-none"
+                      placeholder="john@university.edu"
+                      type="email"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Institution */}
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1 mb-1 block">Institution <span className="normal-case font-normal">(Optional)</span></label>
+                  <div className="flex items-center bg-slate-800/50 border border-slate-700/50 rounded-xl focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all px-4">
+                    <span className="material-symbols-outlined text-slate-400 text-xl">school</span>
+                    <input
+                      className="w-full bg-transparent border-none focus:ring-0 text-white py-4 placeholder:text-slate-500 outline-none"
+                      placeholder="Global University"
+                      type="text"
+                      value={institution}
+                      onChange={e => setInstitution(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Password row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1 mb-1 block">Password</label>
+                    <div className="flex items-center bg-slate-800/50 border border-slate-700/50 rounded-xl focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all px-4">
+                      <input
+                        className="w-full bg-transparent border-none focus:ring-0 text-white py-4 placeholder:text-slate-500 text-sm outline-none"
+                        placeholder="••••••••"
+                        type="password"
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        required
+                        minLength={6}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1 mb-1 block">Confirm</label>
+                    <div className="flex items-center bg-slate-800/50 border border-slate-700/50 rounded-xl focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all px-4">
+                      <input
+                        className="w-full bg-transparent border-none focus:ring-0 text-white py-4 placeholder:text-slate-500 text-sm outline-none"
+                        placeholder="••••••••"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={e => setConfirmPassword(e.target.value)}
+                        required
+                        minLength={6}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Terms */}
+                <div className="flex items-start gap-3 px-1">
+                  <input
+                    className="mt-1 rounded border-slate-700 bg-slate-800 text-primary focus:ring-primary"
+                    id="terms"
+                    type="checkbox"
+                    checked={agreedToTerms}
+                    onChange={e => setAgreedToTerms(e.target.checked)}
+                  />
+                  <label className="text-xs text-slate-400" htmlFor="terms">
+                    I agree to the{' '}
+                    <a className="text-primary hover:underline" href="#">Terms of Service</a> and{' '}
+                    <a className="text-primary hover:underline" href="#">Privacy Policy</a>.
+                  </label>
+                </div>
+
+                <button
+                  className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                  type="submit"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <span className="material-symbols-outlined text-lg animate-spin">progress_activity</span>
+                  ) : (
+                    <>
+                      <span>Get Started Now</span>
+                      <span className="material-symbols-outlined text-lg">arrow_forward</span>
+                    </>
+                  )}
+                </button>
+              </form>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-700/50" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="px-2 text-slate-500" style={{ backgroundColor: 'rgba(26, 34, 51, 0.9)' }}>Or Register With</span>
+                </div>
+              </div>
+
               <button
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-60"
+                className="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-slate-700/50 hover:bg-slate-800 transition-colors disabled:opacity-60"
                 type="button"
                 onClick={handleGoogleSSO}
                 disabled={loading}
               >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.908 3.152-1.928 4.176-1.228 1.216-3.144 2.352-6.4 2.352-5.092 0-9.12-4.132-9.12-9.224s4.028-9.224 9.12-9.224c2.752 0 4.748 1.08 6.176 2.444l2.304-2.304c-2.088-1.984-4.872-3.48-8.48-3.48-6.392 0-11.68 5.176-11.68 11.56s5.288 11.56 11.68 11.56c3.48 0 6.12-1.152 8.136-3.264 2.104-2.104 2.768-5.064 2.768-7.44 0-.704-.064-1.376-.192-2.016h-10.704z" />
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.26.81-.58z" fill="#FBBC05" />
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                 </svg>
                 <span className="text-sm font-semibold">Google</span>
               </button>
-            </div>
-          </div>
 
-          {/* Footer Link */}
-          <div className="mt-8 text-center">
-            <p className="text-sm text-slate-500">
-              Already an EduAR Designer?{' '}
-              <Link className="text-primary font-bold hover:underline" to="/login">
-                Log in to your workspace
-              </Link>
-            </p>
+              <p className="text-center text-sm text-slate-400">
+                Already an EduAR user?{' '}
+                <Link className="text-primary font-bold hover:underline" to="/login">
+                  Log in to your workspace
+                </Link>
+              </p>
+            </div>
           </div>
         </div>
       </main>
 
-      {/* Simple Footer */}
-      <footer className="w-full px-8 py-6 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-400 uppercase tracking-widest font-bold">
-        <div className="flex items-center gap-6">
-          <a className="hover:text-primary transition-colors" href="#">
-            Support
-          </a>
-          <a className="hover:text-primary transition-colors" href="#">
-            Documentation
-          </a>
-          <a className="hover:text-primary transition-colors" href="#">
-            API
-          </a>
-        </div>
-        <div>© 2026 EduAR Inc.</div>
+      <footer className="w-full py-8 text-center text-slate-500 text-xs tracking-wide">
+        © 2026 EduAR. All rights reserved.
       </footer>
     </div>
   );
