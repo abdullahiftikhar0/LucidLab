@@ -13,7 +13,20 @@
           "package_name": "com.example.lucidlab"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "91092596944-0n7rq9f1f3jcnp9gcb440e73032q49h7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.lucidlab",
+            "certificate_hash": "634287eb85f97cff996eb77b6bf6eb77d7a4c39c"
+          }
+        },
+        {
+          "client_id": "91092596944-r1u8d0oigkfdhlnadmcpj8gj88csati6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDIUSfiVd_qu2lYKsjgK4pZZbC4rHvN82M"
@@ -21,7 +34,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "91092596944-r1u8d0oigkfdhlnadmcpj8gj88csati6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

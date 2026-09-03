@@ -84,6 +84,29 @@ namespace Assets.Interaction {
         }
 
         /// <summary>
+        /// Polls a ScheduleAddImageWithValidationJob handle until complete,
+        /// then logs whether the specific marker was accepted or rejected.
+        /// </summary>
+        private async Task WaitForImageJobAsync(
+            AddReferenceImageJobState jobState,
+            MutableRuntimeReferenceImageLibrary library,
+            string markerId) {
+            // Wait for the native job to finish
+            while (jobState.status == AddReferenceImageJobStatus.Pending ||
+                   jobState.status == AddReferenceImageJobStatus.None) {
+                await Task.Yield();
+            }
+            jobState.jobHandle.Complete();
+
+            int count = library.count;
+            if (jobState.status == AddReferenceImageJobStatus.Success) {
+                Debug.LogWarning($"[ARExperimentManager] ✅ Marker '{markerId}' ACCEPTED. Library now has {count} image(s).");
+            } else {
+                Debug.LogError($"[ARExperimentManager] ❌ Marker '{markerId}' REJECTED (status={jobState.status}). Library has {count} image(s).");
+            }
+        }
+
+        /// <summary>
         /// Downloads markers from Firebase Storage URLs provided by SceneData
         /// and injects them into a MutableRuntimeReferenceImageLibrary.
         /// </summary>
@@ -104,45 +127,63 @@ namespace Assets.Interaction {
             Debug.Log($"[ARExperimentManager] Downloading {markers.Count} dynamic markers...");
 
             foreach (var marker in markers) {
-                if (string.IsNullOrEmpty(marker.imageUrl)) continue;
+                if (string.IsNullOrEmpty(marker.imageUrl)) {
+                    Debug.LogWarning($"[ARExperimentManager] Marker '{marker.id}' has no imageUrl, skipping.");
+                    continue;
+                }
+
+                Debug.LogWarning($"[ARExperimentManager] Downloading marker '{marker.id}' from: {marker.imageUrl}");
                 
                 var tcs = new TaskCompletionSource<Texture2D>();
 
-                // UnityWebRequest needs to be tied to a standard Unity Coroutine/WebRequest lifecycle
                 var uwr = UnityWebRequestTexture.GetTexture(marker.imageUrl);
                 var operation = uwr.SendWebRequest();
 
                 operation.completed += (op) => {
                     if (uwr.result == UnityWebRequest.Result.Success) {
-                        tcs.SetResult(DownloadHandlerTexture.GetContent(uwr));
+                        // Guard against non-raster responses (e.g. SVG) that return 200
+                        // but can't be decoded into a Texture2D.
+                        string contentType = uwr.GetResponseHeader("Content-Type") ?? "";
+                        if (contentType.Contains("svg") || contentType.Contains("xml") || contentType.Contains("html")) {
+                            Debug.LogError($"[ARExperimentManager] Marker '{marker.id}' URL returned non-raster content ({contentType}), skipping.");
+                            tcs.SetResult(null);
+                            uwr.Dispose();
+                            return;
+                        }
+                        try {
+                            var tex = DownloadHandlerTexture.GetContent(uwr);
+                            Debug.Log($"[ARExperimentManager] Download OK for '{marker.id}': {tex.width}x{tex.height}, format={tex.format}");
+                            tcs.SetResult(tex);
+                        } catch (System.Exception ex) {
+                            Debug.LogError($"[ARExperimentManager] Marker '{marker.id}' texture decode failed: {ex.Message}");
+                            tcs.SetResult(null);
+                        }
                     } else {
-                        Debug.LogError($"[ARExperimentManager] Failed to download marker {marker.name}: {uwr.error}");
+                        Debug.LogError($"[ARExperimentManager] Failed to download marker '{marker.id}': {uwr.error} (HTTP {uwr.responseCode}), URL: {marker.imageUrl}");
                         tcs.SetResult(null);
                     }
                     uwr.Dispose();
                 };
 
                 Texture2D texture = await tcs.Task;
-                if (texture != null) {
-                    Debug.Log($"[ARExperimentManager] adding marker '{marker.id}' to AR Library...");
-                    // Add to the tracking library. marker.id is used because ObjectBuilder uses objectData.markerId to match!
-                    mutableLibrary.ScheduleAddImageWithValidationJob(texture, marker.id, 0.15f); // 0.15m physical width hint
-                }
+                if (texture == null) continue;
+
+                Debug.LogWarning($"[ARExperimentManager] Adding marker '{marker.id}' ({texture.width}x{texture.height}) to AR Library...");
+                var jobState = mutableLibrary.ScheduleAddImageWithValidationJob(texture, marker.id, 0.15f);
+                _ = WaitForImageJobAsync(jobState, mutableLibrary, marker.id);
             }
 
-            // Apply new library
+            // Apply new library — scheduled jobs complete asynchronously after assignment
             try {
-                // Best practice: disable manager before library swap to avoid native state conflicts
                 bool wasEnabled = trackedImageManager.enabled;
                 trackedImageManager.enabled = false;
                 
                 trackedImageManager.referenceLibrary = mutableLibrary;
                 
                 trackedImageManager.enabled = wasEnabled || true; 
-                Debug.Log("[ARExperimentManager] Dynamic AR Markers initialization complete!");
+                Debug.Log($"[ARExperimentManager] Dynamic AR Markers initialization complete! {markers.Count} marker(s) scheduled.");
             } catch (System.Exception ex) {
                 Debug.LogError($"[ARExperimentManager] CRITICAL ERROR assigning library: {ex.Message}\n{ex.StackTrace}");
-                // This might be the cause of SIGABRT if native calls fail
             }
         }
     }

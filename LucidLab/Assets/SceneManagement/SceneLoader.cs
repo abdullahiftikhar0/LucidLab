@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Assets.SceneManagement.Models;
 using Firebase.Extensions;
@@ -18,6 +19,7 @@ namespace Assets.SceneManagement {
         public List<SceneData> Scenes { get; private set; }
 
         public async Task LoadAllScenes() {
+            Debug.Log($"[SceneLoader] LoadAllScenes START, experimentName='{experimentName}'");
             if (string.IsNullOrEmpty(experimentName)) {
                 Debug.LogError("[SceneLoader] experimentName is null or empty!");
                 return;
@@ -26,15 +28,25 @@ namespace Assets.SceneManagement {
             Scenes = new List<SceneData>();
             try {
                 var scenesRef = _db.Collection($"experiments/{experimentName}/scenes");
+                Debug.Log($"[SceneLoader] Querying Firestore: experiments/{experimentName}/scenes");
                 var snapshot = await scenesRef.GetSnapshotAsync();
+                Debug.Log($"[SceneLoader] Got {snapshot.Documents.Count()} scene documents from Firestore.");
                 foreach (var documentSnapshot in snapshot.Documents) {
                     var scene = documentSnapshot.ConvertTo<SceneData>();
+                    int markerCount = scene.markers?.Count ?? 0;
+                    Debug.Log($"[SceneLoader] Scene '{scene.name}' (index={scene.index}): {markerCount} marker(s)");
+                    if (scene.markers != null) {
+                        foreach (var m in scene.markers) {
+                            Debug.Log($"[SceneLoader]   Marker: id='{m.id}', name='{m.name}', imageUrl='{m.imageUrl}'");
+                        }
+                    }
                     scene = await LoadScene(scene);
                     Scenes.Add(scene);
                 }
                 Scenes.Sort((a, b) => a.index - b.index);
+                Debug.Log($"[SceneLoader] LoadAllScenes DONE. {Scenes.Count} scene(s) loaded.");
             } catch (System.Exception e) {
-                Debug.LogError($"[SceneLoader] Error loading scenes: {e.Message}");
+                Debug.LogError($"[SceneLoader] Error loading scenes: {e.Message}\n{e.StackTrace}");
             }
         }
 
@@ -64,6 +76,9 @@ namespace Assets.SceneManagement {
         void Awake() {
             if (PlayerPrefs.HasKey("expname"))
                 experimentName = PlayerPrefs.GetString("expname");
+            else if (PlayerPrefs.HasKey("current_experiment"))
+                experimentName = PlayerPrefs.GetString("current_experiment");
+            Debug.Log($"[SceneLoader] Awake: experimentName='{experimentName}' (expname='{PlayerPrefs.GetString("expname", "<unset>")}', current_experiment='{PlayerPrefs.GetString("current_experiment", "<unset>")}')" );
         }
     }
 }

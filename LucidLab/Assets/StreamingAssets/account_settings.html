@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LucidLab - Account Settings</title>
+  <link rel="stylesheet" href="fonts/fonts.css" />
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                colors: {
+                    "primary": "var(--accent, #00f2ff)",
+                    "background-light": "#f5f8f8",
+                    "background-dark": "#0f2223",
+                    "glass": "rgba(255, 255, 255, 0.05)",
+                    "glass-border": "color-mix(in srgb, var(--accent) 15%, transparent)",
+                },
+                fontFamily: { "display": ["Inter", "sans-serif"] },
+                borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+            },
+        },
+    }
+</script>
+<style>
+    .glass-panel {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid color-mix(in srgb, var(--accent) 10%, transparent);
+    }
+    :root { --accent: #00f2ff; --text-scale: 1; }
+    body { min-height: max(884px, 100dvh); font-size: calc(16px * var(--text-scale)); }
+    input:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 15%, transparent); }
+    .toast {
+        position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+        background: rgba(22, 44, 45, 0.95); backdrop-filter: blur(12px);
+        border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent);
+        font-size: 13px; font-weight: 600; padding: 10px 20px; border-radius: 999px;
+        z-index: 300; opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+
+<!-- Header -->
+<header class="sticky top-0 z-50 flex items-center gap-3 px-4 py-4 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-primary/10">
+    <button id="back-btn" class="flex items-center justify-center size-10 rounded-full hover:bg-primary/10 transition-colors">
+        <span class="material-symbols-outlined">arrow_back</span>
+    </button>
+    <h1 class="text-lg font-bold tracking-tight">Account Settings</h1>
+</header>
+
+<main class="flex-1 overflow-y-auto px-4 pb-8">
+
+    <!-- Avatar Section -->
+    <section class="flex flex-col items-center mt-8 mb-8">
+        <div class="relative">
+            <div class="w-24 h-24 rounded-full p-[3px] bg-gradient-to-tr from-primary to-transparent">
+                <div id="avatar-circle" class="w-full h-full rounded-full border-[3px] border-background-dark bg-primary/20 flex items-center justify-center">
+                    <span id="avatar-initials" class="text-primary text-2xl font-bold"></span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Form Fields -->
+    <section class="space-y-5 mb-10">
+        <div>
+            <label class="block text-[11px] font-bold uppercase tracking-widest text-primary mb-2">Display Name</label>
+            <div class="glass-panel rounded-xl">
+                <input id="field-name" type="text" placeholder="Your name"
+                    class="w-full bg-transparent px-4 py-3.5 text-sm text-slate-100 placeholder-slate-500 border-0 rounded-xl"/>
+            </div>
+        </div>
+        <div>
+            <label class="block text-[11px] font-bold uppercase tracking-widest text-primary mb-2">Email</label>
+            <div class="glass-panel rounded-xl opacity-60">
+                <input id="field-email" type="email" disabled
+                    class="w-full bg-transparent px-4 py-3.5 text-sm text-slate-400 border-0 rounded-xl cursor-not-allowed"/>
+            </div>
+            <p class="text-[10px] text-slate-500 mt-1 ml-1">Email cannot be changed</p>
+        </div>
+        <div>
+            <label class="block text-[11px] font-bold uppercase tracking-widest text-primary mb-2">Institution</label>
+            <div class="glass-panel rounded-xl">
+                <input id="field-institution" type="text" placeholder="University / School"
+                    class="w-full bg-transparent px-4 py-3.5 text-sm text-slate-100 placeholder-slate-500 border-0 rounded-xl"/>
+            </div>
+        </div>
+    </section>
+
+    <!-- Save Button -->
+    <button id="save-btn" class="w-full py-3.5 bg-primary text-background-dark font-bold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg shadow-primary/20 mb-6">
+        <span class="material-symbols-outlined text-lg">check</span>
+        Save Changes
+    </button>
+
+    <!-- Danger Zone -->
+    <div class="glass-panel rounded-xl p-4">
+        <h3 class="text-xs font-bold uppercase tracking-widest text-rose-400 mb-3">Danger Zone</h3>
+        <div class="space-y-3">
+            <button id="reset-pw-btn" class="w-full py-3 border border-slate-600 text-slate-300 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 hover:bg-white/5 transition-colors">
+                <span class="material-symbols-outlined text-base">lock_reset</span>
+                Reset Password
+            </button>
+        </div>
+    </div>
+</main>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<script>
+(function () {
+    var nav = document.querySelector("nav"); if (nav) nav.style.display = "none";
+
+    document.getElementById("back-btn").addEventListener("click", function () {
+        parent.postMessage("navigate:profile", "*");
+    });
+
+    var userData = null;
+
+    function initials(name) {
+        if (!name) return "?";
+        return name.split(" ").map(function(w){return w[0]||""}).join("").substring(0,2).toUpperCase();
+    }
+
+    function showToast(msg) {
+        var t = document.getElementById("toast");
+        t.textContent = msg; t.classList.add("show");
+        setTimeout(function () { t.classList.remove("show"); }, 2200);
+    }
+
+    function render(user) {
+        userData = user;
+        document.getElementById("avatar-initials").textContent = initials(user.displayName);
+        document.getElementById("field-name").value = user.displayName || "";
+        document.getElementById("field-email").value = user.email || "";
+        document.getElementById("field-institution").value = user.institution || "";
+    }
+
+    // Save
+    document.getElementById("save-btn").addEventListener("click", function () {
+        var name = document.getElementById("field-name").value.trim();
+        var institution = document.getElementById("field-institution").value.trim();
+        if (!name) { showToast("Name cannot be empty"); return; }
+        parent.postMessage({ type: "update_profile", displayName: name, institution: institution }, "*");
+        showToast("Profile updated!");
+        document.getElementById("avatar-initials").textContent = initials(name);
+    });
+
+    // Reset password
+    document.getElementById("reset-pw-btn").addEventListener("click", function () {
+        if (!userData || !userData.email) return;
+        if (!confirm("Send a password reset email to " + userData.email + "?")) return;
+        parent.postMessage({ type: "forgot_password", email: userData.email }, "*");
+        showToast("Reset email sent!");
+    });
+
+    window.addEventListener("message", function (e) {
+        var d = e.data;
+        if (d && typeof d === "object" && d.type === "profile_data") render(d.user || {});
+    });
+})();
+</script>
+<script src="preferences.js"></script>
+</body>
+</html>

@@ -4,21 +4,19 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>LucidLab Student Profile</title>
+  <link rel="stylesheet" href="fonts/fonts.css" />
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#00f2ff",
+                        "primary": "var(--accent, #00f2ff)",
                         "background-light": "#f5f8f8",
                         "background-dark": "#0f2223",
                         "glass": "rgba(255, 255, 255, 0.05)",
-                        "glass-border": "rgba(0, 242, 255, 0.15)",
+                        "glass-border": "color-mix(in srgb, var(--accent) 15%, transparent)",
                     },
                     fontFamily: {
                         "display": ["Inter", "sans-serif"]
@@ -38,15 +36,17 @@
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(0, 242, 255, 0.1);
+            border: 1px solid color-mix(in srgb, var(--accent) 10%, transparent);
         }
         .neon-glow {
-            box-shadow: 0 0 15px rgba(0, 242, 255, 0.4);
+            box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 40%, transparent);
         }
     </style>
 <style>
+    :root { --accent: #00f2ff; --text-scale: 1; }
     body {
       min-height: max(884px, 100dvh);
+      font-size: calc(16px * var(--text-scale));
     }
   </style>
   </head>
@@ -55,7 +55,7 @@
 <header class="sticky top-0 z-50 flex items-center justify-between px-6 py-4 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-primary/10">
 <div class="w-10"></div> <!-- Spacer for centering -->
 <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Profile</h1>
-<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-primary/10 transition-colors">
+<button id="btn-settings-gear" class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-primary/10 transition-colors">
 <span class="material-symbols-outlined text-primary" data-icon="settings">settings</span>
 </button>
 </header>
@@ -93,7 +93,7 @@
 </section>
 <!-- Options List -->
 <section class="space-y-3 mb-8">
-<button class="w-full glass-panel flex items-center justify-between p-4 rounded-xl hover:bg-primary/5 transition-all group">
+<button id="btn-account" class="w-full glass-panel flex items-center justify-between p-4 rounded-xl hover:bg-primary/5 transition-all group">
 <div class="flex items-center gap-4">
 <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
 <span class="material-symbols-outlined">person</span>
@@ -102,7 +102,7 @@
 </div>
 <span class="material-symbols-outlined text-slate-500 group-hover:translate-x-1 transition-transform">chevron_right</span>
 </button>
-<button class="w-full glass-panel flex items-center justify-between p-4 rounded-xl hover:bg-primary/5 transition-all group">
+<button id="btn-appearance" class="w-full glass-panel flex items-center justify-between p-4 rounded-xl hover:bg-primary/5 transition-all group">
 <div class="flex items-center gap-4">
 <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
 <span class="material-symbols-outlined">dark_mode</span>
@@ -111,7 +111,7 @@
 </div>
 <span class="material-symbols-outlined text-slate-500 group-hover:translate-x-1 transition-transform">chevron_right</span>
 </button>
-<button class="w-full glass-panel flex items-center justify-between p-4 rounded-xl hover:bg-primary/5 transition-all group">
+<button id="btn-help" class="w-full glass-panel flex items-center justify-between p-4 rounded-xl hover:bg-primary/5 transition-all group">
 <div class="flex items-center gap-4">
 <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
 <span class="material-symbols-outlined">help</span>
@@ -120,7 +120,7 @@
 </div>
 <span class="material-symbols-outlined text-slate-500 group-hover:translate-x-1 transition-transform">chevron_right</span>
 </button>
-<button class="w-full glass-panel flex items-center justify-between p-4 rounded-xl hover:bg-primary/5 transition-all group">
+<button id="btn-privacy" class="w-full glass-panel flex items-center justify-between p-4 rounded-xl hover:bg-primary/5 transition-all group">
 <div class="flex items-center gap-4">
 <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
 <span class="material-symbols-outlined">shield</span>
@@ -149,6 +149,25 @@
     parent.postMessage({ type: "auth", action: "logout" }, "*");
   });
 
+  // Gear icon in header → App Settings
+  document.getElementById("btn-settings-gear").addEventListener("click", function () {
+    parent.postMessage("navigate:app_settings", "*");
+  });
+
+  // Settings navigation
+  document.getElementById("btn-account").addEventListener("click", function () {
+    parent.postMessage("navigate:account_settings", "*");
+  });
+  document.getElementById("btn-appearance").addEventListener("click", function () {
+    parent.postMessage("navigate:appearance", "*");
+  });
+  document.getElementById("btn-help").addEventListener("click", function () {
+    parent.postMessage("navigate:help", "*");
+  });
+  document.getElementById("btn-privacy").addEventListener("click", function () {
+    parent.postMessage("navigate:privacy", "*");
+  });
+
   function initials(name) {
     if (!name) return "?";
     return name.split(" ").map(function(w){return w[0]||""}).join("").substring(0,2).toUpperCase();
@@ -169,4 +188,5 @@
   });
 })();
 </script>
+<script src="preferences.js"></script>
 </body></html>
