@@ -15,27 +15,30 @@ export default function Vector3Input({ value, onChange }: Vector3InputProps) {
   };
 
   return (
-    <Flex gap="0.5em" width="20em">
-      <Flex gap="0.2em">
-        <Text alignSelf="center">X: </Text>
+    <Flex gap="0.5em" width="100%">
+      <Flex gap="0.2em" flex="1">
+        <Text alignSelf="center" fontSize="sm" color="gray.400">X</Text>
         <Input
           type="number"
+          size="sm"
           value={value[0]}
           onChange={e => handleChange(0, e.target.value)}
         />
       </Flex>
-      <Flex gap="0.2em">
-        <Text alignSelf="center">Y: </Text>
+      <Flex gap="0.2em" flex="1">
+        <Text alignSelf="center" fontSize="sm" color="gray.400">Y</Text>
         <Input
           type="number"
+          size="sm"
           value={value[1]}
           onChange={e => handleChange(1, e.target.value)}
         />
       </Flex>
-      <Flex gap="0.2em">
-        <Text alignSelf="center">Z: </Text>
+      <Flex gap="0.2em" flex="1">
+        <Text alignSelf="center" fontSize="sm" color="gray.400">Z</Text>
         <Input
           type="number"
+          size="sm"
           value={value[2]}
           onChange={e => handleChange(2, e.target.value)}
         />

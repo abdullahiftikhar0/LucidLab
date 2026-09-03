@@ -1,13 +1,16 @@
 import {
   Button,
-  Card,
-  CardBody,
+  Box,
   Checkbox,
   Flex,
   FormControl,
   FormLabel,
   Heading,
   Select,
+  VStack,
+  Input,
+  Text,
+  Divider,
 } from '@chakra-ui/react';
 import * as React from 'react';
 import { CompactPicker } from 'react-color';
@@ -16,118 +19,131 @@ import { SceneObjectInterface } from '../../core/hooks/useScene';
 import { IsPrimitiveObject } from '../../core/misc';
 import { SceneMarker } from '../../core/states/types';
 
-type CompProps = {
+type InspectorProps = {
   sceneObject: SceneObjectInterface;
-  isSelected?: boolean;
-  onSelect?: () => void;
   markers?: SceneMarker[];
 };
 
-export default function SceneObjectComp({ sceneObject, isSelected, onSelect, markers }: CompProps) {
+export default function SceneObjectInspector({ sceneObject, markers }: InspectorProps) {
   const [hasColor, setHasColor] = React.useState(false);
 
   React.useEffect(() => {
-    setHasColor(IsPrimitiveObject(sceneObject.object!));
+    if (sceneObject && sceneObject.object) {
+      setHasColor(IsPrimitiveObject(sceneObject.object));
+    } else {
+      setHasColor(false);
+    }
   }, [sceneObject]);
 
+  if (!sceneObject.object) return <Box p={4}><Text color="gray.500">No object selected</Text></Box>;
+
   return (
-    <Card
-      onClick={onSelect}
-      cursor={onSelect ? 'pointer' : 'default'}
-      border={isSelected ? '2px solid' : '1px solid transparent'}
-      borderColor={isSelected ? 'blue.400' : 'transparent'}
-      boxShadow={isSelected ? '0 0 10px rgba(66, 153, 225, 0.6)' : 'sm'}
-      transition="border-color 0.2s, box-shadow 0.2s"
-    >
-      <CardBody>
-        <Heading size="md" textAlign="center">
-          {sceneObject.object?.objectName} ({sceneObject.object?.objectType})
-        </Heading>
-        <Flex direction="column" gap="1em" onClick={e => e.stopPropagation()}>
-          <FormControl>
-            <FormLabel>Position</FormLabel>
-            <Vector3Input
-              value={sceneObject.object?.position ?? [0, 0, 0]}
-              onChange={sceneObject.setPosition}
+    <VStack spacing={4} align="stretch" p={1}>
+      <Box>
+        <Heading size="sm" mb={1} color="gray.300">Name</Heading>
+        <Text fontSize="md" fontWeight="bold" color="white">{sceneObject.object.objectName}</Text>
+        <Text fontSize="xs" color="gray.500">{sceneObject.object.objectType}</Text>
+      </Box>
+
+      <Divider borderColor="gray.700" />
+
+      <FormControl>
+        <FormLabel fontSize="sm" color="gray.400">Position</FormLabel>
+        <Vector3Input
+          value={sceneObject.object.position ?? [0, 0, 0]}
+          onChange={sceneObject.setPosition}
+        />
+      </FormControl>
+
+      <FormControl>
+        <FormLabel fontSize="sm" color="gray.400">Rotation</FormLabel>
+        <Vector3Input
+          value={sceneObject.object.rotation ?? [0, 0, 0]}
+          onChange={sceneObject.setRotation}
+        />
+      </FormControl>
+
+      <FormControl>
+        <FormLabel fontSize="sm" color="gray.400">Scale</FormLabel>
+        <Vector3Input
+          value={sceneObject.object.scale ?? [0, 0, 0]}
+          onChange={sceneObject.setScale}
+        />
+      </FormControl>
+
+      <Divider borderColor="gray.700" />
+
+      {hasColor && (
+        <FormControl>
+          <FormLabel fontSize="sm" color="gray.400">Color</FormLabel>
+          <Box p={2} bg="gray.800" borderRadius="md">
+            <CompactPicker
+              color={sceneObject.object.color}
+              onChange={e => sceneObject.setColor(e.hex)}
             />
-          </FormControl>
-          <FormControl>
-            <FormLabel>Rotation</FormLabel>
-            <Vector3Input
-              value={sceneObject.object?.rotation ?? [0, 0, 0]}
-              onChange={sceneObject.setRotation}
-            />
-          </FormControl>
-          <FormControl>
-            <FormLabel>Scale</FormLabel>
-            <Vector3Input
-              value={sceneObject.object?.scale ?? [0, 0, 0]}
-              onChange={sceneObject.setScale}
-            />
-          </FormControl>
-          {hasColor && (
-            <FormControl>
-              <FormLabel>Color</FormLabel>
-              <CompactPicker
-                color={sceneObject.object?.color}
-                onChange={e => {
-                  console.log('[SceneObjectComp] CompactPicker onChange', {
-                    objectName: sceneObject.object?.objectName,
-                    hex: e.hex,
-                  });
-                  sceneObject.setColor(e.hex);
-                }}
-                onChangeComplete={e => {
-                  console.log('[SceneObjectComp] CompactPicker onChangeComplete', {
-                    objectName: sceneObject.object?.objectName,
-                    hex: e.hex,
-                  });
-                }}
-              />
-            </FormControl>
-          )}
-          {(markers && markers.length > 0) && (
-            <FormControl>
-              <FormLabel>AR Marker Anchor</FormLabel>
-              <Select
-                value={sceneObject.object?.markerId || ''}
-                onChange={(e) => sceneObject.setMarkerId(e.target.value)}
-              >
-                <option value="">None (Global App Anchor)</option>
-                {markers.map((marker) => (
-                  <option key={marker.id} value={marker.id}>
-                    {marker.name}
-                  </option>
-                ))}
-              </Select>
-            </FormControl>
-          )}
-          <FormControl display="flex" gap="0.1em" flexDir="column">
-            <FormLabel>Others</FormLabel>
-            <Checkbox
-              isChecked={sceneObject.object?.hasGravity}
-              onChange={e => sceneObject.setHasGravity(e.target.checked)}
-            >
-              Has Gravity
-            </Checkbox>
-            <Checkbox
-              isChecked={sceneObject.object?.isGrabbable}
-              onChange={e => sceneObject.setGrabbable(e.target.checked)}
-            >
-              Is Grabable
-            </Checkbox>
-            <Checkbox
-              isChecked={sceneObject.object?.showDesc}
-              onChange={e => sceneObject.setShowDesc(e.target.checked)}
-            >
-              Show Description
-            </Checkbox>
-          </FormControl>
-          <Button colorScheme="red" onClick={sceneObject.deleteSelf}>
-            Delete
-          </Button>
-        </Flex>
-      </CardBody>
-    </Card>
+          </Box>
+        </FormControl>
+      )}
+
+      {(markers && markers.length > 0) && (
+        <FormControl>
+          <FormLabel fontSize="sm" color="gray.400">AR Anchor</FormLabel>
+          <Select
+            size="sm"
+            bg="gray.800"
+            borderColor="gray.600"
+            value={sceneObject.object.markerId || ''}
+            onChange={(e) => sceneObject.setMarkerId(e.target.value)}
+          >
+            <option value="">None (Global)</option>
+            {markers.map((marker) => (
+              <option key={marker.id} value={marker.id}>
+                {marker.name}
+              </option>
+            ))}
+          </Select>
+        </FormControl>
+      )}
+
+      <Divider borderColor="gray.700" />
+
+      <VStack align="start" spacing={2}>
+        <Checkbox
+          colorScheme="blue"
+          size="sm"
+          isChecked={sceneObject.object.hasGravity}
+          onChange={e => sceneObject.setHasGravity(e.target.checked)}
+        >
+          Has Gravity
+        </Checkbox>
+        <Checkbox
+          colorScheme="blue"
+          size="sm"
+          isChecked={sceneObject.object.isGrabbable}
+          onChange={e => sceneObject.setGrabbable(e.target.checked)}
+        >
+          Grabbable
+        </Checkbox>
+        <Checkbox
+          colorScheme="blue"
+          size="sm"
+          isChecked={sceneObject.object.showDesc}
+          onChange={e => sceneObject.setShowDesc(e.target.checked)}
+        >
+          Show Description
+        </Checkbox>
+      </VStack>
+
+      <Button
+        size="sm"
+        colorScheme="red"
+        variant="outline"
+        onClick={sceneObject.deleteSelf}
+        width="100%"
+        mt={4}
+      >
+        Delete Object
+      </Button>
+    </VStack>
   );
 }

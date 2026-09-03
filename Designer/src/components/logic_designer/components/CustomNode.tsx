@@ -1,3 +1,4 @@
+import React from 'react';
 import { Box } from '@chakra-ui/react';
 import { ClassicPreset } from 'rete';
 import {
@@ -291,7 +292,9 @@ export function CustomNode<Scheme extends ClassicScheme>(props: Props<Scheme>) {
 
       {everythingList
         .filter(([key, obj]) => obj !== undefined)
-        .map(([key, obj]) => RenderItemm(key, obj!))}
+        .map(([key, obj]) => (
+          <React.Fragment key={key}>{RenderItemm(key, obj!)}</React.Fragment>
+        ))}
     </NodeStyles>
   );
 }

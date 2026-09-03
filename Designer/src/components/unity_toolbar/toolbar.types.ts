@@ -18,14 +18,12 @@ export enum ToolMode {
     Transform = 'Transform',
 }
 
-/** Maps keyboard shortcut keys to their tool mode */
+/** Maps keyboard shortcut keys to their tool mode (number keys to avoid conflicting with WASD camera) */
 export const TOOL_SHORTCUTS: Record<string, ToolMode> = {
-    q: ToolMode.Hand,
-    w: ToolMode.Move,
-    e: ToolMode.Rotate,
-    r: ToolMode.Scale,
-    t: ToolMode.Rect,
-    y: ToolMode.Transform,
+    '1': ToolMode.Hand,
+    '2': ToolMode.Move,
+    '3': ToolMode.Rotate,
+    '4': ToolMode.Scale,
 };
 
 /** Cursor styles for each tool mode when hovering over WebGL canvas */
