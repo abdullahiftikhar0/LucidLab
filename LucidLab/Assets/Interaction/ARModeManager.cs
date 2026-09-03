@@ -84,12 +84,21 @@ namespace Assets.Interaction {
             if (args.added.Count > 0) {
                 _planeDetected = true;
                 UpdateInstructionText();
+
+                // Notify lock manager so HUD tracking status can show "plane_detected"
+                var lockMgr = FindObjectOfType<ARLockManager>();
+                if (lockMgr != null) lockMgr.SetPlaneDetectedForHud(true);
             }
         }
 
         private void HandleModeChanged(TrackingModeToggleUI.TrackingMode newMode) {
             currentMode = newMode;
             ApplyMode(currentMode);
+
+            // Sync HTML HUD mode
+            var hud = FindObjectOfType<ARHudController>();
+            if (hud != null)
+                hud.SetMode(newMode == TrackingModeToggleUI.TrackingMode.Marker ? "marker" : "plane");
         }
 
         private void ApplyMode(TrackingModeToggleUI.TrackingMode mode) {

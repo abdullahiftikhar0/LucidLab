@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>AR Task</title>
+  <link rel="stylesheet" href="fonts/fonts.css" />
+  <style>
+    :root { --primary: #00f2ff; --text: #e6f3f4; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%; width: 100%; overflow: hidden;
+      background: transparent;
+      font-family: Inter, system-ui, sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none; -webkit-user-select: none;
+    }
+    .card {
+      max-width: 100%; width: 100%;
+      padding: 12px 16px; border-radius: 14px;
+      display: flex; align-items: center; gap: 12px;
+      background: rgba(15, 34, 35, 0.7);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--primary);
+      box-shadow: 0 0 8px rgba(0, 242, 255, 0.4);
+      transition: opacity 0.3s, transform 0.3s;
+    }
+    .card.hidden { opacity: 0; transform: translateY(10px); pointer-events: none; }
+    .progress-ring {
+      position: relative; width: 44px; height: 44px; flex-shrink: 0;
+    }
+    .progress-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .progress-ring .track { fill: none; stroke: #1e293b; stroke-width: 4; }
+    .progress-ring .fill { fill: none; stroke: var(--primary); stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 0.4s; }
+    .progress-ring .pct {
+      position: absolute; inset: 0; display: grid; place-items: center;
+      font-size: 10px; font-weight: 700; color: var(--primary);
+    }
+    .task-label {
+      font-size: 8px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--primary); margin-bottom: 3px;
+    }
+    .task-text { font-size: 12px; font-weight: 500; color: #f1f5f9; line-height: 1.4; }
+  </style>
+</head>
+<body>
+  <div class="card hidden" id="card">
+    <div class="progress-ring">
+      <svg viewBox="0 0 52 52">
+        <circle class="track" cx="26" cy="26" r="22"></circle>
+        <circle class="fill" id="progress-fill" cx="26" cy="26" r="22"
+                stroke-dasharray="138.2" stroke-dashoffset="138.2"></circle>
+      </svg>
+      <span class="pct" id="progress-pct">0%</span>
+    </div>
+    <div>
+      <div class="task-label">Current Task</div>
+      <p class="task-text" id="task-text">Loading...</p>
+    </div>
+  </div>
+  <script>
+    function sendToUnity(msg) {
+      if (window.Unity && window.Unity.call) window.Unity.call(msg);
+      else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.unityControl)
+        window.webkit.messageHandlers.unityControl.postMessage(msg);
+      else window.location = "unity:" + msg;
+    }
+    function setTask(text, pct) {
+      var card = document.getElementById("card");
+      var tt = document.getElementById("task-text");
+      var p = document.getElementById("progress-pct");
+      var fill = document.getElementById("progress-fill");
+      if (!text || text === "") { card.classList.add("hidden"); return; }
+      card.classList.remove("hidden");
+      tt.textContent = text;
+      var v = Math.max(0, Math.min(100, pct || 0));
+      p.textContent = v + "%";
+      fill.style.strokeDashoffset = 138.2 - (138.2 * v / 100);
+    }
+    sendToUnity("task_ready");
+  </script>
+</body>
+</html>

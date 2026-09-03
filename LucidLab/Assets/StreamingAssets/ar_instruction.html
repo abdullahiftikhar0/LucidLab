@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>AR Instruction</title>
+  <link rel="stylesheet" href="fonts/fonts.css" />
+  <style>
+    :root { --primary: #00f2ff; --text: #e6f3f4; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%; width: 100%; overflow: hidden;
+      background: transparent;
+      font-family: Inter, system-ui, sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none; -webkit-user-select: none;
+    }
+    .panel {
+      padding: 12px 24px; border-radius: 14px;
+      text-align: center; max-width: 100%;
+      background: rgba(15, 34, 35, 0.7);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(0, 242, 255, 0.2);
+      transition: opacity 0.3s;
+    }
+    .panel.hidden { opacity: 0; pointer-events: none; }
+    .text {
+      font-size: 13px; font-weight: 500; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--text); line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="panel" id="panel">
+    <p class="text" id="text">Scan a marker to start</p>
+  </div>
+  <script>
+    function sendToUnity(msg) {
+      if (window.Unity && window.Unity.call) window.Unity.call(msg);
+      else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.unityControl)
+        window.webkit.messageHandlers.unityControl.postMessage(msg);
+      else window.location = "unity:" + msg;
+    }
+    function setInstruction(t) {
+      var p = document.getElementById("panel");
+      var el = document.getElementById("text");
+      if (!t || t === "") { p.classList.add("hidden"); }
+      else { p.classList.remove("hidden"); el.textContent = t; }
+    }
+    function hideInstruction() { document.getElementById("panel").classList.add("hidden"); }
+    sendToUnity("instruction_ready");
+  </script>
+</body>
+</html>

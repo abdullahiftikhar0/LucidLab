@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>AR Toolbelt</title>
+  <link rel="stylesheet" href="fonts/fonts.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <style>
+    :root { --primary: #00f2ff; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%; width: 100%; overflow: hidden;
+      background: transparent;
+      font-family: Inter, system-ui, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none; -webkit-user-select: none;
+    }
+    .toolbelt {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      padding: 8px 6px; border-radius: 999px;
+      background: rgba(15, 34, 35, 0.7);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(0, 242, 255, 0.2);
+      width: fit-content; margin: 0 auto;
+    }
+    .tool-btn {
+      width: 40px; height: 40px; border-radius: 50%; border: none;
+      background: transparent; color: #f1f5f9;
+      display: grid; place-items: center; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tool-btn:active { background: rgba(0, 242, 255, 0.15); color: var(--primary); }
+    .tool-btn.active { background: rgba(0, 242, 255, 0.15); color: var(--primary); }
+    .tool-btn .material-symbols-outlined { font-size: 20px; }
+  </style>
+</head>
+<body>
+  <div class="toolbelt">
+    <button class="tool-btn active" id="tool-view" onclick="sendToUnity('tool_view')">
+      <span class="material-symbols-outlined">visibility</span>
+    </button>
+    <button class="tool-btn" id="tool-ai" onclick="sendToUnity('tool_ai')">
+      <span class="material-symbols-outlined">smart_toy</span>
+    </button>
+    <button class="tool-btn" id="tool-reset" onclick="sendToUnity('tool_reset')">
+      <span class="material-symbols-outlined">refresh</span>
+    </button>
+  </div>
+  <script>
+    function sendToUnity(msg) {
+      if (window.Unity && window.Unity.call) window.Unity.call(msg);
+      else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.unityControl)
+        window.webkit.messageHandlers.unityControl.postMessage(msg);
+      else window.location = "unity:" + msg;
+    }
+    /* Forward touch to Unity so AR scene still receives taps */
+    document.addEventListener('touchstart', function(e) {
+      var t = e.changedTouches[0];
+      if (t) sendToUnity('touch_at:' + Math.round(t.screenX) + ',' + Math.round(t.screenY));
+    }, { passive: true });
+
+    sendToUnity("toolbelt_ready");
+  </script>
+</body>
+</html>

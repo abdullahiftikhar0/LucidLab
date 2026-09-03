@@ -33,6 +33,11 @@ namespace Assets.Interaction {
         public static bool IsPlanePlaced { get; private set; }
         private TrackingModeToggleUI.TrackingMode currentMode = TrackingModeToggleUI.TrackingMode.Marker;
 
+        // Cached HUD reference
+        private ARHudController _cachedHud;
+        // Tracks whether any plane has been detected (for HUD status)
+        private bool _planeDetectedForHud;
+
         void Start() {
             IsLocked = false;
             IsPlanePlaced = false;
@@ -106,36 +111,57 @@ namespace Assets.Interaction {
         }
 
         private void UpdateUI() {
-            if (lockButton == null) {
-                Debug.LogWarning("[ARLockManager] UpdateUI SKIPPED — lockButton is null");
-                return;
-            }
+            // Update native Canvas UI (if present)
+            if (lockButton != null) {
+                lockButton.gameObject.SetActive(true);
 
-            lockButton.gameObject.SetActive(true); // Always visible but state changes depending on mode
-
-            if (currentMode == TrackingModeToggleUI.TrackingMode.Marker) {
-                if (IsLocked) {
-                    ApplyLockAppearance();
-                    lockButton.interactable = true;
-                } else if (isMarkerTracked) {
-                    ApplyUnlockAppearance();
-                    lockButton.interactable = true;
-                } else {
-                    ApplyNoTrackAppearance();
-                    lockButton.interactable = false;
-                }
-            } else if (currentMode == TrackingModeToggleUI.TrackingMode.Plane) {
-                if (IsLocked) {
-                    ApplyLockAppearance();
-                    lockButton.interactable = true;
-                } else if (IsPlanePlaced) {
-                    ApplyUnlockAppearance();
-                    lockButton.interactable = true;
-                } else {
-                    ApplyNoTrackAppearance();
-                    lockButton.interactable = false;
+                if (currentMode == TrackingModeToggleUI.TrackingMode.Marker) {
+                    if (IsLocked) {
+                        ApplyLockAppearance();
+                        lockButton.interactable = true;
+                    } else if (isMarkerTracked) {
+                        ApplyUnlockAppearance();
+                        lockButton.interactable = true;
+                    } else {
+                        ApplyNoTrackAppearance();
+                        lockButton.interactable = false;
+                    }
+                } else if (currentMode == TrackingModeToggleUI.TrackingMode.Plane) {
+                    if (IsLocked) {
+                        ApplyLockAppearance();
+                        lockButton.interactable = true;
+                    } else if (IsPlanePlaced) {
+                        ApplyUnlockAppearance();
+                        lockButton.interactable = true;
+                    } else {
+                        ApplyNoTrackAppearance();
+                        lockButton.interactable = false;
+                    }
                 }
             }
+
+            // Update HTML HUD
+            if (_cachedHud == null) _cachedHud = FindObjectOfType<ARHudController>();
+            if (_cachedHud != null) {
+                var hud = _cachedHud;
+                bool canLock = (currentMode == TrackingModeToggleUI.TrackingMode.Marker && isMarkerTracked) ||
+                               (currentMode == TrackingModeToggleUI.TrackingMode.Plane && IsPlanePlaced);
+                string hudState = IsLocked ? "locked" : (canLock ? "unlocked" : "cant-lock");
+                hud.SetLockState(hudState);
+
+                // Also update tracking status
+                if (IsLocked) hud.SetTrackingStatus("tracking");
+                else if (currentMode == TrackingModeToggleUI.TrackingMode.Marker && isMarkerTracked) hud.SetTrackingStatus("tracking");
+                else if (currentMode == TrackingModeToggleUI.TrackingMode.Plane && IsPlanePlaced) hud.SetTrackingStatus("plane_placed");
+                else if (currentMode == TrackingModeToggleUI.TrackingMode.Plane && _planeDetectedForHud) hud.SetTrackingStatus("plane_detected");
+                else if (currentMode == TrackingModeToggleUI.TrackingMode.Marker && !isMarkerTracked) hud.SetTrackingStatus("lost");
+                else hud.SetTrackingStatus("initializing");
+            }
+        }
+
+        public void SetPlaneDetectedForHud(bool detected) {
+            _planeDetectedForHud = detected;
+            UpdateUI();
         }
 
         private void ApplyNoTrackAppearance() {
