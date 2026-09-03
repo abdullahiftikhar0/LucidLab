@@ -93,7 +93,7 @@ public class StartupScript : MonoBehaviour {
         titleRect.offsetMin = Vector2.zero;
         titleRect.offsetMax = Vector2.zero;
         var titleText = titleObj.AddComponent<TextMeshProUGUI>();
-        titleText.text = "EduAR";
+        titleText.text = "LucidLab";
         titleText.fontSize = 64;
         titleText.fontStyle = FontStyles.Bold;
         titleText.alignment = TextAlignmentOptions.Center;

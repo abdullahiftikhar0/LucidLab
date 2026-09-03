@@ -1,4 +1,4 @@
-# EduAR — Presentation Prototype Screens
+# LucidLab — Presentation Prototype Screens
 
 > Hand-drawn wireframe descriptions for all key screens. These serve as templates that team members will hand-draw on paper for the presentation.
 >
@@ -31,7 +31,7 @@ DESIGNER (Web — 7 screens)          PLAYER (Mobile — 7 screens)
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│                         EduAR                            │
+│                         LucidLab                            │
 │                    ┌──────────────┐                       │
 │                    │   📐 Logo    │                       │
 │                    └──────────────┘                       │
@@ -64,7 +64,7 @@ DESIGNER (Web — 7 screens)          PLAYER (Mobile — 7 screens)
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  ☰ EduAR Designer          🔔  👤 Dr. Sarah Khan  ▼        │
+│  ☰ LucidLab Designer          🔔  👤 Dr. Sarah Khan  ▼        │
 ├──────────┬───────────────────────────────────────────────────┤
 │          │                                                    │
 │  📊 Home │   MY CLASSROOMS              [ + New Classroom ]  │
@@ -273,7 +273,7 @@ DESIGNER (Web — 7 screens)          PLAYER (Mobile — 7 screens)
 
 ```
 ┌─────────────────────────┐
-│        EduAR Player     │
+│        LucidLab Player     │
 │                         │
 │     ┌───────────────┐   │
 │     │   📐 Logo     │   │
@@ -512,7 +512,7 @@ The following order maps to the 5–7 minute presentation:
 
 | Slide | Content | Duration |
 |---|---|---|
-| 1 | **Project Introduction** — EduAR title, team members, problem statement | 30s |
+| 1 | **Project Introduction** — LucidLab title, team members, problem statement | 30s |
 | 2 | **Problem** — Safety, cost, repeatability in science education | 45s |
 | 3 | **Proposed Solution** — Two-sided AR platform concept | 45s |
 | 4 | **Target Users** — Teachers (designers) and students (players) | 20s |

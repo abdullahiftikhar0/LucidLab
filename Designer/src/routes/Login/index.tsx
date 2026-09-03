@@ -115,7 +115,7 @@ export default function LoginPage() {
           <div className="bg-primary p-2 rounded-lg">
             <span className="material-symbols-outlined text-white text-2xl">science</span>
           </div>
-          <h2 className="text-xl font-bold tracking-tight text-white">EduAR</h2>
+          <h2 className="text-xl font-bold tracking-tight text-white">LucidLab</h2>
         </div>
         <div className="flex items-center gap-4">
           <span className="hidden md:inline text-slate-400 text-sm">Don&apos;t have an account?</span>
@@ -193,7 +193,7 @@ export default function LoginPage() {
                       <input
                         id="email"
                         className="w-full bg-transparent border-none focus:ring-0 text-white py-4 placeholder:text-slate-500 outline-none"
-                        placeholder="name@eduar.com"
+                        placeholder="name@lucidlab.com"
                         type="email"
                         value={email}
                         onChange={e => setEmail(e.target.value)}
@@ -279,7 +279,7 @@ export default function LoginPage() {
       </main>
 
       <footer className="w-full py-8 text-center text-slate-500 text-xs tracking-wide">
-        © 2026 EduAR. All rights reserved.
+        © 2026 LucidLab. All rights reserved.
       </footer>
     </div>
   );

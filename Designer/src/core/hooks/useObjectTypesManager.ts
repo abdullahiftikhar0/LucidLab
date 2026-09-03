@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react';
-import { EduXRContext } from '../../app';
+import { LucidLabContext } from '../../app';
 import { supabase } from '../../supabaseClient';
 
 export type ObjectType = {
@@ -14,7 +14,7 @@ export type ObjectTypesManager = {
 };
 
 export function useObjectTypesManager(): ObjectTypesManager {
-  const { username } = useContext(EduXRContext);
+  const { username } = useContext(LucidLabContext);
   const [objects, setObjects] = useState<ObjectType[]>([]);
 
   async function getObjects() {
