@@ -9,6 +9,30 @@ import {
 } from '../states/references';
 import { SceneMarker, SceneObjectState } from '../states/types';
 
+/** Rasterise an SVG File to a PNG Blob at the given pixel size. */
+async function svgToPng(svgFile: File, size: number): Promise<Blob> {
+  const svgText = await svgFile.text();
+  const svgBlob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(svgBlob);
+
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, size, size);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(blob => {
+        if (blob) resolve(blob);
+        else reject(new Error('Canvas toBlob returned null'));
+      }, 'image/png');
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Failed to load SVG as image')); };
+    img.src = url;
+  });
+}
 
 export interface SceneObjectInterface {
   object: SceneObjectState | undefined;
@@ -50,20 +74,35 @@ export default function useScene(expName: string, sceneName: string) {
     const defaultMarkers = scene?.markers ?? [];
     const markerId = `marker_${Date.now()}`;
 
+    console.log(`[useScene] addMarker START: name='${name}', markerId='${markerId}', file=${file.name} (${file.size} bytes, ${file.type}), experiment='${expName}', scene='${sceneName}', existingMarkers=${defaultMarkers.length}`);
+
     try {
+      // Convert SVG to PNG so Unity can decode the marker at runtime
+      let uploadFile: File | Blob = file;
+      if (file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg')) {
+        console.log('[useScene] SVG detected, converting to PNG...');
+        uploadFile = await svgToPng(file, 756);
+        console.log(`[useScene] Converted to PNG: ${uploadFile.size} bytes`);
+      }
+
       // Upload to Supabase
+      console.log(`[useScene] Uploading to Supabase bucket 'markers' as '${markerId}'...`);
       const { data, error } = await supabase.storage
         .from('markers')
-        .upload(`${markerId}`, file);
+        .upload(`${markerId}`, uploadFile, { contentType: 'image/png' });
 
       if (error) {
-        console.error('Error uploading marker to Supabase:', error);
+        console.error('[useScene] Supabase upload FAILED:', error);
         throw error;
       }
+
+      console.log(`[useScene] Supabase upload OK, path='${data.path}'`);
 
       const { data: { publicUrl } } = supabase.storage
         .from('markers')
         .getPublicUrl(data.path);
+
+      console.log(`[useScene] Supabase public URL: ${publicUrl}`);
 
       const newMarker: SceneMarker = {
         id: markerId,
@@ -72,14 +111,14 @@ export default function useScene(expName: string, sceneName: string) {
       };
 
       // Update Firestore with marker metadata
+      console.log(`[useScene] Writing marker to Firestore: experiments/${expName}/scenes/${sceneName}`, newMarker);
       await updateDoc(getSceneDocRef(fsapp, expName, sceneName), {
         markers: [...defaultMarkers, newMarker],
       });
       
-      console.log('Marker added successfully:', markerId);
+      console.log(`[useScene] Marker added successfully: id='${markerId}', url='${publicUrl}'`);
     } catch (error) {
-      console.error('Failed to add marker:', error);
-      // Re-throw to let the UI handle the error
+      console.error('[useScene] addMarker FAILED:', error);
       throw error;
     }
   }

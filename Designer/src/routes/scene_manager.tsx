@@ -1,12 +1,134 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import useExperiment from '../core/hooks/useExperiment';
 import ObjectModelManager from './object_model_manager';
 
+function ExperimentDetailsModal({
+  isOpen,
+  onClose,
+  initialTitle,
+  initialDescription,
+  onSave,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  initialTitle: string;
+  initialDescription: string;
+  onSave: (title: string, description: string) => void;
+}) {
+  const [title, setTitle] = useState(initialTitle);
+  const [description, setDescription] = useState(initialDescription);
+
+  useEffect(() => {
+    if (isOpen) {
+      setTitle(initialTitle);
+      setDescription(initialDescription);
+    }
+  }, [isOpen, initialTitle, initialDescription]);
+
+  if (!isOpen) return null;
+
+  const handleSave = () => {
+    if (!title.trim()) return;
+    onSave(title.trim(), description.trim());
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Modal */}
+      <div className="relative w-full max-w-lg mx-4 bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden">
+        {/* Decorative top gradient */}
+        <div className="h-1 bg-gradient-to-r from-primary via-blue-400 to-primary" />
+
+        <div className="p-8">
+          {/* Header */}
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <span className="material-symbols-outlined text-primary text-xl">science</span>
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white">Experiment Details</h2>
+              <p className="text-sm text-slate-400">Give your experiment a clear name and description.</p>
+            </div>
+          </div>
+
+          {/* Fields */}
+          <div className="space-y-5">
+            <div>
+              <label className="block text-sm font-semibold text-slate-300 mb-2">
+                Name <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Acid-Base Titration"
+                className="w-full px-4 py-3 bg-slate-800/80 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors text-sm"
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-300 mb-2">
+                Description
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Briefly describe what students will explore in this experiment..."
+                rows={4}
+                className="w-full px-4 py-3 bg-slate-800/80 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors text-sm resize-none"
+              />
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-3 mt-8">
+            <button
+              onClick={onClose}
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={!title.trim()}
+              className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-primary hover:brightness-110 shadow-lg shadow-primary/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SceneManager() {
   const { expName } = useParams();
-  const { createScene, scenes, experiment } = useExperiment(expName!);
+  const { createScene, scenes, experiment, updateExperiment } = useExperiment(expName!);
   const navigate = useNavigate();
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [hasCheckedInitial, setHasCheckedInitial] = useState(false);
+
+  // Show modal on first load if experiment has no title yet (new experiment)
+  useEffect(() => {
+    if (hasCheckedInitial || !experiment) return;
+    setHasCheckedInitial(true);
+    if (!experiment.title) {
+      setShowDetailsModal(true);
+    }
+  }, [experiment, hasCheckedInitial]);
+
+  const handleSaveDetails = useCallback(
+    (title: string, description: string) => {
+      updateExperiment({ title, description });
+    },
+    [updateExperiment],
+  );
 
   const addScene = () => {
     const sceneName = prompt('Enter a name for the new scene:');
@@ -43,11 +165,23 @@ export default function SceneManager() {
               </span>
               <h1 className="text-2xl font-black tracking-tight flex items-center gap-3 truncate" title={displayTitle}>
                 {displayTitle}
+                <button
+                  onClick={() => setShowDetailsModal(true)}
+                  className="shrink-0 w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center border border-slate-700 transition-colors text-slate-400 hover:text-primary"
+                  title="Edit experiment details"
+                >
+                  <span className="material-symbols-outlined text-[16px]">edit</span>
+                </button>
               </h1>
             </div>
           </div>
           
           <div className="flex items-center gap-4">
+            {experiment?.description && (
+              <p className="hidden lg:block text-sm text-slate-400 max-w-sm truncate" title={experiment.description}>
+                {experiment.description}
+              </p>
+            )}
             <div className="hidden md:flex items-center gap-2 bg-slate-800/80 border border-slate-700 py-1.5 px-4 rounded-full text-sm text-slate-400 font-medium">
               <span className="material-symbols-outlined text-[18px]">cloud_done</span>
               Auto-saved
@@ -141,6 +275,15 @@ export default function SceneManager() {
 
         </div>
       </div>
+      
+      {/* Experiment Details Modal */}
+      <ExperimentDetailsModal
+        isOpen={showDetailsModal}
+        onClose={() => setShowDetailsModal(false)}
+        initialTitle={experiment?.title || ''}
+        initialDescription={experiment?.description || ''}
+        onSave={handleSaveDetails}
+      />
       
       {/* Scrollbar styling for this specific page component scope */}
       <style>{`
