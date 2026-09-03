@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LucidLab - Completed Assignments</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#00f2ff",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#0f2223",
+                        "accent-success": "#10b981", // Neon green for completion
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .neon-glow-primary {
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+        }
+        .neon-glow-success {
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Top App Bar -->
+<header class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+<div class="flex items-center justify-between p-4 h-16">
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold tracking-tight text-slate-900 dark:text-white">My Assignments</h1>
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-primary">filter_list</span>
+</button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto px-4 pb-24">
+<!-- Segmented Control / Tabs -->
+<div class="mt-4 mb-6">
+<div class="flex p-1 bg-slate-200/50 dark:bg-slate-800/50 rounded-xl">
+<button id="tab-todo" class="flex-1 py-2 text-sm font-semibold rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all">
+                    To Do
+                </button>
+<button class="flex-1 py-2 text-sm font-semibold rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm ring-1 ring-black/5">
+                    Completed
+                </button>
+</div>
+</div>
+<!-- Section Title -->
+<div class="flex items-center justify-between mb-4 px-1">
+<h2 class="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Finished Experiments</h2>
+<span id="total-count" class="text-xs font-medium text-primary">0 Total</span>
+</div>
+<div id="completed-list" class="space-y-4"></div>
+<div id="empty-state" class="hidden flex flex-col items-center justify-center py-16 text-center">
+    <span class="material-symbols-outlined text-5xl text-slate-600 mb-3">emoji_events</span>
+    <p class="text-slate-400 text-sm">No completed experiments yet.<br>Get started with your first assignment!</p>
+</div>
+<div class="h-8"></div>
+</main>
+<script>
+(function () {
+  var nav = document.querySelector("nav");
+  if (nav) nav.style.display = "none";
+  var main = document.querySelector("main");
+  if (main) main.style.paddingBottom = "16px";
+
+  // "To Do" tab
+  var todoBtn = document.getElementById("tab-todo");
+  if (todoBtn) {
+    todoBtn.addEventListener("click", function (e) {
+      e.preventDefault(); e.stopPropagation();
+      parent.postMessage("navigate:experiments", "*");
+    });
+  }
+
+  // Back button
+  var header = document.querySelector("header");
+  if (header) {
+    var backBtn = header.querySelector("button");
+    if (backBtn) {
+      backBtn.addEventListener("click", function (e) {
+        e.preventDefault(); e.stopPropagation();
+        parent.postMessage("navigate:home", "*");
+      });
+    }
+  }
+
+  function esc(s) {
+    var d = document.createElement("div");
+    d.appendChild(document.createTextNode(s));
+    return d.innerHTML;
+  }
+
+  function renderCompleted(submissions) {
+    var list = document.getElementById("completed-list");
+    var countEl = document.getElementById("total-count");
+    var empty = document.getElementById("empty-state");
+    list.innerHTML = "";
+
+    if (!submissions || submissions.length === 0) {
+      countEl.textContent = "0 Total";
+      empty.classList.remove("hidden");
+      return;
+    }
+    empty.classList.add("hidden");
+    countEl.textContent = submissions.length + " Total";
+
+    submissions.forEach(function (sub) {
+      var grade = sub.completionPercentage || sub.quizScore || 0;
+      var title = sub.experimentTitle || sub.experimentName || "Experiment";
+      var needsRevision = sub.status === "needs_revision";
+      var isIncorrect = sub.status === "incorrect";
+      var statusIcon = needsRevision ? "refresh" : (isIncorrect ? "cancel" : "check_circle");
+      var statusColor = needsRevision ? "text-amber-400" : (isIncorrect ? "text-rose-400" : "text-accent-success");
+      var gradeColor = needsRevision ? "text-amber-400" : (isIncorrect ? "text-rose-400" : "text-accent-success");
+      var gradeLabel = needsRevision ? "Needs Revision" : (isIncorrect ? "Incorrect" : "Grade: " + Math.round(grade) + "%");
+      var feedback = sub.instructorFeedback || "";
+      var card = document.createElement("div");
+      card.className = "glass-panel p-4 rounded-xl flex items-center gap-4 transition-transform active:scale-[0.98]";
+      card.innerHTML =
+        '<div class="relative shrink-0">' +
+          '<div class="size-16 rounded-lg bg-gradient-to-br from-primary/20 to-blue-600/20 flex items-center justify-center border border-primary/30">' +
+            '<span class="material-symbols-outlined text-3xl ' + statusColor + '">' + statusIcon + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="flex-1 min-w-0">' +
+          '<h3 class="text-base font-bold text-white truncate">' + esc(title) + '</h3>' +
+          '<p class="text-sm text-slate-400 truncate">' + esc(sub.classroomName || "") + '</p>' +
+          '<div class="flex items-center mt-1 gap-1.5">' +
+            '<span class="text-xs font-bold ' + gradeColor + ' uppercase tracking-wider">' + gradeLabel + '</span>' +
+          '</div>' +
+          (feedback ? '<p class="text-xs text-slate-400 mt-1.5 line-clamp-2">' + esc(feedback) + '</p>' : '') +
+          (needsRevision ? '<button class="retake-btn mt-2 w-full bg-amber-400/20 border border-amber-400/40 text-amber-400 font-bold py-2 rounded-lg text-xs flex items-center justify-center gap-1 active:scale-95 transition-transform"><span class="material-symbols-outlined text-sm">refresh</span> Retake Experiment</button>' : '') +
+        '</div>' +
+        '<div class="shrink-0">' +
+          '<span class="material-symbols-outlined text-slate-600">chevron_right</span>' +
+        '</div>';
+      if (needsRevision) {
+        card.querySelector(".retake-btn").addEventListener("click", function (e) {
+          e.stopPropagation();
+          parent.postMessage("unity:start_ar:" + JSON.stringify({ experimentId: sub.experimentId, title: title, mode: "retake" }), "*");
+        });
+      }
+      list.appendChild(card);
+    });
+  }
+
+  window.addEventListener("message", function (e) {
+    var d = e.data;
+    if (d && typeof d === "object" && d.type === "completed_assignments") renderCompleted(d.data);
+  });
+})();
+</script>
+</body></html>

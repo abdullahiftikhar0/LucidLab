@@ -1,9 +1,10 @@
 export const firebaseConfig = {
-    apiKey: "AIzaSyC4PZyLA_nURtjf_nmeXVTz5RFeeEQtqbk",
-    authDomain: "eduar-d3bdc.firebaseapp.com",
-    projectId: "eduar-d3bdc",
-    storageBucket: "eduar-d3bdc.firebasestorage.app",
-    messagingSenderId: "162096178222",
-    appId: "1:162096178222:web:615547a7802469d784ebbf",
-    measurementId: "G-MC94XS0SJ0"
+    apiKey: "AIzaSyCbHACZX4VhFCj45hOr_TlK5KT5yi2dGSs",
+    authDomain: "campuspulse0.firebaseapp.com",
+    databaseURL: "https://campuspulse0-default-rtdb.firebaseio.com",
+    projectId: "campuspulse0",
+    storageBucket: "campuspulse0.firebasestorage.app",
+    messagingSenderId: "91092596944",
+    appId: "1:91092596944:web:4c78dae4fb11db961486d5",
+    measurementId: "G-P2XCWCC795"
 };

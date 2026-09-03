@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>LucidLab - Classroom Detail</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#00f2ff",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#0f2223",
+                        "surface": "#162c2d",
+                        "accent-purple": "#6366f1",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        .glass-card {
+            background: rgba(22, 44, 45, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 242, 255, 0.1);
+        }
+
+        .glow-border {
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.1);
+        }
+
+        .neon-text-glow {
+            text-shadow: 0 0 8px rgba(0, 242, 255, 0.5);
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #00f2ff33;
+            border-radius: 10px;
+        }
+    </style>
+    <style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+    <!-- Top App Bar -->
+    <header
+        class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-primary/10">
+        <div class="max-w-md mx-auto flex items-center justify-between p-4">
+            <div class="flex items-center gap-3">
+                <button id="back-btn"
+                    class="flex items-center justify-center size-10 rounded-full hover:bg-primary/10 text-slate-900 dark:text-slate-100 transition-colors">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </button>
+                <h1 id="class-title" class="text-lg font-bold tracking-tight">Loading…</h1>
+            </div>
+            <button
+                class="flex items-center justify-center size-10 rounded-full hover:bg-primary/10 text-slate-900 dark:text-slate-100 transition-colors">
+                <span class="material-symbols-outlined">more_vert</span>
+            </button>
+        </div>
+    </header>
+    <main class="flex-1 max-w-md mx-auto w-full pb-24">
+        <!-- Header Banner -->
+        <div class="px-4 py-4">
+            <div id="banner" class="relative h-48 w-full rounded-xl overflow-hidden bg-gradient-to-br from-primary/40 via-accent-purple/40 to-background-dark border border-primary/20 flex items-end p-6">
+                <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
+                <div class="relative z-10">
+                    <span id="banner-tag" class="px-3 py-1 rounded-full bg-primary/20 border border-primary text-primary text-xs font-bold tracking-widest uppercase mb-2 inline-block"></span>
+                    <h2 id="banner-title" class="text-4xl font-black text-white tracking-tighter neon-text-glow uppercase"></h2>
+                    <p id="instructor-name" class="text-sm text-slate-300 mt-1"></p>
+                </div>
+            </div>
+        </div>
+        <!-- Quick Stats -->
+        <div class="flex gap-3 px-4 mb-8">
+            <div class="glass-card flex-1 p-3 rounded-xl flex items-center gap-3 border-primary/20">
+                <div class="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                    <span class="material-symbols-outlined">groups</span>
+                </div>
+                <div>
+                    <p class="text-[10px] uppercase tracking-wider text-slate-400">Class Size</p>
+                    <p id="stat-students" class="text-sm font-bold">—</p>
+                </div>
+            </div>
+            <div class="glass-card flex-1 p-3 rounded-xl flex items-center gap-3 border-primary/20">
+                <div class="size-10 rounded-lg bg-accent-purple/10 flex items-center justify-center text-accent-purple">
+                    <span class="material-symbols-outlined">science</span>
+                </div>
+                <div>
+                    <p class="text-[10px] uppercase tracking-wider text-slate-400">Modules</p>
+                    <p id="stat-experiments" class="text-sm font-bold">—</p>
+                </div>
+            </div>
+        </div>
+        <!-- Section Title -->
+        <div class="px-4 mb-4 flex items-center justify-between">
+            <h3 class="text-lg font-bold flex items-center gap-2">
+                Assigned Experiments
+                <span id="exp-count" class="bg-primary/20 text-primary text-xs font-bold px-2 py-0.5 rounded-full border border-primary/30">0</span>
+            </h3>
+        </div>
+        <div id="experiments-list" class="flex flex-col gap-4 px-4"></div>
+        <div id="empty-state" class="hidden flex flex-col items-center justify-center py-16 text-center px-4">
+            <span class="material-symbols-outlined text-5xl text-slate-600 mb-3">science</span>
+            <p class="text-slate-400 text-sm">No experiments assigned yet.</p>
+        </div>
+        <!-- Leave Classroom -->
+        <div class="px-4 mt-10">
+            <button id="leave-btn" class="w-full py-3 border border-rose-500/30 text-rose-500 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 hover:bg-rose-500/10 transition-colors">
+                <span class="material-symbols-outlined text-base">logout</span>
+                Leave Classroom
+            </button>
+        </div>
+    </main>
+    <script>
+    (function () {
+      // Back button
+      document.getElementById("back-btn").addEventListener("click", function (e) {
+        e.preventDefault();
+        parent.postMessage("navigate:home", "*");
+      });
+
+      // Leave classroom
+      var currentClassroomId = null;
+      document.getElementById("leave-btn").addEventListener("click", function (e) {
+        e.preventDefault();
+        if (!currentClassroomId) return;
+        if (!confirm("Are you sure you want to leave this classroom?")) return;
+        parent.postMessage({ type: "leave_classroom", classroomId: currentClassroomId }, "*");
+      });
+
+      function esc(s) {
+        var d = document.createElement("div");
+        d.appendChild(document.createTextNode(s));
+        return d.innerHTML;
+      }
+
+      function renderDetail(classroom, experiments) {
+        currentClassroomId = classroom.id;
+        // Header
+        document.getElementById("class-title").textContent = classroom.name || "Classroom";
+        var subj = classroom.subject || classroom.name || "";
+        document.getElementById("banner-tag").textContent = subj;
+        document.getElementById("banner-title").textContent = subj.toUpperCase();
+        // Instructor name
+        var instrEl = document.getElementById("instructor-name");
+        if (instrEl) instrEl.textContent = classroom.instructorName || "";
+
+        // Stats
+        document.getElementById("stat-students").textContent = (classroom.studentCount || 0) + " Students";
+        document.getElementById("stat-experiments").textContent = experiments.length + " Experiments";
+        document.getElementById("exp-count").textContent = experiments.length;
+
+        var list = document.getElementById("experiments-list");
+        var empty = document.getElementById("empty-state");
+        list.innerHTML = "";
+
+        if (experiments.length === 0) {
+          empty.classList.remove("hidden");
+          return;
+        }
+        empty.classList.add("hidden");
+
+        experiments.forEach(function (exp) {
+          var sub = exp.submission;
+          var status, borderColor, statusBg, statusText, btnClass, btnLabel;
+
+          if (sub && (sub.status === "graded" || sub.status === "correct")) {
+            status = "Completed";
+            borderColor = "border-l-emerald-400";
+            statusBg = "bg-emerald-400/10"; statusText = "text-emerald-500";
+            btnClass = "w-full bg-primary/20 border border-primary/40 text-primary font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 hover:bg-primary/30 transition-all";
+            btnLabel = "Review Session";
+          } else if (sub && (sub.status === "in_progress" || sub.status === "submitted")) {
+            status = "In Progress";
+            borderColor = "border-l-yellow-400";
+            statusBg = "bg-yellow-400/10"; statusText = "text-yellow-500";
+            btnClass = "w-full bg-primary hover:bg-primary/90 text-background-dark font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98]";
+            btnLabel = "Continue AR";
+          } else {
+            status = "Not Started";
+            borderColor = "border-l-slate-500";
+            statusBg = "bg-slate-500/10"; statusText = "text-slate-400";
+            btnClass = "w-full bg-primary hover:bg-primary/90 text-background-dark font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98]";
+            btnLabel = "Launch AR";
+          }
+
+          var card = document.createElement("div");
+          card.className = "glass-card rounded-xl p-4 border-l-4 " + borderColor;
+          card.innerHTML =
+            '<div class="flex justify-between items-start mb-3">' +
+              '<div>' +
+                '<span class="text-[10px] font-bold text-primary uppercase tracking-widest">' + esc(exp.category || classroom.subject || "") + '</span>' +
+                '<h4 class="text-base font-bold text-slate-900 dark:text-slate-100">' + esc(exp.title || exp.name || "Experiment") + '</h4>' +
+              '</div>' +
+              '<span class="px-2 py-1 rounded-lg ' + statusBg + ' ' + statusText + ' text-[10px] font-bold border border-current/20">' + status + '</span>' +
+            '</div>' +
+            '<button class="ar-btn ' + btnClass + '">' +
+              '<span class="material-symbols-outlined text-lg">play_arrow</span> ' + btnLabel +
+            '</button>';
+
+          card.querySelector(".ar-btn").addEventListener("click", function (e) {
+            e.stopPropagation();
+            var mode = "launch";
+            if (sub && (sub.status === "graded" || sub.status === "correct")) mode = "review";
+            else if (sub && (sub.status === "in_progress" || sub.status === "submitted")) mode = "continue";
+            parent.postMessage("unity:start_ar:" + JSON.stringify({ experimentId: exp.id, title: exp.title || exp.name, mode: mode }), "*");
+          });
+          list.appendChild(card);
+        });
+      }
+
+      window.addEventListener("message", function (e) {
+        var d = e.data;
+        if (d && typeof d === "object" && d.type === "classroom_detail") {
+          renderDetail(d.classroom, d.experiments || []);
+        }
+      });
+    })();
+    </script>
+</body>
+
+</html>

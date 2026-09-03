@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>LucidLab - Student Dashboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap"
+        rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet">
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#00f2ff",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#0f2223",
+                        "surface-dark": "rgba(255, 255, 255, 0.05)",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+    <style>
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .neon-glow {
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.4);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+    <style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-display">
+    <!-- Top App Bar -->
+    <header class="sticky top-0 z-50 glass px-4 py-3 flex items-center justify-between border-b border-white/10">
+        <div class="flex items-center">
+            <div id="avatar-wrap" class="size-10 rounded-full border-2 border-primary/30 p-0.5 overflow-hidden flex items-center justify-center bg-primary/20">
+                <span id="avatar-initials" class="text-primary font-bold text-sm"></span>
+            </div>
+        </div>
+        <h1 class="text-lg font-bold tracking-tight text-slate-100">My Classrooms</h1>
+        <button class="relative p-2 text-slate-400 hover:text-primary transition-colors" style="">
+            <span class="material-symbols-outlined" style="">notifications</span>
+            <span
+                class="absolute top-2 right-2 size-2 bg-primary rounded-full neon-glow border border-background-dark"></span>
+        </button>
+    </header>
+    <!-- Main Content -->
+    <main class="flex-1 px-4 py-6 space-y-4 pb-24 overflow-y-auto">
+        <div class="flex items-center justify-between mb-2">
+            <span id="course-count" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Loading…</span>
+            <span class="material-symbols-outlined text-slate-500 text-sm">filter_list</span>
+        </div>
+        <div id="classrooms-list"></div>
+        <div id="empty-state" class="hidden flex flex-col items-center justify-center py-16 text-center">
+            <span class="material-symbols-outlined text-5xl text-slate-600 mb-3">school</span>
+            <p class="text-slate-400 text-sm">No classrooms yet.<br>Tap <b class="text-primary">+</b> to join one!</p>
+        </div>
+    </main>
+    <!-- Background Decoration Elements -->
+    <div class="fixed top-[-10%] left-[-10%] size-64 bg-primary/10 blur-[100px] rounded-full -z-10"></div>
+    <div class="fixed bottom-[10%] right-[-5%] size-80 bg-purple-600/10 blur-[120px] rounded-full -z-10"></div>
+    <script>
+    (function () {
+      var SUBJECT_MAP = {
+        chemistry: { icon: "science", bg: "bg-primary/10", text: "text-primary" },
+        physics:   { icon: "bolt",    bg: "bg-purple-500/10", text: "text-purple-400" },
+        biology:   { icon: "genetics",bg: "bg-emerald-500/10", text: "text-emerald-400" },
+        math:      { icon: "functions",bg: "bg-orange-500/10", text: "text-orange-400" },
+        calculus:  { icon: "functions",bg: "bg-orange-500/10", text: "text-orange-400" },
+        engineering:{icon: "precision_manufacturing", bg: "bg-blue-500/10", text: "text-blue-400" }
+      };
+      var DEFAULT_STYLE = { icon: "school", bg: "bg-primary/10", text: "text-primary" };
+
+      function subjectStyle(subject) {
+        if (!subject) return DEFAULT_STYLE;
+        var k = subject.toLowerCase();
+        for (var s in SUBJECT_MAP) { if (k.indexOf(s) !== -1) return SUBJECT_MAP[s]; }
+        return DEFAULT_STYLE;
+      }
+
+      function esc(str) {
+        var d = document.createElement("div");
+        d.appendChild(document.createTextNode(str));
+        return d.innerHTML;
+      }
+
+      function initials(name) {
+        if (!name) return "?";
+        return name.split(" ").map(function(w){return w[0]||""}).join("").substring(0,2).toUpperCase();
+      }
+
+      function render(classrooms, user) {
+        var el = document.getElementById("avatar-initials");
+        if (el && user) el.textContent = initials(user.displayName);
+
+        var list = document.getElementById("classrooms-list");
+        var countEl = document.getElementById("course-count");
+        var empty = document.getElementById("empty-state");
+        list.innerHTML = "";
+
+        if (!classrooms || classrooms.length === 0) {
+          countEl.textContent = "No Courses";
+          empty.classList.remove("hidden");
+          return;
+        }
+        empty.classList.add("hidden");
+        countEl.textContent = "Active Courses (" + classrooms.length + ")";
+
+        classrooms.forEach(function (c) {
+          var st = subjectStyle(c.subject);
+          var card = document.createElement("div");
+          card.className = "glass p-4 rounded-xl flex items-center gap-4 group cursor-pointer hover:border-primary/40 transition-all duration-300 mb-4";
+          card.innerHTML =
+            '<div class="size-14 rounded-xl ' + st.bg + ' flex items-center justify-center ' + st.text + '">' +
+              '<span class="material-symbols-outlined text-3xl">' + st.icon + '</span>' +
+            '</div>' +
+            '<div class="flex-1 min-w-0">' +
+              '<h3 class="font-bold text-slate-100 truncate">' + esc(c.name || "Untitled") + '</h3>' +
+              '<p class="text-sm text-slate-400">' + esc(c.instructorName || "Instructor") +
+                (c.subject ? ' \u2022 ' + esc(c.subject) : '') + '</p>' +
+              '<p class="text-xs text-slate-500 mt-0.5">' + ((c.experimentIds && c.experimentIds.length) || 0) + ' experiment' + ((c.experimentIds && c.experimentIds.length) !== 1 ? 's' : '') + '</p>' +
+            '</div>' +
+            '<div class="flex flex-col items-end gap-2">' +
+              '<span class="material-symbols-outlined text-slate-500 group-hover:text-primary group-hover:translate-x-1 transition-all">chevron_right</span>' +
+            '</div>';
+          card.addEventListener("click", function () {
+            parent.postMessage({ type: "request_data", request: "classroom_detail", classroomId: c.id }, "*");
+            parent.postMessage("navigate:classroom", "*");
+          });
+          list.appendChild(card);
+        });
+      }
+
+      window.addEventListener("message", function (e) {
+        var d = e.data;
+        if (d && typeof d === "object" && d.type === "classrooms") render(d.data, d.user);
+      });
+    })();
+    </script>
+</body>
+
+</html>
