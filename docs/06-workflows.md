@@ -1,6 +1,6 @@
-# EduAR — Comprehensive Platform Workflows
+# LucidLab — Comprehensive Platform Workflows
 
-> This document details every workflow in the EduAR platform, covering the entire lifecycle of Users, Classrooms, Experiments, and Submissions across both the Designer (Web) and Player (Mobile) apps.
+> This document details every workflow in the LucidLab platform, covering the entire lifecycle of Users, Classrooms, Experiments, and Submissions across both the Designer (Web) and Player (Mobile) apps.
 
 ---
 

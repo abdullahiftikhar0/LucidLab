@@ -162,7 +162,7 @@ export default function RegisterPage() {
           <div className="bg-primary p-2 rounded-lg">
             <span className="material-symbols-outlined text-white text-2xl">science</span>
           </div>
-          <h2 className="text-xl font-bold tracking-tight text-white">EduAR</h2>
+          <h2 className="text-xl font-bold tracking-tight text-white">LucidLab</h2>
         </div>
         <div className="flex items-center gap-4">
           <span className="hidden md:inline text-slate-400 text-sm">Already have an account?</span>
@@ -397,7 +397,7 @@ export default function RegisterPage() {
               </button>
 
               <p className="text-center text-sm text-slate-400">
-                Already an EduAR user?{' '}
+                Already an LucidLab user?{' '}
                 <Link className="text-primary font-bold hover:underline" to="/login">
                   Log in to your workspace
                 </Link>
@@ -408,7 +408,7 @@ export default function RegisterPage() {
       </main>
 
       <footer className="w-full py-8 text-center text-slate-500 text-xs tracking-wide">
-        © 2026 EduAR. All rights reserved.
+        © 2026 LucidLab. All rights reserved.
       </footer>
     </div>
   );
