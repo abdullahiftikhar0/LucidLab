@@ -1,5 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, Component, ErrorInfo, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import Spline from '@splinetool/react-spline';
+
+// Error Boundary to catch Spline loading failures gracefully
+class SplineErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean}> {
+  constructor(props: {children: ReactNode}) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(_: Error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("Spline failed to load:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900/50 rounded-3xl border border-slate-700/50">
+          <span className="material-symbols-outlined text-red-400 text-4xl mb-3">error_outline</span>
+          <p className="text-slate-400 text-sm">3D model unavailable</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const VIDEO_ID = 'XfO_h27IdBs';
 
@@ -104,11 +133,35 @@ export default function LandingPage() {
                 </div>
               </div>
               <div className="relative">
-                <div
-                  className="aspect-square rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 bg-cover bg-center"
-                  style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuAImxXBnkAArCMxVG4yOJeOKbohzM8btRSEBIERZX2BbWmxS_7D3fGGAFt4hhxtnrBTkVpRweV39r6djS8fgh92JEHI2jmNfMKDf1YYMYY6JV8Vg54v0-1fzXcS2nKZH4F4QXSJUkgsH9mW2Rz9g-kx9bAOEOtBF12-sQkLkGLvrUZyQyiaHlpQNMJChBvO2BQRvDqGRoF1K1kHA2kpcIyNLmIqQpNt2GNyaCliDE-K_XESpCax14Km3Ya4d2OT-QUFNFcGtXRli_dg')" }}
-                />
-                <div className="absolute -bottom-6 -left-6 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 max-w-xs">
+                <div className="aspect-square rounded-3xl overflow-hidden shadow-2xl border border-blue-900/40 dark:border-blue-900/60 bg-gradient-to-br from-blue-950/80 via-slate-900 to-slate-950 relative flex items-center justify-center group">
+                  {/* Subtle pulsing background glow matching blue theme */}
+                  <div className="absolute inset-0 bg-blue-600/10 blur-3xl rounded-full scale-110 group-hover:scale-125 transition-transform duration-1000"></div>
+                  
+                  {/* Spline 3D Model */}
+                  <div className="absolute inset-0 w-full h-full spline-wrapper z-10">
+                    <SplineErrorBoundary>
+                      <Spline 
+                         scene="https://prod.spline.design/QJ9NK0LDYhcpN1sq/scene.splinecode"
+                      />
+                    </SplineErrorBoundary>
+                  </div>
+                  <style>{`
+                    /* Hide the "Built with Spline" watermark more aggressively */
+                    #logo,
+                    #spline-logo,
+                    .spline-wrapper canvas ~ a,
+                    .spline-wrapper canvas ~ div,
+                    .spline-wrapper a[href*="spline"] {
+                      display: none !important;
+                      opacity: 0 !important;
+                      visibility: hidden !important;
+                      pointer-events: none !important;
+                      z-index: -999 !important;
+                    }
+                  `}</style>
+                </div>
+                {/* Floating Card - added pointer-events-none so it doesn't block Spline interactions */}
+                <div className="absolute -bottom-6 -left-6 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md p-6 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 max-w-xs pointer-events-none z-10">
                   <div className="flex items-center gap-4 mb-2">
                     <span className="material-symbols-outlined text-green-500 text-3xl">verified</span>
                     <span className="font-bold">Real-time Feedback</span>

@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <title>LucidLab Student</title>
+  <link rel="stylesheet" href="fonts/fonts.css" />
+
+  <!-- Firebase SDK (compat for plain JS) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --bg: #0f2223;
+      --accent: #00f2ff;
+      --primary: var(--accent);
+      --text: #e6f3f4;
+      --muted: #7f9398;
+      --nav-h: 68px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: Inter, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    /* ===== Screen Frames ===== */
+    #screens {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      bottom: var(--nav-h);
+      z-index: 1;
+    }
+
+    #screens > iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .1s ease;
+    }
+
+    #screens > iframe.active {
+      opacity: 1;
+      pointer-events: auto;
+      z-index: 2;
+    }
+
+    /* ===== Join-Class Modal ===== */
+    #modal-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(0,0,0,.6);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+    }
+    #modal-layer.open { display: flex; }
+
+    .glass-modal {
+      background: rgba(15, 34, 35, .8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+      border-radius: 12px;
+      padding: 24px;
+      width: 100%;
+      max-width: 420px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 25px 50px rgba(0,0,0,.4);
+    }
+
+    .glass-modal .glow {
+      position: absolute;
+      top: -96px; right: -96px;
+      width: 192px; height: 192px;
+      background: color-mix(in srgb, var(--primary) 10%, transparent);
+      border-radius: 50%;
+      filter: blur(48px);
+      pointer-events: none;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px; right: 16px;
+      background: none; border: 0;
+      color: var(--muted);
+      cursor: pointer;
+      transition: color .15s;
+    }
+    .modal-close:hover { color: var(--primary); }
+
+    .modal-icon {
+      width: 48px; height: 48px;
+      background: color-mix(in srgb, var(--primary) 15%, transparent);
+      border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+      border-radius: 10px;
+      display: grid; place-items: center;
+      margin-bottom: 16px;
+    }
+    .modal-icon .material-symbols-outlined { font-size: 30px; color: var(--primary); }
+
+    .modal-title { font-size: 20px; font-weight: 700; letter-spacing: -.02em; }
+    .modal-desc  { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    .modal-label {
+      display: block;
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    #join-code {
+      width: 100%;
+      background: rgba(15,23,42,.5);
+      border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      font-size: 24px;
+      font-family: monospace;
+      letter-spacing: .5em;
+      color: var(--primary);
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+      text-transform: uppercase;
+    }
+    #join-code::placeholder { color: color-mix(in srgb, var(--primary) 20%, transparent); }
+    #join-code:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 15px color-mix(in srgb, var(--primary) 40%, transparent);
+    }
+
+    .btn-join {
+      width: 100%;
+      padding: 16px;
+      border: 0; border-radius: 8px;
+      background: var(--primary);
+      color: #072024;
+      font-family: Inter, sans-serif;
+      font-size: 15px; font-weight: 700;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      box-shadow: 0 0 20px color-mix(in srgb, var(--primary) 30%, transparent);
+      transition: opacity .15s;
+    }
+    .btn-join:active { opacity: .85; }
+    .btn-join .material-symbols-outlined { font-size: 20px; }
+
+    .btn-cancel {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 8px;
+      background: transparent;
+      color: #cbd5e1;
+      font-family: Inter, sans-serif;
+      font-size: 14px; font-weight: 500;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-cancel:hover { background: rgba(255,255,255,.05); }
+
+    .modal-footer {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 11px;
+      color: #64748b;
+    }
+    .modal-footer a {
+      color: color-mix(in srgb, var(--primary) 60%, transparent);
+      text-decoration: underline;
+      text-decoration-color: color-mix(in srgb, var(--primary) 30%, transparent);
+    }
+    .modal-footer a:hover { color: var(--primary); }
+
+    /* ===== FAB (Join Class — home only) ===== */
+    #fab {
+      position: fixed;
+      bottom: calc(var(--nav-h) + 18px);
+      right: 20px;
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      border: 0;
+      background: var(--primary);
+      color: #072024;
+      display: grid; place-items: center;
+      box-shadow: 0 0 22px color-mix(in srgb, var(--primary) 40%, transparent);
+      cursor: pointer;
+      z-index: 40;
+      transition: transform .1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #fab:active { transform: scale(.92); }
+    #fab .material-symbols-outlined { font-size: 28px; font-weight: 700; }
+    #fab.hidden { display: none; }
+
+    /* Auth screens use full height (no nav bar) */
+    #screens.auth-mode {
+      bottom: 0;
+    }
+    #app-nav.hidden { display: none; }
+
+    /* ===== Bottom Nav ===== */
+    #app-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: var(--nav-h);
+      z-index: 50;
+      background: rgba(12, 28, 30, .96);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid color-mix(in srgb, var(--primary) 15%, transparent);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 12px;
+      padding-bottom: env(safe-area-inset-bottom, 8px);
+    }
+
+    .nav-btn {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 2px;
+      background: none; border: 0;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 6px 14px;
+      font-family: Inter, sans-serif;
+      transition: color .15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .nav-btn .material-symbols-outlined { font-size: 24px; }
+    .nav-btn .lbl {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .08em;
+    }
+    .nav-btn.active { color: var(--primary); }
+    .nav-btn .dot {
+      width: 4px; height: 4px; border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 6px var(--primary);
+      margin-top: 1px;
+      display: none;
+    }
+    .nav-btn.active .dot { display: block; }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Screen iframes (pre-loaded, shown/hidden) ===== -->
+  <div id="screens" class="auth-mode">
+    <iframe id="frame-login"       class="active" src="login_screen.html"></iframe>
+    <iframe id="frame-signup"                      src="signup_screen.html"></iframe>
+    <iframe id="frame-home"                        src="dashboard.html"></iframe>
+    <iframe id="frame-experiments"                  src="active_assignments.html"></iframe>
+    <iframe id="frame-completed"                    src="completed_assignments.html"></iframe>
+    <iframe id="frame-profile"                      src="profile.html"></iframe>
+    <iframe id="frame-classroom"                    src="classroom_detail.html"></iframe>
+    <iframe id="frame-account_settings"              src="account_settings.html"></iframe>
+    <iframe id="frame-appearance"                    src="appearance.html"></iframe>
+    <iframe id="frame-help"                          src="help_support.html"></iframe>
+    <iframe id="frame-privacy"                       src="privacy_policy.html"></iframe>
+    <iframe id="frame-app_settings"                   src="app_settings.html"></iframe>
+  </div>
+
+  <!-- ===== Join-Class Modal (inline) ===== -->
+  <div id="modal-layer">
+    <div class="glass-modal">
+      <div class="glow"></div>
+      <button class="modal-close" id="modal-close-btn">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+      <div class="modal-icon">
+        <span class="material-symbols-outlined">school</span>
+      </div>
+      <div class="modal-title">Join a Classroom</div>
+      <p class="modal-desc">Enter the join code provided by your teacher to access the lab.</p>
+      <div style="margin-top:20px">
+        <label class="modal-label">6-Digit Access Code</label>
+        <input id="join-code" type="text" maxlength="6" placeholder="L-X9R2" autocomplete="off" />
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-top:16px">
+        <button class="btn-join" id="modal-join-btn">
+          <span>Join Class</span>
+          <span class="material-symbols-outlined">login</span>
+        </button>
+        <button class="btn-cancel" id="modal-cancel-btn">Cancel</button>
+      </div>
+      <p class="modal-footer">Need help? <a href="#">Contact instructor</a></p>
+    </div>
+  </div>
+
+  <!-- ===== FAB — opens join-class popup (visible on Home only) ===== -->
+  <button id="fab" class="hidden" aria-label="Join a class">
+    <span class="material-symbols-outlined">add</span>
+  </button>
+
+  <!-- ===== Unified bottom nav ===== -->
+  <nav id="app-nav" class="hidden">
+    <button class="nav-btn active" data-target="home">
+      <span class="material-symbols-outlined">home</span>
+      <span class="lbl">Home</span>
+      <span class="dot"></span>
+    </button>
+    <button class="nav-btn" data-target="experiments">
+      <span class="material-symbols-outlined">experiment</span>
+      <span class="lbl">Experiments</span>
+      <span class="dot"></span>
+    </button>
+    <button class="nav-btn" data-target="profile">
+      <span class="material-symbols-outlined">person</span>
+      <span class="lbl">Profile</span>
+      <span class="dot"></span>
+    </button>
+  </nav>
+
+  <script>
+    /* ==========================================================
+       Load accent color from localStorage for the shell itself
+       ========================================================== */
+    (function() {
+      try {
+        var accent = localStorage.getItem("lucidlab_accent");
+        if (accent) document.documentElement.style.setProperty("--accent", accent);
+      } catch(e) {}
+    })();
+
+    /* ==========================================================
+       Unity Bridge (central — forwarded into every iframe)
+       ========================================================== */
+    function sendToUnity(msg) {
+      if (window.Unity && window.Unity.call) {
+        window.Unity.call(msg);
+      } else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.unityControl) {
+        window.webkit.messageHandlers.unityControl.postMessage(msg);
+      } else {
+        console.log("[Shell -> Unity]", msg);
+        window.location = "unity:" + msg;
+      }
+    }
+
+    /* ==========================================================
+       State
+       ========================================================== */
+    var current = "login";          // login | signup | home | experiments | completed | profile | classroom
+    var experimentsSub = "active";  // tracks last sub-tab under Experiments
+
+    var frames = {
+      login:            document.getElementById("frame-login"),
+      signup:           document.getElementById("frame-signup"),
+      home:             document.getElementById("frame-home"),
+      experiments:      document.getElementById("frame-experiments"),
+      completed:        document.getElementById("frame-completed"),
+      profile:          document.getElementById("frame-profile"),
+      classroom:        document.getElementById("frame-classroom"),
+      account_settings: document.getElementById("frame-account_settings"),
+      appearance:       document.getElementById("frame-appearance"),
+      help:             document.getElementById("frame-help"),
+      privacy:          document.getElementById("frame-privacy"),
+      app_settings:     document.getElementById("frame-app_settings")
+    };
+
+    var screensDiv = document.getElementById("screens");
+    var appNav     = document.getElementById("app-nav");
+
+    var navBtns    = document.querySelectorAll(".nav-btn");
+    var fab        = document.getElementById("fab");
+    var modalLayer = document.getElementById("modal-layer");
+    var joinInput  = document.getElementById("join-code");
+
+    /* ==========================================================
+       Navigate between screens
+       ========================================================== */
+    function navigate(target) {
+      console.log("[Shell] navigate(", target, ") current=", current);
+      if (target === current) return;
+
+      var isAuth = (target === "login" || target === "signup");
+
+      // Deactivate all
+      Object.keys(frames).forEach(function (k) {
+        frames[k].classList.remove("active");
+      });
+
+      // Activate target
+      if (frames[target]) frames[target].classList.add("active");
+
+      // Auth vs App chrome
+      screensDiv.classList.toggle("auth-mode", isAuth);
+      appNav.classList.toggle("hidden", isAuth);
+
+      if (!isAuth) {
+        // Update nav highlights — "completed" shares the Experiments tab
+        // "classroom" highlights the Home tab since it's a sub-screen of Home
+        var profileSubScreens = ["account_settings", "appearance", "help", "privacy", "app_settings"];
+        navBtns.forEach(function (btn) {
+          var t = btn.dataset.target;
+          var isActive = (t === target) ||
+                         (target === "completed" && t === "experiments") ||
+                         (target === "classroom" && t === "home") ||
+                         (profileSubScreens.indexOf(target) !== -1 && t === "profile");
+          btn.classList.toggle("active", isActive);
+        });
+
+        // FAB only visible on home screen
+        fab.classList.toggle("hidden", target !== "home");
+
+        // Send profile data to account_settings when navigating there
+        if (target === "account_settings" && currentUserData) {
+          broadcastToFrame("account_settings", { type: "profile_data", user: currentUserData });
+        }
+      } else {
+        fab.classList.add("hidden");
+      }
+
+      current = target;
+      if (target === "experiments") experimentsSub = "active";
+      if (target === "completed")  experimentsSub = "completed";
+    }
+
+    navBtns.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var target = btn.dataset.target;
+        // Restore last Experiments sub-tab
+        if (target === "experiments") {
+          target = (experimentsSub === "completed") ? "completed" : "experiments";
+        }
+        navigate(target);
+      });
+    });
+
+    /* ==========================================================
+       Join-Class Modal
+       ========================================================== */
+    function openJoinModal() {
+      joinInput.value = "";
+      modalLayer.classList.add("open");
+      joinInput.focus();
+    }
+
+    function closeJoinModal() {
+      modalLayer.classList.remove("open");
+    }
+
+    document.getElementById("modal-close-btn").addEventListener("click", closeJoinModal);
+    document.getElementById("modal-cancel-btn").addEventListener("click", closeJoinModal);
+    // NOTE: join-btn click is handled by the Firestore join handler below
+
+    // Close on backdrop click
+    modalLayer.addEventListener("click", function (e) {
+      if (e.target === modalLayer) closeJoinModal();
+    });
+
+    fab.addEventListener("click", openJoinModal);
+
+    /* ==========================================================
+       postMessage listener — sub-pages communicate via postMessage
+       since file:// protocol blocks cross-origin iframe access.
+       Sub-pages post: "navigate:<target>"
+                    or "unity:<msg>"
+                    or "open_join_modal" / "close_join_modal"
+       ========================================================== */
+    window.addEventListener("message", function (event) {
+      var data = event.data;
+      if (!data) return;
+
+      // String messages
+      if (typeof data === "string") {
+        if (data.indexOf("navigate:") === 0)   return navigate(data.split(":")[1]);
+        if (data.indexOf("unity:") === 0)      return sendToUnity(data.substring(6));
+        if (data === "open_join_modal")         return openJoinModal();
+        if (data === "close_join_modal")        return closeJoinModal();
+      }
+
+      // Object messages
+      if (typeof data === "object") {
+        if (data.type === "navigate" && data.target) navigate(data.target);
+        if (data.type === "unity" && data.msg)       sendToUnity(data.msg);
+        if (data.type === "modal") {
+          if (data.action === "open")  openJoinModal();
+          if (data.action === "close") closeJoinModal();
+        }
+        // Auth requests from sub-pages
+        if (data.type === "auth") handleAuthRequest(data);
+        // Password reset request
+        if (data.type === "forgot_password" && data.email) {
+          auth.sendPasswordResetEmail(data.email).then(function () {
+            broadcastToFrame("login", { type: "auth_result", success: true, info: "Password reset email sent. Check your inbox." });
+          }).catch(function (err) {
+            broadcastToFrame("login", { type: "auth_result", success: false, error: mapAuthError(err.code) });
+          });
+        }
+        // Leave classroom request
+        if (data.type === "leave_classroom" && data.classroomId && currentUserData) {
+          leaveClassroom(data.classroomId);
+        }
+        // Preference change from appearance page — broadcast to all frames & apply to shell
+        if (data.type === "preference_change" && data.key) {
+          broadcastToAll({ type: "preference_change", key: data.key, value: data.value });
+          if (data.key === "accent") {
+            document.documentElement.style.setProperty("--accent", data.value);
+          }
+        }
+        // Update profile request from account_settings
+        if (data.type === "update_profile" && currentUserData) {
+          var updates = { updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+          if (data.displayName != null) updates.displayName = data.displayName;
+          if (data.institution != null) updates.institution = data.institution;
+          db.collection("users").doc(currentUserData.uid).update(updates).then(function () {
+            if (data.displayName != null) {
+              currentUserData.displayName = data.displayName;
+              auth.currentUser.updateProfile({ displayName: data.displayName });
+            }
+            if (data.institution != null) currentUserData.institution = data.institution;
+            broadcastToFrame("account_settings", { type: "profile_saved", success: true });
+            broadcastToFrame("profile", { type: "profile_data", user: currentUserData });
+          }).catch(function (err) {
+            broadcastToFrame("account_settings", { type: "profile_saved", success: false, error: err.message });
+          });
+        }
+        // Password reset from account_settings
+        if (data.type === "reset_password" && currentUserData && currentUserData.email) {
+          auth.sendPasswordResetEmail(currentUserData.email).then(function () {
+            broadcastToFrame("account_settings", { type: "password_reset_sent", success: true });
+          }).catch(function (err) {
+            broadcastToFrame("account_settings", { type: "password_reset_sent", success: false, error: err.message });
+          });
+        }
+      }
+    });
+
+    /* ==========================================================
+       Firebase Init
+       ========================================================== */
+    firebase.initializeApp({
+      apiKey: "AIzaSyCbHACZX4VhFCj45hOr_TlK5KT5yi2dGSs",
+      authDomain: "campuspulse0.firebaseapp.com",
+      projectId: "campuspulse0",
+      storageBucket: "campuspulse0.firebasestorage.app",
+      messagingSenderId: "91092596944",
+      appId: "1:91092596944:web:4c78dae4fb11db961486d5"
+    });
+
+    var auth = firebase.auth();
+    var db   = firebase.firestore();
+    var currentUserData = null;  // Cached user doc from Firestore
+
+    /* ==========================================================
+       Auth state listener
+       ========================================================== */
+    auth.onAuthStateChanged(function (user) {
+      if (user) {
+        console.log("[Shell] Auth: signed in as", user.email);
+        loadUserData(user);
+      } else {
+        console.log("[Shell] Auth: signed out");
+        currentUserData = null;
+        if (current !== "login" && current !== "signup") {
+          navigate("login");
+        }
+      }
+    });
+
+    /* ==========================================================
+       Auth request handler (from login/signup iframes)
+       ========================================================== */
+    function handleAuthRequest(data) {
+      var action = data.action;
+
+      if (action === "login") {
+        auth.signInWithEmailAndPassword(data.email, data.password)
+          .then(function (cred) {
+            broadcastToFrame("login", { type: "auth_result", success: true });
+          })
+          .catch(function (err) {
+            var msg = mapAuthError(err.code);
+            broadcastToFrame("login", { type: "auth_result", success: false, error: msg });
+          });
+      }
+
+      else if (action === "register") {
+        auth.createUserWithEmailAndPassword(data.email, data.password)
+          .then(function (cred) {
+            var user = cred.user;
+            return user.updateProfile({ displayName: data.name }).then(function() {
+              return db.collection("users").doc(user.uid).set({
+                uid: user.uid,
+                email: user.email,
+                displayName: data.name,
+                role: "student",
+                institution: "",
+                classroomIds: [],
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+              });
+            });
+          })
+          .then(function () {
+            broadcastToFrame("signup", { type: "auth_result", success: true });
+          })
+          .catch(function (err) {
+            var msg = mapAuthError(err.code);
+            broadcastToFrame("signup", { type: "auth_result", success: false, error: msg });
+          });
+      }
+
+      else if (action === "google_login") {
+        var provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider)
+          .then(function (result) {
+            var user = result.user;
+            return db.collection("users").doc(user.uid).get().then(function (doc) {
+              if (!doc.exists) {
+                return db.collection("users").doc(user.uid).set({
+                  uid: user.uid,
+                  email: user.email,
+                  displayName: user.displayName || "",
+                  role: "student",
+                  institution: "",
+                  classroomIds: [],
+                  createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                  updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+              }
+            });
+          })
+          .catch(function (err) {
+            if (err.code !== "auth/popup-closed-by-user") {
+              broadcastToFrame(current, { type: "auth_result", success: false, error: err.message });
+            }
+          });
+      }
+
+      else if (action === "logout") {
+        auth.signOut();
+      }
+    }
+
+    function mapAuthError(code) {
+      var map = {
+        "auth/wrong-password": "Invalid email or password.",
+        "auth/user-not-found": "Invalid email or password.",
+        "auth/invalid-credential": "Invalid email or password.",
+        "auth/invalid-login-credentials": "Invalid email or password.",
+        "auth/invalid-email": "Please enter a valid email address.",
+        "auth/user-disabled": "This account has been disabled.",
+        "auth/too-many-requests": "Too many attempts. Please wait and try again.",
+        "auth/network-request-failed": "Network error. Check your connection.",
+        "auth/email-already-in-use": "An account with this email already exists.",
+        "auth/weak-password": "Password must be at least 6 characters."
+      };
+      return map[code] || "Something went wrong. Please try again.";
+    }
+
+    /* ==========================================================
+       Broadcast data to a specific iframe
+       ========================================================== */
+    function broadcastToFrame(frameName, msg) {
+      var f = frames[frameName];
+      if (f && f.contentWindow) {
+        f.contentWindow.postMessage(msg, "*");
+      }
+    }
+
+    function broadcastToAll(msg) {
+      Object.keys(frames).forEach(function (k) {
+        broadcastToFrame(k, msg);
+      });
+    }
+
+    /* ==========================================================
+       Load user data & classrooms after auth
+       ========================================================== */
+    function loadUserData(user) {
+      db.collection("users").doc(user.uid).get().then(function (doc) {
+        if (doc.exists) {
+          currentUserData = doc.data();
+          currentUserData.uid = user.uid;
+        } else {
+          // Create student doc if it doesn't exist (e.g., first Google sign-in)
+          currentUserData = {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName || "",
+            role: "student",
+            classroomIds: []
+          };
+          db.collection("users").doc(user.uid).set({
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName || "",
+            role: "student",
+            institution: "",
+            classroomIds: [],
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        }
+        navigate("home");
+        loadClassrooms();
+        loadSubmissions();
+      });
+    }
+
+    /* ==========================================================
+       Load student's classrooms
+       ========================================================== */
+    function loadClassrooms() {
+      if (!currentUserData || !currentUserData.classroomIds || currentUserData.classroomIds.length === 0) {
+        broadcastToFrame("home", { type: "classrooms", data: [], user: currentUserData });
+        return;
+      }
+
+      var ids = currentUserData.classroomIds.slice(0, 30);
+      db.collection("classrooms").where(firebase.firestore.FieldPath.documentId(), "in", ids)
+        .get().then(function (snap) {
+          var classrooms = [];
+          var instructorIds = [];
+          snap.forEach(function (doc) {
+            var d = doc.data();
+            d.id = doc.id;
+            classrooms.push(d);
+            if (d.instructorId && instructorIds.indexOf(d.instructorId) === -1) {
+              instructorIds.push(d.instructorId);
+            }
+          });
+
+          if (instructorIds.length === 0) {
+            broadcastToFrame("home", { type: "classrooms", data: classrooms, user: currentUserData });
+            return;
+          }
+
+          db.collection("users").where(firebase.firestore.FieldPath.documentId(), "in", instructorIds.slice(0, 30))
+            .get().then(function (userSnap) {
+              var nameMap = {};
+              userSnap.forEach(function (u) { nameMap[u.id] = u.data().displayName || "Instructor"; });
+              classrooms.forEach(function (c) {
+                if (c.instructorId && nameMap[c.instructorId]) c.instructorName = nameMap[c.instructorId];
+              });
+              broadcastToFrame("home", { type: "classrooms", data: classrooms, user: currentUserData });
+            });
+        });
+    }
+
+    /* ==========================================================
+       Load experiments for a classroom
+       ========================================================== */
+    function loadClassroomExperiments(classroomId) {
+      db.collection("classrooms").doc(classroomId).get().then(function (doc) {
+        if (!doc.exists) return;
+        var classroom = doc.data();
+        classroom.id = doc.id;
+
+        // Get instructor name
+        db.collection("users").doc(classroom.instructorId).get().then(function (userDoc) {
+          var instructor = userDoc.exists ? userDoc.data() : { displayName: "Instructor" };
+          classroom.instructorName = instructor.displayName;
+
+          if (!classroom.experimentIds || classroom.experimentIds.length === 0) {
+            broadcastToFrame("classroom", { type: "classroom_detail", classroom: classroom, experiments: [] });
+            return;
+          }
+
+          var expIds = classroom.experimentIds.slice(0, 30);
+          db.collection("experiments").where(firebase.firestore.FieldPath.documentId(), "in", expIds)
+            .get().then(function (snap) {
+              var experiments = [];
+              snap.forEach(function (d) {
+                var e = d.data();
+                e.id = d.id;
+                experiments.push(e);
+              });
+
+              // Attach student's submissions for these experiments
+              if (currentUserData) {
+                db.collection("submissions")
+                  .where("studentId", "==", currentUserData.uid)
+                  .where("classroomId", "==", classroomId)
+                  .get().then(function (subSnap) {
+                    var subMap = {};
+                    subSnap.forEach(function (s) { var sd = s.data(); subMap[sd.experimentId] = sd; });
+                    experiments.forEach(function (e) { if (subMap[e.id]) e.submission = subMap[e.id]; });
+                    broadcastToFrame("classroom", { type: "classroom_detail", classroom: classroom, experiments: experiments });
+                  });
+              } else {
+                broadcastToFrame("classroom", { type: "classroom_detail", classroom: classroom, experiments: experiments });
+              }
+            });
+        });
+      });
+    }
+
+    /* ==========================================================
+       Load all submissions for the student
+       ========================================================== */
+    function loadSubmissions() {
+      if (!currentUserData) return;
+      db.collection("submissions")
+        .where("studentId", "==", currentUserData.uid)
+        .get().then(function (snap) {
+          var active = [];
+          var completed = [];
+          snap.forEach(function (doc) {
+            var s = doc.data();
+            s.id = doc.id;
+            if (s.status === "graded" || s.status === "correct" || s.status === "incorrect" || s.status === "needs_revision") {
+              completed.push(s);
+            } else {
+              active.push(s);
+            }
+          });
+
+          // Also load experiments that are assigned to student's classrooms but not yet submitted
+          loadAssignedExperiments(active, completed);
+        });
+    }
+
+    function loadAssignedExperiments(existingActive, existingCompleted) {
+      if (!currentUserData || !currentUserData.classroomIds || currentUserData.classroomIds.length === 0) {
+        broadcastToFrame("experiments", { type: "assignments", data: [], user: currentUserData });
+        broadcastToFrame("completed", { type: "completed_assignments", data: existingCompleted, user: currentUserData });
+        return;
+      }
+
+      var ids = currentUserData.classroomIds.slice(0, 30);
+      db.collection("classrooms").where(firebase.firestore.FieldPath.documentId(), "in", ids)
+        .get().then(function (snap) {
+          var allExpIds = [];
+          var classroomMap = {};
+          snap.forEach(function (doc) {
+            var d = doc.data();
+            d.id = doc.id;
+            (d.experimentIds || []).forEach(function (eid) {
+              allExpIds.push(eid);
+              classroomMap[eid] = d;
+            });
+          });
+
+          if (allExpIds.length === 0) {
+            broadcastToFrame("experiments", { type: "assignments", data: [], user: currentUserData });
+            broadcastToFrame("completed", { type: "completed_assignments", data: existingCompleted, user: currentUserData });
+            return;
+          }
+
+          // Unique IDs
+          allExpIds = allExpIds.filter(function (v, i, a) { return a.indexOf(v) === i; });
+          var submittedExpIds = existingActive.concat(existingCompleted).map(function (s) { return s.experimentId; });
+
+          var uniqueExpIds = allExpIds.slice(0, 30);
+          db.collection("experiments").where(firebase.firestore.FieldPath.documentId(), "in", uniqueExpIds)
+            .get().then(function (expSnap) {
+              var activeAssignments = [];
+              var expNameMap = {};
+              expSnap.forEach(function (doc) {
+                var e = doc.data();
+                e.id = doc.id;
+                e.classroom = classroomMap[e.id];
+                expNameMap[e.id] = e.title || e.name || "Experiment";
+                // Check if already submitted
+                var sub = existingActive.concat(existingCompleted).find(function (s) { return s.experimentId === e.id; });
+                if (sub) {
+                  e.submission = sub;
+                }
+                var isCompleted = sub && (sub.status === "graded" || sub.status === "correct" || sub.status === "incorrect" || sub.status === "needs_revision");
+                // Only show published/active experiments to students
+                if (!isCompleted && e.status !== "draft") {
+                  activeAssignments.push(e);
+                }
+              });
+
+              // Build classroom name map
+              var classNameMap = {};
+              snap.forEach(function (doc) { classNameMap[doc.id] = doc.data().name || ""; });
+
+              // Enrich completed submissions with experiment and classroom names
+              existingCompleted.forEach(function (s) {
+                s.experimentTitle = expNameMap[s.experimentId] || "Experiment";
+                s.classroomName = classNameMap[s.classroomId] || "";
+              });
+
+              broadcastToFrame("experiments", { type: "assignments", data: activeAssignments, user: currentUserData });
+              broadcastToFrame("completed", { type: "completed_assignments", data: existingCompleted, user: currentUserData });
+              broadcastToFrame("profile", { type: "profile_data", user: currentUserData, stats: {
+                classrooms: (currentUserData.classroomIds || []).length,
+                completed: existingCompleted.length,
+                avgScore: calcAvgScore(existingCompleted)
+              }});
+            });
+        });
+    }
+
+    function calcAvgScore(completed) {
+      if (!completed.length) return 0;
+      var total = 0;
+      var count = 0;
+      completed.forEach(function (s) {
+        if (s.completionPercentage != null) { total += s.completionPercentage; count++; }
+        else if (s.quizScore != null) { total += s.quizScore; count++; }
+      });
+      return count ? Math.round(total / count) : 0;
+    }
+
+    /* ==========================================================
+       Leave Classroom
+       ========================================================== */
+    function leaveClassroom(classroomId) {
+      var batch = db.batch();
+      batch.delete(db.collection("classrooms").doc(classroomId).collection("members").doc(currentUserData.uid));
+      batch.update(db.collection("classrooms").doc(classroomId), {
+        studentCount: firebase.firestore.FieldValue.increment(-1),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      batch.update(db.collection("users").doc(currentUserData.uid), {
+        classroomIds: firebase.firestore.FieldValue.arrayRemove(classroomId),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      batch.commit().then(function () {
+        currentUserData.classroomIds = (currentUserData.classroomIds || []).filter(function (id) { return id !== classroomId; });
+        navigate("home");
+        loadClassrooms();
+        loadSubmissions();
+      }).catch(function (err) {
+        console.error("Leave failed:", err);
+      });
+    }
+
+    /* ==========================================================
+       Join Class (real Firestore logic)
+       ========================================================== */
+    var joinBtn = document.getElementById("modal-join-btn");
+    joinBtn.removeEventListener("click", joinBtn._handler);
+    joinBtn._handler = function () {
+      var code = joinInput.value.trim().toUpperCase();
+      if (code.length === 0) return;
+      if (!currentUserData) return;
+
+      joinBtn.disabled = true;
+      joinBtn.innerHTML = '<span>Joining...</span>';
+
+      db.collection("classrooms")
+        .where("joinCode", "==", code)
+        .where("joinCodeActive", "==", true)
+        .get().then(function (snap) {
+          if (snap.empty) {
+            joinBtn.disabled = false;
+            joinBtn.innerHTML = '<span>Join Class</span><span class="material-symbols-outlined">login</span>';
+            alert("Invalid code. Please check and try again.");
+            return;
+          }
+
+          var classDoc = snap.docs[0];
+          var classId = classDoc.id;
+
+          // Check if already a member
+          if (currentUserData.classroomIds && currentUserData.classroomIds.indexOf(classId) !== -1) {
+            joinBtn.disabled = false;
+            joinBtn.innerHTML = '<span>Join Class</span><span class="material-symbols-outlined">login</span>';
+            alert("You already joined this classroom!");
+            closeJoinModal();
+            return;
+          }
+
+          // Add to members subcollection
+          var batch = db.batch();
+          batch.set(db.collection("classrooms").doc(classId).collection("members").doc(currentUserData.uid), {
+            uid: currentUserData.uid,
+            displayName: currentUserData.displayName || "",
+            email: currentUserData.email || "",
+            role: "student",
+            joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            status: "active"
+          });
+
+          // Increment student count
+          batch.update(db.collection("classrooms").doc(classId), {
+            studentCount: firebase.firestore.FieldValue.increment(1),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+
+          // Add classroom to user's classroomIds
+          batch.update(db.collection("users").doc(currentUserData.uid), {
+            classroomIds: firebase.firestore.FieldValue.arrayUnion(classId),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+
+          batch.commit().then(function () {
+            currentUserData.classroomIds = (currentUserData.classroomIds || []).concat(classId);
+            joinBtn.disabled = false;
+            joinBtn.innerHTML = '<span>Join Class</span><span class="material-symbols-outlined">login</span>';
+            closeJoinModal();
+            // Reload data
+            loadClassrooms();
+            loadSubmissions();
+          }).catch(function (err) {
+            console.error("Join failed:", err);
+            joinBtn.disabled = false;
+            joinBtn.innerHTML = '<span>Join Class</span><span class="material-symbols-outlined">login</span>';
+            alert("Failed to join. Please try again.");
+          });
+        });
+    };
+    joinBtn.addEventListener("click", joinBtn._handler);
+
+    /* ==========================================================
+       Extended postMessage handler — sub-pages can request data
+       ========================================================== */
+    window.addEventListener("message", function (event) {
+      var data = event.data;
+      if (!data || typeof data !== "object") return;
+
+      if (data.type === "request_data") {
+        if (data.request === "classrooms") loadClassrooms();
+        if (data.request === "submissions") loadSubmissions();
+        if (data.request === "classroom_detail" && data.classroomId) {
+          loadClassroomExperiments(data.classroomId);
+        }
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>LucidLab - Classroom Detail</title>
+  <link rel="stylesheet" href="fonts/fonts.css" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "var(--accent, #00f2ff)",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#0f2223",
+                        "surface": "#162c2d",
+                        "accent-purple": "#6366f1",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        :root { --accent: #00f2ff; --text-scale: 1; }
+        .glass-card {
+            background: rgba(22, 44, 45, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid color-mix(in srgb, var(--accent) 10%, transparent);
+        }
+
+        .glow-border {
+            box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 10%, transparent);
+        }
+
+        .neon-text-glow {
+            text-shadow: 0 0 8px color-mix(in srgb, var(--accent) 50%, transparent);
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: color-mix(in srgb, var(--accent) 20%, transparent);
+            border-radius: 10px;
+        }
+
+        /* Overflow menu */
+        .overflow-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 4px;
+            min-width: 200px;
+            background: rgba(22, 44, 45, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid color-mix(in srgb, var(--accent) 15%, transparent);
+            border-radius: 0.75rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            padding: 6px;
+            opacity: 0;
+            transform: translateY(-8px) scale(0.95);
+            pointer-events: none;
+            transition: opacity 0.15s ease, transform 0.15s ease;
+            z-index: 100;
+        }
+        .overflow-menu.open {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+        .overflow-menu button {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border: none;
+            background: transparent;
+            color: #f1f5f9;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .overflow-menu button:hover {
+            background: color-mix(in srgb, var(--accent) 8%, transparent);
+        }
+        .overflow-menu button.danger {
+            color: #f43f5e;
+        }
+        .overflow-menu button.danger:hover {
+            background: rgba(244, 63, 94, 0.1);
+        }
+        .overflow-menu .separator {
+            height: 1px;
+            background: color-mix(in srgb, var(--accent) 10%, transparent);
+            margin: 4px 8px;
+        }
+
+        /* Bottom sheet overlay */
+        .sheet-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+        .sheet-overlay.open { opacity: 1; pointer-events: auto; }
+
+        .info-sheet {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            z-index: 210;
+            background: rgba(22, 44, 45, 0.97);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid color-mix(in srgb, var(--accent) 15%, transparent);
+            border-radius: 1.25rem 1.25rem 0 0;
+            padding: 0 24px 32px;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        .info-sheet.open { transform: translateY(0); }
+        .info-sheet .handle {
+            width: 36px; height: 4px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 999px;
+            margin: 12px auto 20px;
+        }
+        .info-row {
+            display: flex; align-items: flex-start; gap: 14px;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-row .icon-box {
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .info-row .label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+        .info-row .value { font-size: 15px; color: #f1f5f9; font-weight: 600; margin-top: 2px; }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+            background: rgba(22, 44, 45, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+            color: var(--accent);
+            font-size: 13px; font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 999px;
+            z-index: 300;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* Experiment detail screen */
+        .exp-detail-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 250;
+            background: #0f2223;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .exp-detail-screen.open {
+            transform: translateX(0);
+        }
+        .detail-header {
+            position: sticky; top: 0; z-index: 10;
+            background: rgba(15, 34, 35, 0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid color-mix(in srgb, var(--accent) 10%, transparent);
+            padding: 16px;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .detail-header .back-circle {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: transparent;
+            border: none; color: #f1f5f9; cursor: pointer;
+            transition: background 0.15s;
+        }
+        .detail-header .back-circle:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+        .detail-hero {
+            position: relative;
+            height: 160px;
+            background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 30%, transparent), rgba(99,102,241,0.3), #0f2223);
+            display: flex; align-items: flex-end; padding: 24px;
+            overflow: hidden;
+        }
+        .detail-hero::before {
+            content: ''; position: absolute; inset: 0;
+            background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+            opacity: 0.08;
+        }
+        .detail-body { padding: 20px 16px 100px; flex: 1; }
+        .detail-stat-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+            margin-bottom: 24px;
+        }
+        .detail-stat {
+            background: rgba(22, 44, 45, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid color-mix(in srgb, var(--accent) 10%, transparent);
+            border-radius: 0.75rem;
+            padding: 14px;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .detail-stat .ds-icon {
+            width: 40px; height: 40px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .detail-stat .ds-label { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+        .detail-stat .ds-value { font-size: 16px; color: #f1f5f9; font-weight: 700; margin-top: 2px; }
+        .detail-section-title {
+            font-size: 13px; font-weight: 700; color: #94a3b8;
+            text-transform: uppercase; letter-spacing: 0.08em;
+            margin-bottom: 10px;
+        }
+        .detail-desc {
+            font-size: 14px; color: #cbd5e1; line-height: 1.65;
+            margin-bottom: 24px;
+        }
+        .feedback-card {
+            background: rgba(22, 44, 45, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(99,102,241,0.2);
+            border-radius: 0.75rem;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .feedback-card .fb-label { font-size: 11px; color: #6366f1; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; margin-bottom: 6px; }
+        .feedback-card .fb-text { font-size: 14px; color: #e2e8f0; line-height: 1.6; }
+        .detail-launch-bar {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            z-index: 260;
+            background: rgba(15, 34, 35, 0.92);
+            backdrop-filter: blur(16px);
+            border-top: 1px solid color-mix(in srgb, var(--accent) 10%, transparent);
+            padding: 16px;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+        }
+        .detail-launch-bar.open { transform: translateX(0); }
+        .progress-track {
+            width: 100%; height: 6px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--accent), #6366f1);
+            transition: width 0.6s ease;
+        }
+    </style>
+    <style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+    <!-- Top App Bar -->
+    <header
+        class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-primary/10">
+        <div class="max-w-md mx-auto flex items-center justify-between p-4">
+            <div class="flex items-center gap-3">
+                <button id="back-btn"
+                    class="flex items-center justify-center size-10 rounded-full hover:bg-primary/10 text-slate-900 dark:text-slate-100 transition-colors">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </button>
+                <h1 id="class-title" class="text-lg font-bold tracking-tight">Loading…</h1>
+            </div>
+            <div class="relative">
+                <button id="menu-btn"
+                    class="flex items-center justify-center size-10 rounded-full hover:bg-primary/10 text-slate-900 dark:text-slate-100 transition-colors">
+                    <span class="material-symbols-outlined">more_vert</span>
+                </button>
+                <div id="overflow-menu" class="overflow-menu">
+                    <button id="menu-info">
+                        <span class="material-symbols-outlined text-base">info</span>
+                        Classroom Info
+                    </button>
+                    <button id="menu-share">
+                        <span class="material-symbols-outlined text-base">share</span>
+                        Share Join Code
+                    </button>
+                    <div class="separator"></div>
+                    <button id="menu-leave" class="danger">
+                        <span class="material-symbols-outlined text-base">logout</span>
+                        Leave Classroom
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    <main class="flex-1 max-w-md mx-auto w-full pb-24">
+        <!-- Header Banner -->
+        <div class="px-4 py-4">
+            <div id="banner" class="relative h-48 w-full rounded-xl overflow-hidden bg-gradient-to-br from-primary/40 via-accent-purple/40 to-background-dark border border-primary/20 flex items-end p-6">
+                <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
+                <div class="relative z-10">
+                    <span id="banner-tag" class="px-3 py-1 rounded-full bg-primary/20 border border-primary text-primary text-xs font-bold tracking-widest uppercase mb-2 inline-block"></span>
+                    <h2 id="banner-title" class="text-4xl font-black text-white tracking-tighter neon-text-glow uppercase"></h2>
+                    <p id="instructor-name" class="text-sm text-slate-300 mt-1"></p>
+                </div>
+            </div>
+        </div>
+        <!-- Quick Stats -->
+        <div class="flex gap-3 px-4 mb-8">
+            <div class="glass-card flex-1 p-3 rounded-xl flex items-center gap-3 border-primary/20">
+                <div class="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                    <span class="material-symbols-outlined">groups</span>
+                </div>
+                <div>
+                    <p class="text-[10px] uppercase tracking-wider text-slate-400">Class Size</p>
+                    <p id="stat-students" class="text-sm font-bold">—</p>
+                </div>
+            </div>
+            <div class="glass-card flex-1 p-3 rounded-xl flex items-center gap-3 border-primary/20">
+                <div class="size-10 rounded-lg bg-accent-purple/10 flex items-center justify-center text-accent-purple">
+                    <span class="material-symbols-outlined">science</span>
+                </div>
+                <div>
+                    <p class="text-[10px] uppercase tracking-wider text-slate-400">Modules</p>
+                    <p id="stat-experiments" class="text-sm font-bold">—</p>
+                </div>
+            </div>
+        </div>
+        <!-- Section Title -->
+        <div class="px-4 mb-4 flex items-center justify-between">
+            <h3 class="text-lg font-bold flex items-center gap-2">
+                Assigned Experiments
+                <span id="exp-count" class="bg-primary/20 text-primary text-xs font-bold px-2 py-0.5 rounded-full border border-primary/30">0</span>
+            </h3>
+        </div>
+        <div id="experiments-list" class="flex flex-col gap-4 px-4"></div>
+        <div id="empty-state" class="hidden flex flex-col items-center justify-center py-16 text-center px-4">
+            <span class="material-symbols-outlined text-5xl text-slate-600 mb-3">science</span>
+            <p class="text-slate-400 text-sm">No experiments assigned yet.</p>
+        </div>
+
+    </main>
+
+    <!-- Info Bottom Sheet -->
+    <div id="sheet-overlay" class="sheet-overlay"></div>
+    <div id="info-sheet" class="info-sheet">
+        <div class="handle"></div>
+        <h3 style="font-size:18px;font-weight:700;color:#f1f5f9;margin-bottom:16px;">Classroom Info</h3>
+        <div id="info-rows"></div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Experiment Detail Screen -->
+    <div id="exp-detail" class="exp-detail-screen">
+        <div class="detail-header">
+            <button id="detail-back" class="back-circle">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <h1 id="detail-title" class="text-lg font-bold tracking-tight text-slate-100 truncate">Experiment</h1>
+        </div>
+        <div class="detail-hero">
+            <div class="relative z-10">
+                <span id="detail-category" class="px-3 py-1 rounded-full bg-primary/20 border border-primary text-primary text-xs font-bold tracking-widest uppercase mb-2 inline-block"></span>
+                <h2 id="detail-hero-title" class="text-3xl font-black text-white tracking-tight neon-text-glow"></h2>
+            </div>
+        </div>
+        <div class="detail-body">
+            <!-- Status badge -->
+            <div class="flex items-center gap-3 mb-5">
+                <span id="detail-status-badge" class="px-3 py-1 rounded-lg text-xs font-bold border"></span>
+                <span id="detail-date" class="text-xs text-slate-500"></span>
+            </div>
+
+            <!-- Stats grid -->
+            <div id="detail-stats" class="detail-stat-grid"></div>
+
+            <!-- Description -->
+            <div id="detail-desc-section">
+                <h4 class="detail-section-title">Description</h4>
+                <p id="detail-desc" class="detail-desc"></p>
+            </div>
+
+            <!-- Instructor Feedback -->
+            <div id="detail-feedback-section" class="hidden">
+                <h4 class="detail-section-title">Instructor Feedback</h4>
+                <div class="feedback-card">
+                    <div class="fb-label">Feedback</div>
+                    <div id="detail-feedback" class="fb-text"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Floating AR button for detail screen -->
+    <div id="detail-launch-bar" class="detail-launch-bar">
+        <button id="detail-ar-btn" class="w-full bg-primary hover:bg-primary/90 text-background-dark font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-base">
+            <span class="material-symbols-outlined text-xl">play_arrow</span>
+            <span id="detail-ar-label">Launch AR</span>
+        </button>
+    </div>
+    <script>
+    (function () {
+      // Back button
+      document.getElementById("back-btn").addEventListener("click", function (e) {
+        e.preventDefault();
+        parent.postMessage("navigate:home", "*");
+      });
+
+      // Overflow menu toggle
+      var currentClassroomId = null;
+      var menuBtn = document.getElementById("menu-btn");
+      var overflowMenu = document.getElementById("overflow-menu");
+
+      menuBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        overflowMenu.classList.toggle("open");
+      });
+
+      // Close menu when tapping outside
+      document.addEventListener("click", function () {
+        overflowMenu.classList.remove("open");
+      });
+
+      // ===== Experiment Detail Screen =====
+      var expDetailScreen = document.getElementById("exp-detail");
+      var detailLaunchBar = document.getElementById("detail-launch-bar");
+      var currentDetailExp = null;
+      var currentDetailClassroom = null;
+
+      function openExpDetail(exp, classroom) {
+        currentDetailExp = exp;
+        currentDetailClassroom = classroom;
+        var sub = exp.submission;
+
+        // Title
+        document.getElementById("detail-title").textContent = exp.title || exp.name || "Experiment";
+        document.getElementById("detail-hero-title").textContent = exp.title || exp.name || "Experiment";
+        document.getElementById("detail-category").textContent = exp.category || classroom.subject || "";
+
+        // Status
+        var statusBadge = document.getElementById("detail-status-badge");
+        var status, sBg, sText;
+        if (sub && (sub.status === "graded" || sub.status === "correct")) {
+          status = "Completed"; sBg = "bg-emerald-400/10"; sText = "text-emerald-500 border-emerald-500/20";
+        } else if (sub && sub.status === "incorrect") {
+          status = "Incorrect"; sBg = "bg-rose-400/10"; sText = "text-rose-400 border-rose-400/20";
+        } else if (sub && sub.status === "needs_revision") {
+          status = "Needs Revision"; sBg = "bg-amber-400/10"; sText = "text-amber-400 border-amber-400/20";
+        } else if (sub && (sub.status === "in_progress" || sub.status === "submitted")) {
+          status = sub.status === "submitted" ? "Submitted" : "In Progress"; sBg = "bg-yellow-400/10"; sText = "text-yellow-400 border-yellow-400/20";
+        } else {
+          status = "Not Started"; sBg = "bg-slate-500/10"; sText = "text-slate-400 border-slate-600";
+        }
+        statusBadge.className = "px-3 py-1 rounded-lg text-xs font-bold border " + sBg + " " + sText;
+        statusBadge.textContent = status;
+
+        // Date
+        var dateEl = document.getElementById("detail-date");
+        if (sub && sub.submittedAt) {
+          var d = sub.submittedAt.toDate ? sub.submittedAt.toDate() : new Date(sub.submittedAt);
+          dateEl.textContent = "Submitted " + d.toLocaleDateString();
+        } else { dateEl.textContent = ""; }
+
+        // Stats grid
+        var statsEl = document.getElementById("detail-stats");
+        statsEl.innerHTML = "";
+        var stats = [];
+
+        // Progress
+        var pct = 0;
+        if (sub && sub.experimentState && sub.experimentState.completionPercentage != null) {
+          pct = sub.experimentState.completionPercentage;
+        } else if (sub && sub.completionPercentage != null) {
+          pct = sub.completionPercentage;
+        }
+        stats.push({ icon: "trending_up", bg: "color-mix(in srgb, var(--accent) 10%, transparent)", color: "var(--accent)", label: "Progress", value: pct + "%", extra: '<div class="progress-track"><div class="progress-fill" style="width:' + pct + '%"></div></div>' });
+
+        // Grade
+        if (sub && sub.grade) {
+          stats.push({ icon: "grade", bg: "rgba(99,102,241,0.1)", color: "#6366f1", label: "Grade", value: esc(sub.grade) });
+        }
+
+        // Quiz score
+        if (sub && sub.quizScore != null) {
+          stats.push({ icon: "quiz", bg: "color-mix(in srgb, var(--accent) 10%, transparent)", color: "var(--accent)", label: "Quiz Score", value: sub.quizScore + "%" });
+        }
+
+        // Steps
+        if (sub && sub.experimentState && sub.experimentState.completedSteps != null) {
+          stats.push({ icon: "checklist", bg: "rgba(99,102,241,0.1)", color: "#6366f1", label: "Steps", value: sub.experimentState.completedSteps + " / " + (sub.experimentState.totalSteps || "?") });
+        }
+
+        // Ensure even number for grid
+        if (stats.length % 2 !== 0) {
+          stats.push({ icon: "science", bg: "color-mix(in srgb, var(--accent) 10%, transparent)", color: "var(--accent)", label: "Scenes", value: "AR" });
+        }
+
+        stats.forEach(function (s) {
+          var div = document.createElement("div");
+          div.className = "detail-stat";
+          div.innerHTML =
+            '<div class="ds-icon" style="background:' + s.bg + ';color:' + s.color + '">' +
+              '<span class="material-symbols-outlined" style="font-size:20px">' + s.icon + '</span>' +
+            '</div>' +
+            '<div style="flex:1;min-width:0">' +
+              '<div class="ds-label">' + s.label + '</div>' +
+              '<div class="ds-value">' + s.value + '</div>' +
+              (s.extra || '') +
+            '</div>';
+          statsEl.appendChild(div);
+        });
+
+        // Description
+        var descSection = document.getElementById("detail-desc-section");
+        var descText = exp.description || "";
+        if (descText) {
+          descSection.classList.remove("hidden");
+          document.getElementById("detail-desc").textContent = descText;
+        } else {
+          descSection.classList.add("hidden");
+        }
+
+        // Instructor Feedback
+        var fbSection = document.getElementById("detail-feedback-section");
+        if (sub && sub.instructorFeedback) {
+          fbSection.classList.remove("hidden");
+          document.getElementById("detail-feedback").textContent = sub.instructorFeedback;
+        } else {
+          fbSection.classList.add("hidden");
+        }
+
+        // AR button label
+        var arLabel = document.getElementById("detail-ar-label");
+        if (sub && (sub.status === "graded" || sub.status === "correct")) {
+          arLabel.textContent = "Review Session";
+        } else if (sub && (sub.status === "in_progress" || sub.status === "submitted")) {
+          arLabel.textContent = "Continue AR";
+        } else if (sub && sub.status === "needs_revision") {
+          arLabel.textContent = "Retake Experiment";
+        } else {
+          arLabel.textContent = "Launch AR";
+        }
+
+        expDetailScreen.classList.add("open");
+        detailLaunchBar.classList.add("open");
+      }
+
+      function closeExpDetail() {
+        expDetailScreen.classList.remove("open");
+        detailLaunchBar.classList.remove("open");
+        currentDetailExp = null;
+      }
+
+      document.getElementById("detail-back").addEventListener("click", function (e) {
+        e.preventDefault();
+        closeExpDetail();
+      });
+
+      document.getElementById("detail-ar-btn").addEventListener("click", function (e) {
+        e.preventDefault();
+        if (!currentDetailExp) return;
+        var sub = currentDetailExp.submission;
+        var mode = "launch";
+        if (sub && (sub.status === "graded" || sub.status === "correct")) mode = "review";
+        else if (sub && (sub.status === "in_progress" || sub.status === "submitted")) mode = "continue";
+        parent.postMessage("unity:start_ar:" + JSON.stringify({ experimentId: currentDetailExp.id, title: currentDetailExp.title || currentDetailExp.name, mode: mode }), "*");
+      });
+
+      // Leave classroom via menu
+      document.getElementById("menu-leave").addEventListener("click", function (e) {
+        e.preventDefault();
+        overflowMenu.classList.remove("open");
+        if (!currentClassroomId) return;
+        if (!confirm("Are you sure you want to leave this classroom?")) return;
+        parent.postMessage({ type: "leave_classroom", classroomId: currentClassroomId }, "*");
+      });
+
+      // Info sheet
+      var sheetOverlay = document.getElementById("sheet-overlay");
+      var infoSheet = document.getElementById("info-sheet");
+      var currentClassroom = null;
+
+      function openInfoSheet() {
+        if (!currentClassroom) return;
+        var rows = document.getElementById("info-rows");
+        rows.innerHTML = "";
+        var items = [
+          { icon: "school", bg: "color-mix(in srgb, var(--accent) 10%, transparent)", color: "var(--accent)", label: "Classroom", value: currentClassroom.name || "—" },
+          { icon: "menu_book", bg: "rgba(99,102,241,0.1)", color: "#6366f1", label: "Subject", value: currentClassroom.subject || "—" },
+          { icon: "person", bg: "color-mix(in srgb, var(--accent) 10%, transparent)", color: "var(--accent)", label: "Instructor", value: currentClassroom.instructorName || "—" },
+          { icon: "groups", bg: "rgba(99,102,241,0.1)", color: "#6366f1", label: "Students", value: (currentClassroom.studentCount || 0) + " enrolled" },
+          { icon: "vpn_key", bg: "color-mix(in srgb, var(--accent) 10%, transparent)", color: "var(--accent)", label: "Join Code", value: currentClassroom.joinCode || "—" },
+        ];
+        items.forEach(function (it) {
+          var row = document.createElement("div");
+          row.className = "info-row";
+          row.innerHTML =
+            '<div class="icon-box" style="background:' + it.bg + ';color:' + it.color + '">' +
+              '<span class="material-symbols-outlined" style="font-size:20px">' + it.icon + '</span>' +
+            '</div>' +
+            '<div><div class="label">' + it.label + '</div><div class="value">' + esc(it.value) + '</div></div>';
+          rows.appendChild(row);
+        });
+        sheetOverlay.classList.add("open");
+        infoSheet.classList.add("open");
+      }
+
+      function closeInfoSheet() {
+        sheetOverlay.classList.remove("open");
+        infoSheet.classList.remove("open");
+      }
+
+      sheetOverlay.addEventListener("click", closeInfoSheet);
+
+      document.getElementById("menu-info").addEventListener("click", function (e) {
+        e.preventDefault();
+        overflowMenu.classList.remove("open");
+        openInfoSheet();
+      });
+
+      // Share join code
+      function showToast(msg) {
+        var t = document.getElementById("toast");
+        t.textContent = msg;
+        t.classList.add("show");
+        setTimeout(function () { t.classList.remove("show"); }, 2000);
+      }
+
+      document.getElementById("menu-share").addEventListener("click", function (e) {
+        e.preventDefault();
+        overflowMenu.classList.remove("open");
+        if (!currentClassroom || !currentClassroom.joinCode) return;
+        var code = currentClassroom.joinCode;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(code).then(function () {
+            showToast("Join code copied: " + code);
+          });
+        } else {
+          // Fallback
+          var ta = document.createElement("textarea");
+          ta.value = code; ta.style.position = "fixed"; ta.style.opacity = "0";
+          document.body.appendChild(ta); ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+          showToast("Join code copied: " + code);
+        }
+      });
+
+      function esc(s) {
+        var d = document.createElement("div");
+        d.appendChild(document.createTextNode(s));
+        return d.innerHTML;
+      }
+
+      function renderDetail(classroom, experiments) {
+        currentClassroomId = classroom.id;
+        currentClassroom = classroom;
+        // Header
+        document.getElementById("class-title").textContent = classroom.name || "Classroom";
+        var subj = classroom.subject || classroom.name || "";
+        document.getElementById("banner-tag").textContent = subj;
+        document.getElementById("banner-title").textContent = subj.toUpperCase();
+        // Instructor name
+        var instrEl = document.getElementById("instructor-name");
+        if (instrEl) instrEl.textContent = classroom.instructorName || "";
+
+        // Stats
+        document.getElementById("stat-students").textContent = (classroom.studentCount || 0) + " Students";
+        document.getElementById("stat-experiments").textContent = experiments.length + " Experiments";
+        document.getElementById("exp-count").textContent = experiments.length;
+
+        var list = document.getElementById("experiments-list");
+        var empty = document.getElementById("empty-state");
+        list.innerHTML = "";
+
+        if (experiments.length === 0) {
+          empty.classList.remove("hidden");
+          return;
+        }
+        empty.classList.add("hidden");
+
+        experiments.forEach(function (exp) {
+          var sub = exp.submission;
+          var status, borderColor, statusBg, statusText, btnClass, btnLabel;
+
+          if (sub && (sub.status === "graded" || sub.status === "correct")) {
+            status = "Completed";
+            borderColor = "border-l-emerald-400";
+            statusBg = "bg-emerald-400/10"; statusText = "text-emerald-500";
+            btnClass = "w-full bg-primary/20 border border-primary/40 text-primary font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 hover:bg-primary/30 transition-all";
+            btnLabel = "Review Session";
+          } else if (sub && (sub.status === "in_progress" || sub.status === "submitted")) {
+            status = "In Progress";
+            borderColor = "border-l-yellow-400";
+            statusBg = "bg-yellow-400/10"; statusText = "text-yellow-500";
+            btnClass = "w-full bg-primary hover:bg-primary/90 text-background-dark font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98]";
+            btnLabel = "Continue AR";
+          } else {
+            status = "Not Started";
+            borderColor = "border-l-slate-500";
+            statusBg = "bg-slate-500/10"; statusText = "text-slate-400";
+            btnClass = "w-full bg-primary hover:bg-primary/90 text-background-dark font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98]";
+            btnLabel = "Launch AR";
+          }
+
+          var pct = 0;
+          if (sub && sub.experimentState && sub.experimentState.completionPercentage != null) pct = sub.experimentState.completionPercentage;
+          else if (sub && sub.completionPercentage != null) pct = sub.completionPercentage;
+
+          var card = document.createElement("div");
+          card.className = "glass-card rounded-xl p-4 border-l-4 cursor-pointer active:scale-[0.98] transition-transform " + borderColor;
+          card.innerHTML =
+            '<div class="flex justify-between items-start mb-1">' +
+              '<div class="min-w-0 flex-1 mr-2">' +
+                '<span class="text-[10px] font-bold text-primary uppercase tracking-widest">' + esc(exp.category || classroom.subject || "") + '</span>' +
+                '<h4 class="text-base font-bold text-slate-900 dark:text-slate-100 truncate">' + esc(exp.title || exp.name || "Experiment") + '</h4>' +
+              '</div>' +
+              '<span class="px-2 py-1 rounded-lg shrink-0 ' + statusBg + ' ' + statusText + ' text-[10px] font-bold border border-current/20">' + status + '</span>' +
+            '</div>' +
+            (pct > 0 ? '<div class="progress-track mb-3"><div class="progress-fill" style="width:' + pct + '%"></div></div>' : '<div class="mb-3"></div>') +
+            '<button class="ar-btn ' + btnClass + '">' +
+              '<span class="material-symbols-outlined text-lg">play_arrow</span> ' + btnLabel +
+            '</button>';
+
+          // Card tap → detail screen
+          (function (capturedExp, capturedClassroom) {
+            card.addEventListener("click", function () {
+              openExpDetail(capturedExp, capturedClassroom);
+            });
+          })(exp, classroom);
+
+          // AR button keeps direct launch
+          card.querySelector(".ar-btn").addEventListener("click", function (e) {
+            e.stopPropagation();
+            var mode = "launch";
+            if (sub && (sub.status === "graded" || sub.status === "correct")) mode = "review";
+            else if (sub && (sub.status === "in_progress" || sub.status === "submitted")) mode = "continue";
+            parent.postMessage("unity:start_ar:" + JSON.stringify({ experimentId: exp.id, title: exp.title || exp.name, mode: mode }), "*");
+          });
+          list.appendChild(card);
+        });
+      }
+
+      window.addEventListener("message", function (e) {
+        var d = e.data;
+        if (d && typeof d === "object" && d.type === "classroom_detail") {
+          renderDetail(d.classroom, d.experiments || []);
+        }
+      });
+    })();
+    </script>
+<script src="preferences.js"></script>
+</body>
+
+</html>

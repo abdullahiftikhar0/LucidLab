@@ -408,19 +408,17 @@ function SceneContent() {
                 <VStack spacing={3}>
                   <FormControl>
                     <FormLabel fontSize="xs" color="gray.400">Add Marker</FormLabel>
-                    <Flex gap={2}>
-                      <Input
-                        size="sm"
-                        value={markerName}
-                        onChange={e => setMarkerName(e.target.value)}
-                        placeholder="Name"
-                        bg="gray.900"
-                        border="none"
-                      />
-                    </Flex>
+                    <Input
+                      size="sm"
+                      value={markerName}
+                      onChange={e => setMarkerName(e.target.value)}
+                      placeholder="Name"
+                      bg="gray.900"
+                      border="none"
+                    />
                   </FormControl>
-                  
                   <FormControl>
+                    <FormLabel fontSize="xs" color="gray.400">Marker Image</FormLabel>
                     <Input
                       id="markerFileInput"
                       type="file"
@@ -432,7 +430,6 @@ function SceneContent() {
                       border="none"
                     />
                   </FormControl>
-
                   <HStack w="100%">
                     <Button
                       size="sm"
