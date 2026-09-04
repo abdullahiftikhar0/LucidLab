@@ -355,7 +355,7 @@ export default function ExperimentsList() {
                       const fallback = pickCategoryImage(exp.category || 'Other', exp.id);
                       const imgSrc = exp.thumbnailUrl || fallback;
                       return imgSrc ? (
-                        <img className="w-full h-full object-cover transition-transform group-hover:scale-105" src={imgSrc} alt={exp.title || exp.category || 'Experiment'} />
+                        <img className="w-full h-full object-cover transition-transform group-hover:scale-105" src={imgSrc} alt={exp.title || exp.category || 'Experiment'} loading="lazy" decoding="async" />
                       ) : (
                         <span className="material-symbols-outlined text-5xl text-slate-300 dark:text-slate-500">{CATEGORY_ICONS[exp.category] || 'science'}</span>
                       );
