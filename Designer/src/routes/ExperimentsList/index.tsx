@@ -11,6 +11,7 @@ import ConfirmDialog from '../../components/ConfirmDialog';
 interface Experiment {
   id: string; title: string; category: string; status: string;
   experimentCode: string; classroomIds: string[]; updatedAt: any; thumbnailUrl: string;
+  description?: string;
 }
 
 const PUBLIC_IMAGE_BASE = '/Lucid_Lab%20images/';
@@ -32,11 +33,22 @@ const CATEGORY_IMAGES: Record<string, string[]> = {
   Other: ['General_science.png'],
 };
 
+function normalizeCategory(raw: string | undefined): string {
+  const s = (raw || '').trim().toLowerCase();
+  if (s.includes('chem')) return 'Chemistry';
+  if (s.includes('phys')) return 'Physics';
+  if (s.includes('bio')) return 'Biology';
+  if (s.includes('env')) return 'Environmental Science';
+  if (s === 'general' || s === 'science' || s.includes('general science')) return 'General Science';
+  if (s.includes('quant') || s.includes('quatam') || s.includes('quantam')) return 'Quantum';
+  if (s.includes('eng')) return 'Engineering';
+  if (s.includes('geo')) return 'Geology';
+  return raw && raw.length ? raw : 'General Science';
+}
+
 function pickCategoryImage(category: string, seed: string): string | null {
-  const list =
-    CATEGORY_IMAGES[category] ||
-    CATEGORY_IMAGES[category?.trim()] ||
-    CATEGORY_IMAGES['Other'];
+  const key = normalizeCategory(category);
+  const list = CATEGORY_IMAGES[key] || CATEGORY_IMAGES['Other'];
   if (!list || list.length === 0) return null;
   let h = 0;
   for (let i = 0; i < seed.length; i++) {
@@ -60,6 +72,18 @@ const CATEGORY_ICONS: Record<string, string> = {
   Engineering: 'engineering', Geology: 'landscape', Other: 'science',
 };
 
+const CATEGORY_PILL_STYLES: Record<string, string> = {
+  Chemistry: 'bg-green-500/10 text-green-400 border-green-500/20',
+  Physics: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  Biology: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+  Engineering: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+  Geology: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+  'Environmental Science': 'bg-teal-500/10 text-teal-400 border-teal-500/20',
+  'General Science': 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
+  Quantum: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+  Other: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+};
+
 export default function ExperimentsList() {
   const app = useFirebaseApp();
   const db = getFirestore(app);
@@ -73,9 +97,20 @@ export default function ExperimentsList() {
   const [sortBy, setSortBy] = useState('newest');
   const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; id: string; title: string }>({ open: false, id: '', title: '' });
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+<<<<<<< HEAD
   const [isCreating, setIsCreating] = useState(false);
+=======
+  const [openFilterId, setOpenFilterId] = useState<string | null>(null);
+>>>>>>> 17a2f29380429581ac33813284ed091d15ab252f
 
   useEffect(() => { if (currentUser) loadExperiments(); }, [currentUser]);
+  useEffect(() => {
+    function onEsc(e: KeyboardEvent) {
+      if (e.key === 'Escape') { setOpenMenuId(null); setOpenFilterId(null); }
+    }
+    document.addEventListener('keydown', onEsc);
+    return () => document.removeEventListener('keydown', onEsc);
+  }, []);
 
   async function loadExperiments() {
     setLoading(true);
@@ -189,7 +224,7 @@ export default function ExperimentsList() {
 
   let filtered = [...experiments];
   if (statusFilter !== 'all') filtered = filtered.filter(e => e.status === statusFilter);
-  if (categoryFilter !== 'all') filtered = filtered.filter(e => e.category === categoryFilter);
+  if (categoryFilter !== 'all') filtered = filtered.filter(e => normalizeCategory(e.category) === categoryFilter);
   if (sortBy === 'oldest') filtered.reverse();
   if (sortBy === 'name') filtered.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
 
@@ -200,6 +235,32 @@ export default function ExperimentsList() {
       <div className="bg-background-light dark:bg-background-dark min-h-screen font-display text-slate-900 dark:text-slate-100" style={{ fontFamily: "'Inter', sans-serif" }}>
         <TopBar />
         <main className="px-6 lg:px-10 py-8 flex-1 flex flex-col max-w-[1440px] mx-auto w-full">
+          <style>{`
+            .glass-card {
+              background: rgba(255, 255, 255, 0.03);
+              backdrop-filter: blur(12px);
+              -webkit-backdrop-filter: blur(12px);
+              border: 1px solid rgba(255, 255, 255, 0.08);
+              transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .glass-card:hover {
+              background: rgba(255, 255, 255, 0.06);
+              transform: translateY(-2px);
+              border-color: rgba(36, 99, 235, 0.4);
+              box-shadow: 0 0 14px rgba(36, 99, 235, 0.12);
+            }
+            .no-scrollbar::-webkit-scrollbar { display: none; }
+            .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+            .thin-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+            .thin-scrollbar::-webkit-scrollbar-track { background: transparent; }
+            .thin-scrollbar::-webkit-scrollbar-thumb {
+              background-color: #334155; /* slate-700 */
+              border-radius: 9999px;
+              border: 2px solid transparent;
+            }
+            .thin-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #475569; /* slate-600 */ }
+            .thin-scrollbar { scrollbar-width: thin; scrollbar-color: #334155 transparent; }
+          `}</style>
           <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
             <div>
               <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">My Experiments</h1>
@@ -222,39 +283,76 @@ export default function ExperimentsList() {
           <div className="flex flex-wrap items-center justify-between gap-3 mb-8 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
             <div className="flex items-center gap-3">
               <span className="px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider border backdrop-blur-sm text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800">Filters</span>
-              <select
-                className="min-w-[180px] h-10 rounded-lg bg-slate-100 dark:bg-slate-800 px-4 text-sm font-medium text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/30"
-                value={statusFilter}
-                onChange={e => setStatusFilter(e.target.value)}
-              >
-                <option value="all">Status: All</option>
-                <option value="published">Published</option>
-                <option value="draft">Draft</option>
-              </select>
-              <select
-                className="min-w-[200px] h-10 rounded-lg bg-slate-100 dark:bg-slate-800 px-4 text-sm font-medium text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/30"
-                value={categoryFilter}
-                onChange={e => setCategoryFilter(e.target.value)}
-              >
-                <option value="all">Category: All</option>
-                <option value="Chemistry">Chemistry</option>
-                <option value="Physics">Physics</option>
-                <option value="Biology">Biology</option>
-                <option value="Engineering">Engineering</option>
-                <option value="Geology">Geology</option>
-              </select>
+              <div className="relative">
+                <button
+                  onClick={() => setOpenFilterId(openFilterId === 'status' ? null : 'status')}
+                  className="min-w-[180px] h-10 rounded-lg bg-slate-100 dark:bg-slate-800 px-4 text-sm font-medium text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 focus:outline-none flex items-center justify-between"
+                >
+                  <span>{statusFilter === 'all' ? 'Status: All' : statusFilter === 'published' ? 'Published' : 'Draft'}</span>
+                  <span className="material-symbols-outlined text-base">expand_more</span>
+                </button>
+                {openFilterId === 'status' && (
+                  <>
+                    <div className="fixed inset-0 z-30" onClick={() => setOpenFilterId(null)} />
+                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl z-40 py-1 max-h-60 overflow-y-auto overflow-x-hidden thin-scrollbar">
+                      {['all','published','draft'].map(opt => (
+                        <button
+                          key={opt}
+                          onClick={() => { setStatusFilter(opt); setOpenFilterId(null); }}
+                          className={`w-full text-left px-4 py-2 text-sm ${statusFilter === opt ? 'text-primary' : 'text-slate-700 dark:text-slate-300'} hover:bg-slate-50 dark:hover:bg-slate-800`}
+                        >
+                          {opt === 'all' ? 'Status: All' : opt === 'published' ? 'Published' : 'Draft'}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-2">
-              <select
-                className="min-w-[180px] h-10 rounded-lg bg-slate-100 dark:bg-slate-800 px-4 text-sm font-medium text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/30"
-                value={sortBy}
-                onChange={e => setSortBy(e.target.value)}
-              >
-                <option value="newest">Sort: Recent</option>
-                <option value="oldest">Oldest First</option>
-                <option value="name">Name A-Z</option>
-              </select>
+              <div className="relative">
+                <button
+                  onClick={() => setOpenFilterId(openFilterId === 'sort' ? null : 'sort')}
+                  className="min-w-[180px] h-10 rounded-lg bg-slate-100 dark:bg-slate-800 px-4 text-sm font-medium text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 focus:outline-none flex items-center justify-between"
+                >
+                  <span>{sortBy === 'newest' ? 'Sort: Recent' : sortBy === 'oldest' ? 'Oldest First' : 'Name A-Z'}</span>
+                  <span className="material-symbols-outlined text-base">expand_more</span>
+                </button>
+                {openFilterId === 'sort' && (
+                  <>
+                    <div className="fixed inset-0 z-30" onClick={() => setOpenFilterId(null)} />
+                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl z-40 py-1 max-h-60 overflow-y-auto overflow-x-hidden thin-scrollbar">
+                      {[
+                        { value: 'newest', label: 'Sort: Recent' },
+                        { value: 'oldest', label: 'Oldest First' },
+                        { value: 'name', label: 'Name A-Z' },
+                      ].map(opt => (
+                        <button
+                          key={opt.value}
+                          onClick={() => { setSortBy(opt.value); setOpenFilterId(null); }}
+                          className={`w-full text-left px-4 py-2 text-sm ${sortBy === opt.value ? 'text-primary' : 'text-slate-700 dark:text-slate-300'} hover:bg-slate-50 dark:hover:bg-slate-800`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
+          </div>
+
+          <div className="flex gap-2 p-1 mb-8 overflow-x-auto no-scrollbar">
+            <button onClick={() => setCategoryFilter('all')} className={`px-5 py-2 rounded-lg text-sm font-semibold ${categoryFilter === 'all' ? 'bg-primary text-white' : 'bg-slate-800/50 text-slate-300 hover:bg-slate-800 transition-colors'}`}>All Categories</button>
+            {['Physics','Chemistry','Biology','Engineering','Geology'].map(cat => (
+              <button
+                key={cat}
+                onClick={() => setCategoryFilter(cat)}
+                className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${categoryFilter === cat ? 'bg-primary text-white' : 'bg-slate-800/50 text-slate-300 hover:bg-slate-800'}`}
+              >
+                {cat}
+              </button>
+            ))}
           </div>
 
           {loading ? (
@@ -274,29 +372,30 @@ export default function ExperimentsList() {
               <EmptyState icon="science" title="No experiments found" description={experiments.length === 0 ? 'Create your first experiment to start building AR content.' : 'No experiments match the current filters.'} actionLabel={experiments.length === 0 ? 'New Experiment' : undefined} onAction={experiments.length === 0 ? createExperiment : undefined} />
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {filtered.map(exp => (
-                <div key={exp.id} className="group flex flex-col bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:shadow-lg hover:border-primary/30 transition-all">
-                  <Link to={`/experiment/${exp.id}`} className="relative w-full aspect-video bg-slate-200 dark:bg-slate-800 overflow-hidden flex items-center justify-center">
+                <div key={exp.id} className="glass-card flex flex-col rounded-2xl overflow-hidden">
+                  <Link to={`/experiment/${exp.id}`} className="relative w-full aspect-video bg-slate-800/50 overflow-hidden flex items-center justify-center">
                     {(() => {
                       const fallback = pickCategoryImage(exp.category || 'Other', exp.id);
                       const imgSrc = exp.thumbnailUrl || fallback;
                       return imgSrc ? (
-                        <img className="w-full h-full object-cover transition-transform group-hover:scale-105" src={imgSrc} alt={exp.title || exp.category || 'Experiment'} />
+                        <img className="w-full h-full object-cover transition-transform group-hover:scale-105" src={imgSrc} alt={exp.title || exp.category || 'Experiment'} loading="lazy" decoding="async" />
                       ) : (
                         <span className="material-symbols-outlined text-5xl text-slate-300 dark:text-slate-500">{CATEGORY_ICONS[exp.category] || 'science'}</span>
                       );
                     })()}
+                    <div className="absolute inset-0 bg-gradient-to-t from-background-dark/80 to-transparent" />
                     <div className="absolute top-3 left-3">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border backdrop-blur-sm ${exp.status === 'published' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
                         {exp.status || 'Draft'}
                       </span>
                     </div>
                   </Link>
-                  <div className="p-4 flex flex-col gap-1 relative">
+                  <div className="p-5 flex flex-col gap-2 relative">
                     <div className="flex items-start justify-between gap-2">
                       <Link to={`/experiment/${exp.id}`}>
-                        <h3 className="text-base font-bold leading-tight line-clamp-1 hover:text-primary transition-colors">{exp.title || 'Untitled'}</h3>
+                        <h3 className="text-base font-bold leading-tight line-clamp-1 hover:text-primary transition-colors text-slate-100">{exp.title || 'Untitled'}</h3>
                       </Link>
                       <div className="relative">
                         <button onClick={() => setOpenMenuId(openMenuId === exp.id ? null : exp.id)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400">
@@ -321,8 +420,17 @@ export default function ExperimentsList() {
                         )}
                       </div>
                     </div>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm">{exp.category || 'Science'}</p>
-                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-1 rounded text-xs font-semibold border ${CATEGORY_PILL_STYLES[normalizeCategory(exp.category)] || CATEGORY_PILL_STYLES.Other}`}>
+                        {normalizeCategory(exp.category) || 'Science'}
+                      </span>
+                    </div>
+                    {exp.description && (
+                      <p className="text-slate-500 dark:text-slate-400 text-sm">
+                        {exp.description}
+                      </p>
+                    )}
+                    <div className="mt-4 pt-4 border-t border-glass-border flex items-center justify-between">
                       <span className="text-xs text-slate-400 dark:text-slate-500">Edited {formatTimeAgo(exp.updatedAt)}</span>
                       {(exp.classroomIds?.length || 0) > 0 && (
                         <span className="text-xs text-slate-400 dark:text-slate-500">{exp.classroomIds.length} classroom{exp.classroomIds.length > 1 ? 's' : ''}</span>

@@ -223,7 +223,7 @@ export default function ClassroomDetail() {
         {/* Cover Image Header */}
         {classroom.coverImageURL && (
           <div className="w-full h-48 rounded-xl overflow-hidden mb-8 relative">
-            <img src={classroom.coverImageURL} alt="" className="w-full h-full object-cover" />
+            <img src={classroom.coverImageURL} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
           </div>
         )}

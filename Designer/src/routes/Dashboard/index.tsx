@@ -261,8 +261,8 @@ export default function DashboardHome() {
                     className="group flex flex-col overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm transition-all hover:shadow-md"
                   >
                     <div className={`h-28 relative overflow-hidden ${c.coverImageURL ? '' : 'bg-gradient-to-br from-primary/20 to-primary/5'}`}>
-                      {c.coverImageURL ? (
-                        <img src={c.coverImageURL} alt="" className="w-full h-full object-cover" />
+                    {c.coverImageURL ? (
+                      <img src={c.coverImageURL} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center opacity-20">
                           <span className="material-symbols-outlined text-6xl text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>{pickSubjectIcon(c.subject, c.id || c.name || c.joinCode)}</span>

@@ -1,6 +1,6 @@
-import React, { useState, Component, ErrorInfo, ReactNode } from 'react';
+import React, { useState, useRef, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import Spline from '@splinetool/react-spline';
+// Spline is heavy; defer loading until the hero is visible
 
 // Error Boundary to catch Spline loading failures gracefully
 class SplineErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean}> {
@@ -58,6 +58,7 @@ function VideoPlayer() {
               src={thumbnail}
               alt="LucidLab Demo Video"
               className="w-full h-full object-cover"
+              loading="lazy"
             />
             {/* Dark overlay */}
             <div className="absolute inset-0 bg-slate-900/50 group-hover/play:bg-slate-900/40 transition-colors" />
@@ -85,6 +86,34 @@ function VideoPlayer() {
 }
 
 export default function LandingPage() {
+  const heroRef = useRef<HTMLDivElement | null>(null);
+  const [SplineComp, setSplineComp] = useState<React.ComponentType<any> | null>(null);
+  const [shouldLoadSpline, setShouldLoadSpline] = useState(false);
+
+  useEffect(() => {
+    const el = heroRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setShouldLoadSpline(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!shouldLoadSpline || SplineComp) return;
+    import('@splinetool/react-spline').then(mod => {
+      setSplineComp(() => mod.default);
+    }).catch(() => {
+      setSplineComp(null);
+    });
+  }, [shouldLoadSpline, SplineComp]);
   return (
     // "dark" class here enables Tailwind dark: variants for just this page
     <div className="dark">
@@ -138,11 +167,15 @@ export default function LandingPage() {
                   <div className="absolute inset-0 bg-blue-600/10 blur-3xl rounded-full scale-110 group-hover:scale-125 transition-transform duration-1000"></div>
                   
                   {/* Spline 3D Model */}
-                  <div className="absolute inset-0 w-full h-full spline-wrapper z-10">
+                  <div ref={heroRef} className="absolute inset-0 w-full h-full spline-wrapper z-10">
                     <SplineErrorBoundary>
-                      <Spline 
-                         scene="https://prod.spline.design/QJ9NK0LDYhcpN1sq/scene.splinecode"
-                      />
+                      {SplineComp ? (
+                        <SplineComp scene="https://prod.spline.design/QJ9NK0LDYhcpN1sq/scene.splinecode" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <div className="w-24 h-24 rounded-full border-4 border-primary/30 border-t-primary animate-spin" aria-label="Loading 3D" />
+                        </div>
+                      )}
                     </SplineErrorBoundary>
                   </div>
                   <style>{`
