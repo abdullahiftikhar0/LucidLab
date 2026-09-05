@@ -85,7 +85,18 @@ namespace Assets.Interaction
 
         public void OnEmptyTapped() => Deselect();
         
-        private void OnMarkerLost(string markerName) => Deselect();
+        private void OnMarkerLost(string markerName)
+        {
+            // Keep controls active for locked/placed scenes; marker visibility no longer
+            // determines manipulability once pose is intentionally pinned.
+            if (ARLockManager.IsLocked || ARLockManager.IsPlanePlaced)
+            {
+                Debug.Log($"[ObjectManipulationController] Ignoring marker lost '{markerName}' while locked/placed.");
+                return;
+            }
+
+            Deselect();
+        }
 
         private void Select(GameObject go, GrabbableObject grabbable)
         {

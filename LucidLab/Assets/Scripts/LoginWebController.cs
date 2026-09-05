@@ -18,8 +18,7 @@ namespace LucidLab.UI
         private static LoginWebController _activeController;
 
         // Splash → app loading state
-        private bool _splashLoaded;
-        private bool _appLoadRequested;
+        private bool _shellLoaded;
 
         private void Awake()
         {
@@ -50,8 +49,7 @@ namespace LucidLab.UI
                 yield break;
             }
 
-            _splashLoaded = false;
-            _appLoadRequested = false;
+            _shellLoaded = false;
 
             webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
             DontDestroyOnLoad(webViewObject.gameObject);
@@ -73,22 +71,15 @@ namespace LucidLab.UI
                     Debug.Log($"WebView Loaded: {msg}");
                     if (_activeController == null) return;
 
-                    if (!_activeController._splashLoaded)
-                    {
-                        // Splash page finished loading — show it and fade out the Unity canvas overlay
-                        _activeController._splashLoaded = true;
-                        if (_persistentWebView != null)
-                            _persistentWebView.SetVisibility(true);
-                        if (_activeController.loadingScreen != null)
-                            _activeController.StartCoroutine(_activeController.FadeOutLoader());
-                        // Start the timer to transition to the real app
-                        _activeController.StartCoroutine(_activeController.LoadAppAfterSplash());
-                    }
-                    else if (_activeController._appLoadRequested)
-                    {
-                        // student_app.html finished loading — splash is naturally replaced
-                        Debug.Log("[Splash] App loaded, splash dismissed.");
-                    }
+                    if (_activeController._shellLoaded) return;
+
+                    _activeController._shellLoaded = true;
+                    if (_persistentWebView != null)
+                        _persistentWebView.SetVisibility(true);
+                    if (_activeController.loadingScreen != null)
+                        _activeController.StartCoroutine(_activeController.FadeOutLoader());
+
+                    Debug.Log("[Splash] App shell loaded.");
                 },
                 transparent: true
             );
@@ -101,34 +92,15 @@ namespace LucidLab.UI
 
             webViewObject.SetMargins(0, 0, 0, 0);
 
-            // Load the splash screen first
-            string splashUrl = System.IO.Path.Combine(Application.streamingAssetsPath, "splash_screen.html");
-            splashUrl = splashUrl.Replace("\\", "/");
+                // Load student shell directly.
+                // The shell manages splash/auth bootstrap internally, so we avoid showing splash twice.
+                string appUrl = System.IO.Path.Combine(Application.streamingAssetsPath, "student_app.html");
+                appUrl = appUrl.Replace("\\", "/");
 
 #if UNITY_ANDROID && !UNITY_EDITOR
-            webViewObject.LoadURL("file:///android_asset/splash_screen.html");
+                webViewObject.LoadURL("file:///android_asset/student_app.html");
 #else
-            webViewObject.LoadURL("file://" + splashUrl);
-#endif
-        }
-
-        /// <summary>
-        /// Wait for the minimum splash duration, then navigate to the real app shell.
-        /// The WebView keeps showing splash_screen.html until student_app.html finishes loading.
-        /// </summary>
-        private IEnumerator LoadAppAfterSplash()
-        {
-            yield return new WaitForSeconds(minSplashDuration);
-
-            _appLoadRequested = true;
-
-            string appUrl = System.IO.Path.Combine(Application.streamingAssetsPath, "student_app.html");
-            appUrl = appUrl.Replace("\\", "/");
-
-#if UNITY_ANDROID && !UNITY_EDITOR
-            webViewObject.LoadURL("file:///android_asset/student_app.html");
-#else
-            webViewObject.LoadURL("file://" + appUrl);
+                webViewObject.LoadURL("file://" + appUrl);
 #endif
         }
 
@@ -197,10 +169,20 @@ namespace LucidLab.UI
                     {
                         PlayerPrefs.SetString("instructorId", json.instructorId);
                     }
+
+                    if (!string.IsNullOrEmpty(json.initialSceneName))
+                    {
+                        PlayerPrefs.SetString("initialSceneName", json.initialSceneName);
+                    }
+                    else
+                    {
+                        PlayerPrefs.DeleteKey("initialSceneName");
+                    }
                 } catch {
                     PlayerPrefs.SetString("expname", payload);
                     PlayerPrefs.SetString("experimentId", payload);
                     PlayerPrefs.SetString("experimentTitle", payload);
+                    PlayerPrefs.DeleteKey("initialSceneName");
                 }
                 PlayerPrefs.Save();
                 // Hide webview instead of destroying it so we can restore it later
@@ -231,6 +213,7 @@ namespace LucidLab.UI
             public string classroomId;
             public string instructorId;
             public string modelUsername;
+            public string initialSceneName;
         }
 
         private void OnDestroy()

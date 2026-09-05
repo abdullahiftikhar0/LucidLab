@@ -41,6 +41,7 @@ namespace Assets.Interaction
         private WebViewObject _instruction;
         private WebViewObject _task;
         private WebViewObject _confirm;   // full-screen submit-confirm overlay
+        private WebViewObject _scenePicker; // full-screen scene picker overlay
 
         // Ready flags
         private bool _topBarReady;
@@ -48,6 +49,11 @@ namespace Assets.Interaction
         private bool _toolbeltReady;
         private bool _instructionReady;
         private bool _taskReady;
+        private bool _scenePickerReady;
+
+        // Keep mode-toggle availability sticky even if the panel is not ready yet.
+        private bool _markerModeEnabled = true;
+        private string _scenePickerPayloadJson;
 
         private SceneNavigator _sceneNavigator;
         private TapInteractor _tapInteractor;
@@ -207,16 +213,20 @@ namespace Assets.Interaction
             {
                 case "mode_toggle_ready":
                     _modeToggleReady = true;
+                    SetMarkerModeEnabled(_markerModeEnabled);
                     break;
                 case "mode_marker":
                     var t1 = FindObjectOfType<TrackingModeToggleUI>();
-                    if (t1 != null && t1.CurrentMode != TrackingModeToggleUI.TrackingMode.Marker)
-                        t1.Toggle();
+                    if (t1 != null)
+                        t1.SetMode(TrackingModeToggleUI.TrackingMode.Marker, true);
                     break;
                 case "mode_plane":
                     var t2 = FindObjectOfType<TrackingModeToggleUI>();
-                    if (t2 != null && t2.CurrentMode != TrackingModeToggleUI.TrackingMode.Plane)
-                        t2.Toggle();
+                    if (t2 != null)
+                        t2.SetMode(TrackingModeToggleUI.TrackingMode.Plane, true);
+                    break;
+                case "mode_marker_unavailable":
+                    SetInstruction("Marker for this scene not available");
                     break;
             }
         }
@@ -282,6 +292,100 @@ namespace Assets.Interaction
             _confirm = wv;
         }
 
+        // ── Scene Picker panel lifecycle ──────────────────────────────────────
+
+        public void ShowScenePicker(string scenePickerPayloadJson)
+        {
+            _scenePickerPayloadJson = scenePickerPayloadJson;
+            _scenePickerReady = false;
+
+            if (_scenePicker != null)
+            {
+                PushContextToScenePicker();
+                return;
+            }
+
+            StartCoroutine(InitScenePickerPanel());
+        }
+
+        private IEnumerator InitScenePickerPanel()
+        {
+            var wv = (new GameObject("ARHud_ScenePicker")).AddComponent<WebViewObject>();
+
+            wv.Init(
+                cb:      (msg) => HandleScenePickerMsg(msg),
+                err:     (msg) => Debug.LogError($"[ARHud_ScenePicker] Error: {msg}"),
+                httpErr: (msg) => Debug.LogError($"[ARHud_ScenePicker] HTTP Error: {msg}"),
+                started: (msg) => Debug.Log($"[ARHud_ScenePicker] Started: {msg}"),
+                ld:      (msg) =>
+                {
+                    Debug.Log($"[ARHud_ScenePicker] Loaded: {msg}");
+                    wv.SetVisibility(true);
+                },
+                transparent: true
+            );
+
+            while (!wv.IsInitialized())
+                yield return null;
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+            wv.LoadURL("file:///android_asset/ar_scene_picker.html");
+#else
+            string url = System.IO.Path.Combine(Application.streamingAssetsPath, "ar_scene_picker.html").Replace("\\", "/");
+            wv.LoadURL("file://" + url);
+#endif
+
+            // Full-screen overlay for scene selection
+            wv.SetMargins(0, 0, 0, 0);
+            _scenePicker = wv;
+        }
+
+        private void HandleScenePickerMsg(string msg)
+        {
+            if (msg == "scene_picker_ready")
+            {
+                _scenePickerReady = true;
+                PushContextToScenePicker();
+            }
+            else if (msg.StartsWith("scene_picker_select:"))
+            {
+                string encodedSceneName = msg.Substring("scene_picker_select:".Length);
+                string sceneName = System.Uri.UnescapeDataString(encodedSceneName ?? string.Empty);
+
+                var sceneManager = FindObjectOfType<Assets.SceneManagement.SceneManager>();
+                if (sceneManager != null)
+                {
+                    sceneManager.HandleScenePickerSelection(sceneName);
+                }
+
+                CloseScenePicker();
+            }
+            else if (msg == "close_scene_picker")
+            {
+                CloseScenePicker();
+            }
+            else
+            {
+                Debug.Log($"[ARHud ScenePicker] {msg}");
+            }
+        }
+
+        private void PushContextToScenePicker()
+        {
+            if (_scenePicker == null || !_scenePickerReady) return;
+            if (string.IsNullOrWhiteSpace(_scenePickerPayloadJson)) return;
+
+            _scenePicker.EvaluateJS($"window.postMessage({_scenePickerPayloadJson}, '*');");
+        }
+
+        private void CloseScenePicker()
+        {
+            if (_scenePicker == null) return;
+            Destroy(_scenePicker.gameObject);
+            _scenePicker = null;
+            _scenePickerReady = false;
+        }
+
         private void CloseSubmitConfirm()
         {
             if (_confirm == null) return;
@@ -321,6 +425,15 @@ namespace Assets.Interaction
 
             string stateJson = string.Empty;
             float progress = 0f;
+            int totalSceneCount = 0;
+            string currentSceneName = PlayerPrefs.GetString("currentScene", "");
+
+            var sceneManager = FindObjectOfType<Assets.SceneManagement.SceneManager>();
+            if (sceneManager != null && sceneManager.sceneLoader != null && sceneManager.sceneLoader.Scenes != null)
+            {
+                totalSceneCount = sceneManager.sceneLoader.Scenes.Count;
+            }
+
             var subManager = FindObjectOfType<SubmissionManager>();
             if (subManager != null)
             {
@@ -343,7 +456,9 @@ namespace Assets.Interaction
                 classroomId = PlayerPrefs.GetString("classroomId", "unknown"),
                 instructorId = PlayerPrefs.GetString("instructorId", ""),
                 expname = PlayerPrefs.GetString("experimentTitle", PlayerPrefs.GetString("expname", "Untitled")),
-                stateJson = stateJson
+                stateJson = stateJson,
+                currentSceneName = currentSceneName,
+                totalSceneCount = totalSceneCount
             };
 
             string json = JsonUtility.ToJson(context);
@@ -362,6 +477,8 @@ namespace Assets.Interaction
             public string instructorId;
             public string expname;
             public string stateJson;
+            public string currentSceneName;
+            public int totalSceneCount;
         }
 
 
@@ -455,6 +572,13 @@ namespace Assets.Interaction
             EvalOnPanel(_modeToggle, $"setMode('{EscapeJS(mode)}');");
         }
 
+        public void SetMarkerModeEnabled(bool enabled)
+        {
+            _markerModeEnabled = enabled;
+            if (!_modeToggleReady) return;
+            EvalOnPanel(_modeToggle, $"setMarkerModeEnabled({(enabled ? "true" : "false")});");
+        }
+
         public void SetInstruction(string text)
         {
             if (!_instructionReady) return;
@@ -500,6 +624,7 @@ namespace Assets.Interaction
             if (_instruction!= null) Destroy(_instruction.gameObject);
             if (_task       != null) Destroy(_task.gameObject);
             if (_confirm    != null) Destroy(_confirm.gameObject);
+            if (_scenePicker!= null) Destroy(_scenePicker.gameObject);
         }
     }
 }

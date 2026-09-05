@@ -86,6 +86,33 @@ namespace Assets.SceneManagement {
             return await DownloadBytesFromUrl(url);
         }
 
+        private static string BuildEncodedStoragePath(string storagePath) {
+            if (string.IsNullOrWhiteSpace(storagePath)) return string.Empty;
+
+            var segments = storagePath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < segments.Length; i++) {
+                segments[i] = UnityWebRequest.EscapeURL(segments[i]);
+            }
+
+            return string.Join("/", segments);
+        }
+
+        private async Task<byte[]> TrySupabasePublicDownloadByPath(string storagePath) {
+            if (string.IsNullOrWhiteSpace(supabaseBaseUrl) || string.IsNullOrWhiteSpace(supabaseBucket)) {
+                return null;
+            }
+
+            var baseUrl = supabaseBaseUrl.TrimEnd('/');
+            var safeBucket = UnityWebRequest.EscapeURL(supabaseBucket);
+            var safePath = BuildEncodedStoragePath(storagePath);
+            if (string.IsNullOrWhiteSpace(safePath)) {
+                return null;
+            }
+
+            var url = $"{baseUrl}/storage/v1/object/public/{safeBucket}/{safePath}";
+            return await DownloadBytesFromUrl(url);
+        }
+
         private static string NormalizeModelName(string modelName) {
             var value = (modelName ?? string.Empty).Trim();
             if (value.EndsWith(".glb", StringComparison.OrdinalIgnoreCase)) {
@@ -123,16 +150,47 @@ namespace Assets.SceneManagement {
         }
 
         public async Task<byte[]> GetModelBytes(string modelName) {
+            if (Uri.TryCreate(modelName, UriKind.Absolute, out var absoluteUri)
+                && (absoluteUri.Scheme == Uri.UriSchemeHttp || absoluteUri.Scheme == Uri.UriSchemeHttps)) {
+                var directBytes = await DownloadBytesFromUrl(modelName);
+                if (directBytes != null) {
+                    CacheManager.PutFileInCache($"url/{modelName}", directBytes);
+                    Debug.Log($"[ModelManager] Loaded custom model from direct URL: {modelName}");
+                    return directBytes;
+                }
+            }
+
             var normalizedModelName = NormalizeModelName(modelName);
             if (string.IsNullOrWhiteSpace(normalizedModelName)) {
                 Debug.LogError("[ModelManager] Model name is empty.");
                 return null;
             }
 
+            var hasScopedPath = normalizedModelName.Contains("/");
+            var scopedPath = hasScopedPath ? normalizedModelName + ".glb" : null;
+            var baseModelName = hasScopedPath
+                ? normalizedModelName[(normalizedModelName.LastIndexOf('/') + 1)..]
+                : normalizedModelName;
+
+            if (hasScopedPath) {
+                var scopedCacheKey = $"path/{scopedPath}";
+                var scopedCachedBytes = CacheManager.GetFileFromCache(scopedCacheKey);
+                if (scopedCachedBytes != null && scopedCachedBytes.Length > 0) {
+                    return scopedCachedBytes;
+                }
+
+                var scopedBytes = await TrySupabasePublicDownloadByPath(scopedPath);
+                if (scopedBytes != null) {
+                    CacheManager.PutFileInCache(scopedCacheKey, scopedBytes);
+                    Debug.Log($"[ModelManager] Loaded '{normalizedModelName}' using direct bucket path.");
+                    return scopedBytes;
+                }
+            }
+
             var users = GetCandidateUsernames();
 
             foreach (var user in users) {
-                var scopedCacheKey = BuildUserScopedCacheKey(normalizedModelName, user);
+                var scopedCacheKey = BuildUserScopedCacheKey(baseModelName, user);
                 var cachedBytes = CacheManager.GetFileFromCache(scopedCacheKey);
                 if (cachedBytes != null && cachedBytes.Length > 0) return cachedBytes;
             }
@@ -141,33 +199,41 @@ namespace Assets.SceneManagement {
 
             if (trySupabaseFirst) {
                 foreach (var user in users) {
-                    bytes = await TrySupabasePublicDownload(normalizedModelName, user);
+                    bytes = await TrySupabasePublicDownload(baseModelName, user);
                     if (bytes != null) {
-                        CacheManager.PutFileInCache(BuildUserScopedCacheKey(normalizedModelName, user), bytes);
-                        Debug.Log($"[ModelManager] Loaded '{normalizedModelName}' from Supabase for user '{user}'.");
+                        CacheManager.PutFileInCache(BuildUserScopedCacheKey(baseModelName, user), bytes);
+                        Debug.Log($"[ModelManager] Loaded '{baseModelName}' from Supabase for user '{user}'.");
                         return bytes;
                     }
                 }
             }
 
             foreach (var user in users) {
-                bytes = await TryFirebaseStorageDownload(normalizedModelName, user);
+                bytes = await TryFirebaseStorageDownload(baseModelName, user);
                 if (bytes != null) {
-                    CacheManager.PutFileInCache(BuildUserScopedCacheKey(normalizedModelName, user), bytes);
-                    Debug.Log($"[ModelManager] Loaded '{normalizedModelName}' from Firebase Storage for user '{user}'.");
+                    CacheManager.PutFileInCache(BuildUserScopedCacheKey(baseModelName, user), bytes);
+                    Debug.Log($"[ModelManager] Loaded '{baseModelName}' from Firebase Storage for user '{user}'.");
                     return bytes;
                 }
             }
 
             if (!trySupabaseFirst) {
                 foreach (var user in users) {
-                    bytes = await TrySupabasePublicDownload(normalizedModelName, user);
+                    bytes = await TrySupabasePublicDownload(baseModelName, user);
                     if (bytes != null) {
-                        CacheManager.PutFileInCache(BuildUserScopedCacheKey(normalizedModelName, user), bytes);
-                        Debug.Log($"[ModelManager] Loaded '{normalizedModelName}' from Supabase for user '{user}'.");
+                        CacheManager.PutFileInCache(BuildUserScopedCacheKey(baseModelName, user), bytes);
+                        Debug.Log($"[ModelManager] Loaded '{baseModelName}' from Supabase for user '{user}'.");
                         return bytes;
                     }
                 }
+            }
+
+            // Legacy fallback: model stored at bucket root without user scoping.
+            bytes = await TrySupabasePublicDownloadByPath(baseModelName + ".glb");
+            if (bytes != null) {
+                CacheManager.PutFileInCache($"legacy/{baseModelName}.glb", bytes);
+                Debug.Log($"[ModelManager] Loaded '{baseModelName}' from root bucket fallback path.");
+                return bytes;
             }
 
             Debug.LogError($"[ModelManager] Failed to load model '{normalizedModelName}'. Tried users: {string.Join(", ", users)}");

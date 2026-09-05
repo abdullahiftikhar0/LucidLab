@@ -7,7 +7,7 @@ import {
 } from '@chakra-ui/react';
 import { getFirestore } from '@firebase/firestore';
 import React, { lazy } from 'react';
-import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { FirestoreProvider, useFirebaseApp } from 'reactfire';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AuthGuard from './components/AuthGuard';
@@ -55,7 +55,7 @@ function AppShell() {
         <ColorModeScript />
         <ChakraProvider theme={theme}>
           <React.Suspense fallback={<div className="w-screen h-screen skeleton-shimmer" />}>
-            <RouterProvider router={router} />
+            <RouterProvider router={router} future={{ v7_startTransition: true }} />
           </React.Suspense>
         </ChakraProvider>
       </ExperimentRoot>

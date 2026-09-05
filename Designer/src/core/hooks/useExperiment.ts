@@ -25,7 +25,7 @@ export default function useExperiment(expName: string) {
     );
   }
 
-  async function updateExperiment(fields: { title?: string; description?: string; category?: string }) {
+  async function updateExperiment(fields: { title?: string; description?: string; category?: string; thumbnailUrl?: string }) {
     const experimentRef = getExperimentDocRef(fsapp, expName);
     await setDoc(experimentRef, fields, { merge: true });
   }

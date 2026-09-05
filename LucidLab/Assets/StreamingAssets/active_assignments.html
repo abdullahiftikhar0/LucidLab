@@ -262,6 +262,134 @@
         return d.innerHTML;
       }
 
+      function normalizeStatus(status) {
+        var s = status == null ? "" : String(status).trim().toLowerCase();
+        if (!s) return "in_progress";
+        if (s === "in progress") return "in_progress";
+        if (s === "needs revision") return "needs_revision";
+        return s;
+      }
+
+      function getSceneSummary(sub) {
+        if (!sub || typeof sub !== "object") return null;
+        var raw = sub.sceneSummary;
+        if (raw && typeof raw === "object") {
+          var total = Number(raw.totalSceneCount);
+          if (isFinite(total) && total > 0) {
+            return {
+              totalSceneCount: Math.max(1, Math.round(total)),
+              submittedWaitingCount: Math.max(0, Math.round(Number(raw.submittedWaitingCount) || 0)),
+              gradedCount: Math.max(0, Math.round(Number(raw.gradedCount) || 0)),
+              needsRevisionCount: Math.max(0, Math.round(Number(raw.needsRevisionCount) || 0)),
+              inProgressCount: Math.max(0, Math.round(Number(raw.inProgressCount) || 0)),
+              submittedOrDoneCount: Math.max(0, Math.round(Number(raw.submittedOrDoneCount) || 0))
+            };
+          }
+        }
+
+        if (!sub.sceneSubmissions || typeof sub.sceneSubmissions !== "object") return null;
+        var keys = Object.keys(sub.sceneSubmissions);
+        if (!keys.length) return null;
+
+        var submittedWaitingCount = 0;
+        var gradedCount = 0;
+        var needsRevisionCount = 0;
+
+        keys.forEach(function (key) {
+          var scene = sub.sceneSubmissions[key] || {};
+          var status = normalizeStatus(scene.status);
+          if (status === "submitted") submittedWaitingCount += 1;
+          else if (status === "graded" || status === "correct" || status === "incorrect") gradedCount += 1;
+          else if (status === "needs_revision") needsRevisionCount += 1;
+        });
+
+        var submittedOrDoneCount = submittedWaitingCount + gradedCount + needsRevisionCount;
+        var totalSceneCount = Number(sub.totalSceneCount);
+        if (!isFinite(totalSceneCount) || totalSceneCount <= 0) totalSceneCount = keys.length;
+
+        return {
+          totalSceneCount: Math.max(1, Math.round(totalSceneCount)),
+          submittedWaitingCount: submittedWaitingCount,
+          gradedCount: gradedCount,
+          needsRevisionCount: needsRevisionCount,
+          inProgressCount: Math.max(0, Math.round(totalSceneCount) - submittedOrDoneCount),
+          submittedOrDoneCount: submittedOrDoneCount
+        };
+      }
+
+      function getEffectiveStatus(sub) {
+        var summary = getSceneSummary(sub);
+        if (summary) {
+          if (summary.needsRevisionCount > 0) return "needs_revision";
+          if (summary.submittedOrDoneCount < summary.totalSceneCount) return "in_progress";
+          if (summary.submittedWaitingCount > 0) return "submitted";
+          if (summary.gradedCount >= summary.totalSceneCount) return "graded";
+        }
+        return normalizeStatus(sub && (sub.effectiveStatus || sub.status));
+      }
+
+      function getSceneSummaryText(sub) {
+        var summary = getSceneSummary(sub);
+        if (!summary) return "No scene submissions yet";
+        var base = summary.submittedOrDoneCount + "/" + summary.totalSceneCount + " scenes submitted";
+        if (summary.needsRevisionCount > 0) return base + " • " + summary.needsRevisionCount + " need revision";
+        if (summary.submittedWaitingCount > 0) return base + " • Awaiting grade";
+        if (summary.gradedCount >= summary.totalSceneCount) return base + " • Fully graded";
+        return base;
+      }
+
+      function getPrimaryFeedback(sub) {
+        if (!sub) return "";
+        if (sub.instructorFeedback) return sub.instructorFeedback;
+        if (!sub.sceneSubmissions || typeof sub.sceneSubmissions !== "object") return "";
+        var entries = Object.keys(sub.sceneSubmissions).map(function (key) {
+          return sub.sceneSubmissions[key] || {};
+        });
+        for (var i = 0; i < entries.length; i += 1) {
+          var scene = entries[i];
+          if (scene.instructorFeedback) {
+            var sceneName = scene.sceneName ? String(scene.sceneName) : "Scene";
+            return sceneName + ": " + scene.instructorFeedback;
+          }
+        }
+        return "";
+      }
+
+      function getProgressPct(sub) {
+        var pct = 0;
+        if (sub && sub.experimentState && sub.experimentState.completionPercentage != null) {
+          pct = Number(sub.experimentState.completionPercentage);
+        } else if (sub && sub.completionPercentage != null) {
+          pct = Number(sub.completionPercentage);
+        } else if (sub && sub.sceneSubmissions && typeof sub.sceneSubmissions === "object") {
+          var keys = Object.keys(sub.sceneSubmissions);
+          if (keys.length) {
+            var total = 0;
+            var count = 0;
+            keys.forEach(function (key) {
+              var scene = sub.sceneSubmissions[key] || {};
+              var value = Number(scene.completionPct != null ? scene.completionPct : scene.completionPercentage);
+              if (isFinite(value)) {
+                total += value;
+                count += 1;
+              }
+            });
+            if (count > 0) pct = total / count;
+          }
+        }
+        if (!isFinite(pct)) pct = 0;
+        return Math.max(0, Math.min(100, Math.round(pct)));
+      }
+
+      function resolveLaunchMode(sub) {
+        var status = getEffectiveStatus(sub);
+        if (status === "graded" || status === "correct") return "review";
+        if (status === "submitted") return "view";
+        if (status === "needs_revision") return "retake";
+        if (status === "in_progress") return "continue";
+        return "launch";
+      }
+
       // ===== Experiment Detail Screen =====
       var expDetailScreen = document.getElementById("exp-detail");
       var detailLaunchBar = document.getElementById("detail-launch-bar");
@@ -270,6 +398,8 @@
       function openExpDetail(exp) {
         currentDetailExp = exp;
         var sub = exp.submission;
+        var effectiveStatus = getEffectiveStatus(sub);
+        var sceneSummary = getSceneSummary(sub);
 
         document.getElementById("detail-title").textContent = exp.title || exp.name || "Experiment";
         document.getElementById("detail-hero-title").textContent = exp.title || exp.name || "Experiment";
@@ -278,11 +408,13 @@
         // Status badge
         var statusBadge = document.getElementById("detail-status-badge");
         var status, sBg, sText;
-        if (sub && (sub.status === "graded" || sub.status === "correct")) {
+        if (effectiveStatus === "graded" || effectiveStatus === "correct") {
           status = "Graded"; sBg = "bg-emerald-400/10"; sText = "text-emerald-500 border-emerald-500/20";
-        } else if (sub && sub.status === "submitted") {
+        } else if (effectiveStatus === "submitted") {
           status = "Submitted"; sBg = "bg-cyan-400/10"; sText = "text-cyan-400 border-cyan-400/20";
-        } else if (sub && sub.status === "in_progress") {
+        } else if (effectiveStatus === "needs_revision") {
+          status = "Needs Revision"; sBg = "bg-amber-400/10"; sText = "text-amber-400 border-amber-400/20";
+        } else if (effectiveStatus === "in_progress") {
           status = "In Progress"; sBg = "bg-yellow-400/10"; sText = "text-yellow-400 border-yellow-400/20";
         } else {
           status = "Not Started"; sBg = "bg-slate-500/10"; sText = "text-slate-400 border-slate-600";
@@ -307,10 +439,12 @@
         statsEl.innerHTML = "";
         var stats = [];
 
-        var pct = 0;
-        if (sub && sub.experimentState && sub.experimentState.completionPercentage != null) pct = sub.experimentState.completionPercentage;
-        else if (sub && sub.completionPercentage != null) pct = sub.completionPercentage;
+        var pct = getProgressPct(sub);
         stats.push({ icon: "trending_up", bg: "color-mix(in srgb, var(--accent) 10%, transparent)", color: "var(--accent)", label: "Progress", value: pct + "%", extra: '<div class="progress-track"><div class="progress-fill" style="width:' + pct + '%"></div></div>' });
+
+        if (sceneSummary) {
+          stats.push({ icon: "scene", bg: "rgba(99,102,241,0.1)", color: "#6366f1", label: "Scenes", value: sceneSummary.submittedOrDoneCount + " / " + sceneSummary.totalSceneCount });
+        }
 
         if (sub && sub.quizScore != null) {
           stats.push({ icon: "quiz", bg: "color-mix(in srgb, var(--accent) 10%, transparent)", color: "var(--accent)", label: "Quiz Score", value: sub.quizScore + "%" });
@@ -349,18 +483,21 @@
 
         // Instructor Feedback
         var fbSection = document.getElementById("detail-feedback-section");
-        if (sub && sub.instructorFeedback) {
+        var feedbackText = getPrimaryFeedback(sub);
+        if (feedbackText) {
           fbSection.classList.remove("hidden");
-          document.getElementById("detail-feedback").textContent = sub.instructorFeedback;
+          document.getElementById("detail-feedback").textContent = feedbackText;
         } else { fbSection.classList.add("hidden"); }
 
         // AR button label
         var arLabel = document.getElementById("detail-ar-label");
-        if (sub && (sub.status === "graded" || sub.status === "correct")) {
+        if (effectiveStatus === "graded" || effectiveStatus === "correct") {
           arLabel.textContent = "Review Session";
-        } else if (sub && sub.status === "submitted") {
+        } else if (effectiveStatus === "submitted") {
           arLabel.textContent = "View Submission";
-        } else if (sub && sub.status === "in_progress") {
+        } else if (effectiveStatus === "needs_revision") {
+          arLabel.textContent = "Retake Scene";
+        } else if (effectiveStatus === "in_progress") {
           arLabel.textContent = "Continue AR";
         } else {
           arLabel.textContent = "Launch AR";
@@ -385,10 +522,7 @@
         e.preventDefault();
         if (!currentDetailExp) return;
         var sub = currentDetailExp.submission;
-        var mode = "launch";
-        if (sub && (sub.status === "graded" || sub.status === "correct")) mode = "review";
-        else if (sub && sub.status === "submitted") mode = "view";
-        else if (sub && sub.status === "in_progress") mode = "continue";
+        var mode = resolveLaunchMode(sub);
         var classroomId = currentDetailExp.classroomId || (currentDetailExp.classroom && currentDetailExp.classroom.id) || null;
         var modelUsername = (currentDetailExp.classroom && currentDetailExp.classroom.instructorId) || currentDetailExp.instructorId || null;
         
@@ -409,36 +543,41 @@
       function renderAssignments(experiments) {
         var list = document.getElementById("assignments-list");
         var skeletons = document.getElementById("skeleton-container");
+        var empty = document.getElementById("empty-state");
         if (skeletons) skeletons.remove();
 
         var countEl = document.getElementById("total-count");
 
         if (!experiments || experiments.length === 0) {
-          countEl.textContent = "0 Total";
+          if (countEl) countEl.textContent = "0 Total";
           empty.classList.remove("hidden");
           return;
         }
         empty.classList.add("hidden");
-        countEl.textContent = experiments.length + " Total";
+        if (countEl) countEl.textContent = experiments.length + " Total";
 
         experiments.forEach(function (exp) {
           var sub = exp.submission;
-          var isGraded    = sub && (sub.status === "graded" || sub.status === "correct");
-          var isSubmitted = sub && sub.status === "submitted";
-          var isInProg    = sub && sub.status === "in_progress";
+           var effectiveStatus = getEffectiveStatus(sub);
+           var sceneSummaryLabel = getSceneSummaryText(sub);
 
           var statusIcon, statusColor, statusLabel, btnLabel;
-          if (isGraded) {
+           if (effectiveStatus === "graded" || effectiveStatus === "correct") {
              statusIcon  = "workspace_premium";
              statusLabel = "Graded";
              statusColor = "text-accent-success";
              btnLabel    = "Review Session";
-          } else if (isSubmitted) {
+           } else if (effectiveStatus === "submitted") {
              statusIcon  = "schedule_send";
              statusLabel = "Submitted";
              statusColor = "text-cyan-400";
              btnLabel    = "View Submission";
-          } else if (isInProg) {
+           } else if (effectiveStatus === "needs_revision") {
+             statusIcon  = "refresh";
+             statusLabel = "Needs Revision";
+             statusColor = "text-amber-400";
+             btnLabel    = "Retake Scene";
+           } else if (effectiveStatus === "in_progress") {
              statusIcon  = "trending_up";
              statusLabel = "In Progress";
              statusColor = "text-amber-400";
@@ -450,7 +589,7 @@
              btnLabel    = "Launch AR";
           }
 
-          var pct = (sub && sub.completionPercentage) || 0;
+          var pct = getProgressPct(sub);
           // Submissions might not have classroomName if fetched directly, but exp has it
           var classroomName = (exp.classroom && exp.classroom.name) || (sub && sub.classroomName) || "";
 
@@ -469,6 +608,7 @@
                 '<div class="flex items-center mt-1 gap-1.5">' +
                   '<span class="text-xs font-bold ' + statusColor + ' uppercase tracking-wider">' + statusLabel + '</span>' +
                 '</div>' +
+                '<p class="text-[11px] text-slate-400 mt-1 line-clamp-1">' + esc(sceneSummaryLabel) + '</p>' +
               '</div>' +
               '<div class="shrink-0">' +
                 '<span class="material-symbols-outlined text-slate-600">chevron_right</span>' +
@@ -490,10 +630,7 @@
           (function(capturedSub) {
             card.querySelector(".ar-btn").addEventListener("click", function (e) {
               e.stopPropagation();
-              var mode = "launch";
-              if (capturedSub && (capturedSub.status === "graded" || capturedSub.status === "correct")) mode = "review";
-              else if (capturedSub && capturedSub.status === "submitted") mode = "view";
-              else if (capturedSub && capturedSub.status === "in_progress") mode = "continue";
+              var mode = resolveLaunchMode(capturedSub);
               var classroomId = exp.classroomId || (exp.classroom && exp.classroom.id) || null;
               var modelUsername = (exp.classroom && exp.classroom.instructorId) || exp.instructorId || null;
               parent.postMessage("unity:start_ar:" + JSON.stringify({ 

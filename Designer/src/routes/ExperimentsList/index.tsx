@@ -7,6 +7,7 @@ import TopBar from '../../components/TopBar';
 import StatusBadge from '../../components/StatusBadge';
 import EmptyState from '../../components/EmptyState';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import { deleteExperimentThumbnail } from '../../utils/storageHelpers';
 
 interface Experiment {
   id: string; title: string; category: string; status: string;
@@ -133,7 +134,7 @@ export default function ExperimentsList() {
       const expRef = doc(collection(db, 'experiments'));
       await setDoc(expRef, {
         name: expRef.id,
-        title: 'Untitled Experiment',
+        title: '',
         category: 'General Science',
         status: 'draft',
         instructorId: currentUser!.uid,
@@ -167,6 +168,10 @@ export default function ExperimentsList() {
         );
       }
 
+      if (exp?.thumbnailUrl) {
+        await deleteExperimentThumbnail(id, exp.thumbnailUrl);
+      }
+
       await deleteDoc(doc(db, 'experiments', id));
       setExperiments(prev => prev.filter(e => e.id !== id));
     } catch (e) { console.error(e); }
@@ -184,6 +189,7 @@ export default function ExperimentsList() {
         status: 'draft',
         experimentCode: '',
         classroomIds: [],
+        thumbnailUrl: '',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });

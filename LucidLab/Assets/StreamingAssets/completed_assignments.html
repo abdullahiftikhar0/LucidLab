@@ -123,6 +123,97 @@
     return d.innerHTML;
   }
 
+  function normalizeStatus(status) {
+    var s = status == null ? "" : String(status).trim().toLowerCase();
+    if (!s) return "in_progress";
+    if (s === "in progress") return "in_progress";
+    if (s === "needs revision") return "needs_revision";
+    return s;
+  }
+
+  function getSceneSummary(sub) {
+    if (!sub || typeof sub !== "object") return null;
+    var raw = sub.sceneSummary;
+    if (raw && typeof raw === "object") {
+      var total = Number(raw.totalSceneCount);
+      if (isFinite(total) && total > 0) {
+        return {
+          totalSceneCount: Math.max(1, Math.round(total)),
+          submittedWaitingCount: Math.max(0, Math.round(Number(raw.submittedWaitingCount) || 0)),
+          gradedCount: Math.max(0, Math.round(Number(raw.gradedCount) || 0)),
+          needsRevisionCount: Math.max(0, Math.round(Number(raw.needsRevisionCount) || 0)),
+          inProgressCount: Math.max(0, Math.round(Number(raw.inProgressCount) || 0)),
+          submittedOrDoneCount: Math.max(0, Math.round(Number(raw.submittedOrDoneCount) || 0))
+        };
+      }
+    }
+
+    if (!sub.sceneSubmissions || typeof sub.sceneSubmissions !== "object") return null;
+    var keys = Object.keys(sub.sceneSubmissions);
+    if (!keys.length) return null;
+
+    var submittedWaitingCount = 0;
+    var gradedCount = 0;
+    var needsRevisionCount = 0;
+
+    keys.forEach(function (key) {
+      var scene = sub.sceneSubmissions[key] || {};
+      var status = normalizeStatus(scene.status);
+      if (status === "submitted") submittedWaitingCount += 1;
+      else if (status === "graded" || status === "correct" || status === "incorrect") gradedCount += 1;
+      else if (status === "needs_revision") needsRevisionCount += 1;
+    });
+
+    var submittedOrDoneCount = submittedWaitingCount + gradedCount + needsRevisionCount;
+    var totalSceneCount = Number(sub.totalSceneCount);
+    if (!isFinite(totalSceneCount) || totalSceneCount <= 0) totalSceneCount = keys.length;
+
+    return {
+      totalSceneCount: Math.max(1, Math.round(totalSceneCount)),
+      submittedWaitingCount: submittedWaitingCount,
+      gradedCount: gradedCount,
+      needsRevisionCount: needsRevisionCount,
+      inProgressCount: Math.max(0, Math.round(totalSceneCount) - submittedOrDoneCount),
+      submittedOrDoneCount: submittedOrDoneCount
+    };
+  }
+
+  function getEffectiveStatus(sub) {
+    var summary = getSceneSummary(sub);
+    if (summary) {
+      if (summary.needsRevisionCount > 0) return "needs_revision";
+      if (summary.submittedOrDoneCount < summary.totalSceneCount) return "in_progress";
+      if (summary.submittedWaitingCount > 0) return "submitted";
+      if (summary.gradedCount >= summary.totalSceneCount) return "graded";
+    }
+    return normalizeStatus(sub && (sub.effectiveStatus || sub.status));
+  }
+
+  function getSceneSummaryText(sub) {
+    var summary = getSceneSummary(sub);
+    if (!summary) return "No scene summary";
+    var base = summary.submittedOrDoneCount + "/" + summary.totalSceneCount + " scenes submitted";
+    if (summary.needsRevisionCount > 0) return base + " • " + summary.needsRevisionCount + " need revision";
+    if (summary.submittedWaitingCount > 0) return base + " • Awaiting grade";
+    if (summary.gradedCount >= summary.totalSceneCount) return base + " • Fully graded";
+    return base;
+  }
+
+  function getDisplayFeedback(sub) {
+    if (!sub) return "";
+    if (sub.instructorFeedback) return sub.instructorFeedback;
+    if (!sub.sceneSubmissions || typeof sub.sceneSubmissions !== "object") return "";
+    var keys = Object.keys(sub.sceneSubmissions);
+    for (var i = 0; i < keys.length; i += 1) {
+      var scene = sub.sceneSubmissions[keys[i]] || {};
+      if (scene.instructorFeedback) {
+        var sceneName = scene.sceneName ? String(scene.sceneName) : "Scene";
+        return sceneName + ": " + scene.instructorFeedback;
+      }
+    }
+    return "";
+  }
+
   function renderCompleted(submissions) {
     var list = document.getElementById("completed-list");
     var countEl = document.getElementById("total-count");
@@ -139,10 +230,13 @@
 
     submissions.forEach(function (sub) {
       var title = sub.experimentTitle || sub.experimentName || "Experiment";
-      var isGraded      = sub.status === "graded" || sub.status === "correct";
-      var isSubmitted   = sub.status === "submitted";
-      var needsRevision = sub.status === "needs_revision";
-      var isIncorrect   = sub.status === "incorrect";
+      var effectiveStatus = getEffectiveStatus(sub);
+      var summaryText = getSceneSummaryText(sub);
+      var summary = getSceneSummary(sub);
+      var isGraded      = effectiveStatus === "graded" || effectiveStatus === "correct";
+      var isSubmitted   = effectiveStatus === "submitted";
+      var needsRevision = effectiveStatus === "needs_revision";
+      var isIncorrect   = effectiveStatus === "incorrect";
 
       // Derive display strings
       var statusIcon, statusColor, gradeColor, gradeLabel;
@@ -154,6 +248,8 @@
         // Prefer instructor-assigned grade text; fall back to numeric pct
         if (sub.grade) {
           gradeLabel = "Grade: " + sub.grade;
+        } else if (summary && summary.totalSceneCount > 0) {
+          gradeLabel = "Graded Scenes: " + summary.gradedCount + "/" + summary.totalSceneCount;
         } else {
           var numGrade = sub.completionPct || sub.completionPercentage || sub.quizScore || 0;
           gradeLabel = "Grade: " + Math.round(numGrade) + "%";
@@ -180,7 +276,7 @@
         gradeLabel  = "Completed";
       }
 
-      var feedback = sub.instructorFeedback || "";
+      var feedback = getDisplayFeedback(sub);
       var card = document.createElement("div");
       card.className = "glass-panel p-4 rounded-xl flex items-center gap-4 transition-transform active:scale-[0.98]";
       card.innerHTML =
@@ -195,6 +291,7 @@
           '<div class="flex items-center mt-1 gap-1.5">' +
             '<span class="text-xs font-bold ' + gradeColor + ' uppercase tracking-wider">' + gradeLabel + '</span>' +
           '</div>' +
+          '<p class="text-[11px] text-slate-400 mt-1 line-clamp-1">' + esc(summaryText) + '</p>' +
           (feedback ? '<p class="text-xs text-slate-400 mt-1.5 line-clamp-2">' + esc(feedback) + '</p>' : '') +
           (needsRevision ? '<button class="retake-btn mt-2 w-full bg-amber-400/20 border border-amber-400/40 text-amber-400 font-bold py-2 rounded-lg text-xs flex items-center justify-center gap-1 active:scale-95 transition-transform"><span class="material-symbols-outlined text-sm">refresh</span> Retake Experiment</button>' : '') +
         '</div>' +

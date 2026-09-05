@@ -3,8 +3,15 @@ using Assets.Interaction;
 using Assets.SceneManagement.Core;
 using Assets.SceneManagement.Models;
 using GLTFast;
+using GLTFast.Logging;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.XR.ARFoundation;
+#if USING_URP
+using GLTFast.Materials;
+using UnityEngine.Rendering.Universal;
+#endif
 
 namespace Assets.SceneManagement.Builders {
     public class ObjectBuilder : MonoBehaviour {
@@ -17,6 +24,121 @@ namespace Assets.SceneManagement.Builders {
         /// Set by SceneBuilder before building objects.
         /// </summary>
         public string primaryMarkerId;
+
+        private static bool ShouldUseArAnchoring() {
+            return UnityEngine.Object.FindFirstObjectByType<ARModeManager>() != null
+                || UnityEngine.Object.FindFirstObjectByType<ARLockManager>() != null
+                || UnityEngine.Object.FindFirstObjectByType<ARTrackedImageManager>() != null
+                || UnityEngine.Object.FindFirstObjectByType<ARRaycastManager>() != null;
+        }
+
+        private static GltfImport CreateGltfImporter(CollectingLogger logger) {
+#if USING_URP
+            var urpAsset = QualitySettings.renderPipeline as UniversalRenderPipelineAsset
+                ?? GraphicsSettings.defaultRenderPipeline as UniversalRenderPipelineAsset;
+
+            if (urpAsset != null) {
+                return new GltfImport(materialGenerator: new UniversalRPMaterialGenerator(urpAsset), logger: logger);
+            }
+#endif
+            return new GltfImport(logger: logger);
+        }
+
+        private static Shader GetFallbackShader() {
+            return Shader.Find("Universal Render Pipeline/Lit")
+                ?? Shader.Find("Universal Render Pipeline/Simple Lit")
+                ?? Shader.Find("Standard")
+                ?? Shader.Find("Diffuse");
+        }
+
+        private static bool IsUnsupportedMaterial(Material material) {
+            if (material == null) return true;
+            if (material.shader == null) return true;
+            if (material.shader.name == "Hidden/InternalErrorShader") return true;
+            return !material.shader.isSupported;
+        }
+
+        private static Color GetBestEffortColor(Material material) {
+            if (material == null) return Color.white;
+            if (material.HasProperty("_BaseColor")) return material.GetColor("_BaseColor");
+            if (material.HasProperty("_Color")) return material.color;
+            return Color.white;
+        }
+
+        private static Texture GetBestEffortTexture(Material material) {
+            if (material == null) return null;
+            if (material.HasProperty("_BaseMap")) {
+                var tex = material.GetTexture("_BaseMap");
+                if (tex != null) return tex;
+            }
+
+            if (material.HasProperty("_MainTex")) {
+                var tex = material.GetTexture("_MainTex");
+                if (tex != null) return tex;
+            }
+
+            if (material.HasProperty("_BaseColorMap")) {
+                var tex = material.GetTexture("_BaseColorMap");
+                if (tex != null) return tex;
+            }
+
+            return null;
+        }
+
+        private static void ApplyFallbackMaterialValues(Material target, Color color, Texture texture) {
+            if (target == null) return;
+
+            if (target.HasProperty("_BaseColor")) target.SetColor("_BaseColor", color);
+            if (target.HasProperty("_Color")) target.color = color;
+
+            if (texture != null) {
+                if (target.HasProperty("_BaseMap")) target.SetTexture("_BaseMap", texture);
+                if (target.HasProperty("_MainTex")) target.SetTexture("_MainTex", texture);
+            }
+        }
+
+        private static void RepairUnsupportedMaterials(GameObject root, string objectType) {
+            if (root == null) return;
+
+            var fallbackShader = GetFallbackShader();
+            if (fallbackShader == null) {
+                Debug.LogWarning("[ObjectBuilder] Could not find fallback shader for unsupported materials.");
+                return;
+            }
+
+            var replacedCount = 0;
+            foreach (var renderer in root.GetComponentsInChildren<Renderer>(true)) {
+                var materials = renderer.sharedMaterials;
+                var changed = false;
+
+                for (int i = 0; i < materials.Length; i++) {
+                    var sourceMaterial = materials[i];
+                    if (!IsUnsupportedMaterial(sourceMaterial)) continue;
+
+                    var replacement = new Material(fallbackShader) {
+                        name = $"{objectType}_Fallback_{i}"
+                    };
+
+                    ApplyFallbackMaterialValues(
+                        replacement,
+                        GetBestEffortColor(sourceMaterial),
+                        GetBestEffortTexture(sourceMaterial)
+                    );
+
+                    materials[i] = replacement;
+                    replacedCount++;
+                    changed = true;
+                }
+
+                if (changed) {
+                    renderer.sharedMaterials = materials;
+                }
+            }
+
+            if (replacedCount > 0) {
+                Debug.LogWarning($"[ObjectBuilder] Replaced {replacedCount} unsupported material(s) on '{objectType}' using fallback shader '{fallbackShader.name}'.");
+            }
+        }
 
         public async Task<Core.Object> CreateObjectFromData(ObjectData objectData) {
             GameObject gameObj;
@@ -37,20 +159,34 @@ namespace Assets.SceneManagement.Builders {
                 default:
                     gameObj = new GameObject();
                     var loadedCustomModel = false;
+                    var loadFailureReason = "Unknown error.";
                     if (modelManager != null) {
                         var cachedData = await modelManager.GetModelBytes(objectData.objectType);
-                        if (cachedData != null && cachedData.Length > 0) {
-                            var gltf = new GltfImport();
+                        if (cachedData == null || cachedData.Length == 0) {
+                            loadFailureReason = "Model bytes were empty or unavailable.";
+                        } else {
+                            var gltfLogger = new CollectingLogger();
+                            using var gltf = CreateGltfImporter(gltfLogger);
                             var success = await gltf.Load(cachedData);
                             if (success) {
-                                await gltf.InstantiateMainSceneAsync(gameObj.transform);
-                                loadedCustomModel = true;
+                                loadedCustomModel = await gltf.InstantiateMainSceneAsync(gameObj.transform);
+                                if (!loadedCustomModel) {
+                                    loadFailureReason = "glTF loaded but scene instantiation failed.";
+                                }
+                            } else {
+                                loadFailureReason = "glTF parsing/import failed.";
+                            }
+
+                            if (!loadedCustomModel && gltfLogger.Count > 0) {
+                                gltfLogger.LogAll();
                             }
                         }
+                    } else {
+                        loadFailureReason = "ModelManager reference is missing.";
                     }
 
                     if (!loadedCustomModel) {
-                        Debug.LogWarning($"[ObjectBuilder] Failed to load custom model '{objectData.objectType}'. Falling back to cube primitive.");
+                        Debug.LogWarning($"[ObjectBuilder] Failed to load custom model '{objectData.objectType}'. Reason: {loadFailureReason}. Falling back to cube primitive.");
                         Destroy(gameObj);
                         gameObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
                         isCustomObj = false;
@@ -65,6 +201,8 @@ namespace Assets.SceneManagement.Builders {
                     break;
             }
 
+                    RepairUnsupportedMaterials(gameObj, objectData.objectType);
+
             gameObj.name = objectData.objectName;
             gameObj.AddComponent<Rigidbody>();
 
@@ -73,15 +211,15 @@ namespace Assets.SceneManagement.Builders {
                 ? objectData.markerId
                 : primaryMarkerId;
 
-            // AR Marker Anchoring — every object gets a MarkerAnchor
-            if (!string.IsNullOrEmpty(effectiveMarkerId)) {
+            var shouldUseArAnchoring = ShouldUseArAnchoring();
+
+            // In AR scenes, always attach MarkerAnchor so markerless scenes stay hidden
+            // until explicit plane placement.
+            if (!string.IsNullOrEmpty(effectiveMarkerId) || shouldUseArAnchoring) {
                 var anchor = gameObj.AddComponent<MarkerAnchor>();
                 anchor.markerId = effectiveMarkerId;
-                // Don't parent yet — MarkerAnchor.Start() will handle parenting when marker is detected
-            }
-
-            // Fallback: if no markers at all, parent to bigParent (non-AR mode)
-            if (string.IsNullOrEmpty(effectiveMarkerId) && bigParent != null) {
+            } else if (bigParent != null) {
+                // Non-AR fallback path.
                 gameObj.transform.parent = bigParent.transform;
             }
 
