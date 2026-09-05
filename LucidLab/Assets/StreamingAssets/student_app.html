@@ -334,6 +334,442 @@
     #fab .material-symbols-outlined { font-size: 28px; font-weight: 700; }
     #fab.hidden { display: none; }
 
+    /* ===== AI FAB + Chat Overlay ===== */
+    #ai-fab {
+      position: fixed;
+      bottom: calc(var(--nav-h) + 18px);
+      right: 86px;
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+      background: rgba(15, 34, 35, .92);
+      color: var(--primary);
+      display: grid; place-items: center;
+      box-shadow: 0 0 24px color-mix(in srgb, var(--primary) 26%, transparent);
+      cursor: pointer;
+      z-index: 40;
+      transition: transform .12s ease, box-shadow .18s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #ai-fab:active { transform: scale(.92); }
+    #ai-fab:hover { box-shadow: 0 0 28px color-mix(in srgb, var(--primary) 34%, transparent); }
+    #ai-fab .material-symbols-outlined { font-size: 24px; font-weight: 600; }
+    #ai-fab.hidden { display: none; }
+
+    #ai-chat-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 140;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      background: rgba(0, 0, 0, .58);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      padding: 14px;
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+    }
+    #ai-chat-layer.open { display: flex; }
+
+    .ai-chat-panel {
+      width: 100%;
+      max-width: 560px;
+      height: min(82vh, 760px);
+      background: linear-gradient(
+        180deg,
+        rgba(16, 36, 38, .96) 0%,
+        rgba(12, 29, 31, .98) 100%
+      );
+      border: 1px solid color-mix(in srgb, var(--primary) 22%, transparent);
+      border-radius: 16px;
+      box-shadow: 0 18px 48px rgba(0,0,0,.48);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .ai-chat-panel::before {
+      content: "";
+      position: absolute;
+      width: 220px;
+      height: 220px;
+      top: -90px;
+      right: -90px;
+      background: color-mix(in srgb, var(--primary) 15%, transparent);
+      border-radius: 50%;
+      filter: blur(34px);
+      pointer-events: none;
+    }
+
+    .ai-chat-head {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 14px 14px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      background: rgba(11, 27, 28, .76);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .ai-chat-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .ai-chat-badge {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      border: 1px solid color-mix(in srgb, var(--primary) 24%, transparent);
+      background: color-mix(in srgb, var(--primary) 8%, transparent);
+      display: grid;
+      place-items: center;
+      color: var(--primary);
+      flex-shrink: 0;
+    }
+
+    .ai-chat-title {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .01em;
+      color: #e8f9fb;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ai-chat-subtitle {
+      margin-top: 2px;
+      font-size: 11px;
+      color: #8ab2b7;
+    }
+
+    .ai-chat-close {
+      border: 0;
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,.05);
+      color: #c7e8ec;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .ai-chat-close:active { transform: scale(.95); }
+    .ai-chat-call {
+      border: 0;
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      background: color-mix(in srgb, var(--primary) 18%, transparent);
+      color: #0a2a2d;
+      cursor: pointer;
+      flex-shrink: 0;
+      margin-right: 2px;
+    }
+    .ai-chat-call.active {
+      background: #ef4444;
+      color: #fff;
+    }
+    .ai-chat-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ai-chat-quick {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 10px 12px 4px;
+      scrollbar-width: none;
+    }
+    .ai-chat-quick::-webkit-scrollbar { display: none; }
+
+    .ai-quick-btn {
+      border: 1px solid color-mix(in srgb, var(--primary) 24%, transparent);
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--primary) 8%, transparent);
+      color: #b8edf2;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 7px 10px;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .ai-chat-body {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 12px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      scrollbar-width: thin;
+      scrollbar-color: color-mix(in srgb, var(--primary) 30%, transparent) transparent;
+    }
+    .ai-chat-body::-webkit-scrollbar { width: 6px; }
+    .ai-chat-body::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--primary) 25%, transparent);
+      border-radius: 999px;
+    }
+
+    .ai-msg {
+      max-width: 84%;
+      border-radius: 12px;
+      padding: 10px 12px;
+      line-height: 1.45;
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      border: 1px solid transparent;
+    }
+    .ai-msg.user {
+      align-self: flex-end;
+      background: color-mix(in srgb, var(--primary) 22%, transparent);
+      border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+      color: #e8feff;
+      border-bottom-right-radius: 4px;
+    }
+    .ai-msg.assistant {
+      align-self: flex-start;
+      background: rgba(255,255,255,.045);
+      border-color: rgba(255,255,255,.11);
+      color: #e3f2f3;
+      border-bottom-left-radius: 4px;
+    }
+    .ai-msg.system {
+      align-self: center;
+      max-width: 100%;
+      background: rgba(245, 158, 11, .11);
+      border-color: rgba(245, 158, 11, .35);
+      color: #fcd58f;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    .ai-typing {
+      align-self: flex-start;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      color: #a6c8cb;
+      border-radius: 10px;
+      padding: 7px 10px;
+      font-size: 12px;
+    }
+    .ai-typing.show { display: inline-flex; }
+    .ai-typing-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #9fd6db;
+      opacity: .5;
+      animation: aiTypingPulse 1.1s infinite ease-in-out;
+    }
+    .ai-typing-dot:nth-child(2) { animation-delay: .15s; }
+    .ai-typing-dot:nth-child(3) { animation-delay: .3s; }
+    @keyframes aiTypingPulse {
+      0%, 80%, 100% { transform: scale(.75); opacity: .4; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    .ai-chat-foot {
+      position: relative;
+      z-index: 1;
+      padding: 10px 12px 12px;
+      border-top: 1px solid rgba(255,255,255,.08);
+      background: rgba(11, 27, 28, .85);
+    }
+    .ai-chat-input-wrap {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      border: 1px solid color-mix(in srgb, var(--primary) 24%, transparent);
+      background: rgba(10, 23, 24, .78);
+      border-radius: 12px;
+      padding: 8px 8px 8px 10px;
+    }
+    #ai-chat-input {
+      flex: 1;
+      min-height: 38px;
+      max-height: 130px;
+      resize: none;
+      border: 0;
+      outline: none;
+      background: transparent;
+      color: #e8f8fb;
+      font-size: 13px;
+      line-height: 1.4;
+      font-family: Inter, sans-serif;
+    }
+    #ai-chat-input::placeholder { color: #7fa5aa; }
+
+    #ai-chat-send {
+      width: 36px;
+      height: 36px;
+      border: 0;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      background: var(--primary);
+      color: #052023;
+      cursor: pointer;
+      transition: opacity .15s ease;
+    }
+    #ai-chat-send:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+
+    .ai-chat-footnote {
+      margin-top: 8px;
+      font-size: 10px;
+      color: #7ea6aa;
+      text-align: center;
+    }
+
+    .ai-call-view {
+      display: none;
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      padding: 18px 14px;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      text-align: center;
+      gap: 14px;
+    }
+    .ai-chat-panel.voice-mode .ai-chat-quick,
+    .ai-chat-panel.voice-mode .ai-chat-body,
+    .ai-chat-panel.voice-mode .ai-chat-foot {
+      display: none;
+    }
+    .ai-chat-panel.voice-mode .ai-call-view {
+      display: flex;
+    }
+
+    .ai-call-orb {
+      width: 108px;
+      height: 108px;
+      border-radius: 50%;
+      border: 1px solid color-mix(in srgb, var(--primary) 36%, transparent);
+      background: color-mix(in srgb, var(--primary) 14%, transparent);
+      box-shadow: 0 0 28px color-mix(in srgb, var(--primary) 34%, transparent);
+      display: grid;
+      place-items: center;
+      color: var(--primary);
+      position: relative;
+    }
+    .ai-call-orb.pulsing::after {
+      content: "";
+      position: absolute;
+      inset: -10px;
+      border-radius: 50%;
+      border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+      animation: aiCallPulse 1.4s ease-out infinite;
+    }
+    @keyframes aiCallPulse {
+      from { opacity: .7; transform: scale(.92); }
+      to { opacity: 0; transform: scale(1.18); }
+    }
+    .ai-call-status {
+      font-size: 15px;
+      color: #e5f8fa;
+      font-weight: 700;
+    }
+    .ai-call-substatus {
+      font-size: 12px;
+      color: #8ab2b7;
+      max-width: 320px;
+      line-height: 1.45;
+    }
+    .ai-call-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .ai-call-btn {
+      min-width: 138px;
+      border: 0;
+      border-radius: 12px;
+      padding: 11px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .ai-call-btn.start {
+      background: var(--primary);
+      color: #062629;
+    }
+    .ai-call-btn.end {
+      background: #ef4444;
+      color: #fff;
+    }
+    .ai-call-chip {
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 11px;
+      color: #c6e8eb;
+      background: rgba(255,255,255,.04);
+    }
+    .ai-call-error-box {
+      display: none;
+      width: 100%;
+      margin-top: 6px;
+      border: 1px solid rgba(239, 68, 68, .38);
+      background: rgba(239, 68, 68, .08);
+      border-radius: 12px;
+      padding: 10px;
+      text-align: left;
+    }
+    .ai-call-error-box.show { display: block; }
+    .ai-call-error-title {
+      font-size: 11px;
+      color: #fecaca;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 6px;
+    }
+    .ai-call-error-text {
+      font-size: 12px;
+      color: #fee2e2;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .ai-call-error-copy {
+      margin-top: 8px;
+      border: 1px solid rgba(254, 202, 202, .35);
+      background: rgba(255, 255, 255, .06);
+      color: #fee2e2;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
     /* Auth screens use full height (no nav bar) */
     #screens.auth-mode {
       bottom: 0;
@@ -489,6 +925,69 @@
     <span class="material-symbols-outlined">add</span>
   </button>
 
+  <button id="ai-fab" class="hidden" aria-label="Open AI assistant">
+    <span class="material-symbols-outlined">auto_awesome</span>
+  </button>
+
+  <div id="ai-chat-layer" aria-hidden="true">
+    <div class="ai-chat-panel" role="dialog" aria-modal="true" aria-labelledby="ai-chat-title">
+      <div class="ai-chat-head">
+        <div class="ai-chat-title-wrap">
+          <div class="ai-chat-badge">
+            <span class="material-symbols-outlined" style="font-size:18px;">smart_toy</span>
+          </div>
+          <div>
+            <div id="ai-chat-title" class="ai-chat-title">LucidLab AI Assistant</div>
+            <div class="ai-chat-subtitle">Ask about experiments, concepts, and next steps</div>
+          </div>
+        </div>
+        <div class="ai-chat-actions">
+          <button id="ai-chat-call" class="ai-chat-call" type="button" aria-label="Open voice call">
+            <span class="material-symbols-outlined" style="font-size:18px;">call</span>
+          </button>
+          <button id="ai-chat-close" class="ai-chat-close" type="button" aria-label="Close AI assistant">
+            <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+          </button>
+        </div>
+      </div>
+      <div id="ai-chat-quick" class="ai-chat-quick"></div>
+      <div id="ai-chat-body" class="ai-chat-body">
+        <div class="ai-msg assistant">Hi! I can help with your current classroom experiments, AR scenes, and science concepts.</div>
+        <div id="ai-typing" class="ai-typing">
+          <span class="ai-typing-dot"></span>
+          <span class="ai-typing-dot"></span>
+          <span class="ai-typing-dot"></span>
+          <span>Thinking...</span>
+        </div>
+      </div>
+      <div class="ai-chat-foot">
+        <div class="ai-chat-input-wrap">
+          <textarea id="ai-chat-input" rows="1" placeholder="Ask anything..."></textarea>
+          <button id="ai-chat-send" type="button" aria-label="Send message">
+            <span class="material-symbols-outlined" style="font-size:18px;">send</span>
+          </button>
+        </div>
+        <div class="ai-chat-footnote">Temporary test mode - responses may be imperfect.</div>
+      </div>
+      <div id="ai-call-view" class="ai-call-view">
+        <div id="ai-call-orb" class="ai-call-orb">
+          <span class="material-symbols-outlined" style="font-size:40px;">support_agent</span>
+        </div>
+        <div id="ai-call-status" class="ai-call-status">Voice Agent Ready</div>
+        <div id="ai-call-substatus" class="ai-call-substatus">Tap start call to talk with LucidLab AI voice assistant.</div>
+        <div class="ai-call-controls">
+          <button id="ai-call-toggle" class="ai-call-btn start" type="button">Start Call</button>
+          <div id="ai-call-state-chip" class="ai-call-chip">Idle</div>
+        </div>
+        <div id="ai-call-error-box" class="ai-call-error-box">
+          <div class="ai-call-error-title">Technical Details</div>
+          <div id="ai-call-error-text" class="ai-call-error-text"></div>
+          <button id="ai-call-error-copy" class="ai-call-error-copy" type="button">Copy Error</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== Unified bottom nav ===== -->
   <nav id="app-nav" class="hidden">
     <button class="nav-btn active" data-target="home">
@@ -558,6 +1057,9 @@
     var pendingStartArLaunch = null;
     var startArPromptRequestId = 0;
     var initialAuthResolved = false;
+    var splashGateReady = false;
+    var hasPendingInitialAuth = false;
+    var pendingInitialAuthUser = null;
     var forceLogoutInProgress = false;
     var offlineToastShownAt = 0;
     var shellToastTimer = null;
@@ -590,15 +1092,388 @@
     var sceneLaunchList = document.getElementById("scene-launch-list");
     var sceneLaunchCancel = document.getElementById("scene-launch-cancel");
     var shellToast = document.getElementById("shell-toast");
+    var aiFab = document.getElementById("ai-fab");
+    var aiChatLayer = document.getElementById("ai-chat-layer");
+    var aiChatCloseBtn = document.getElementById("ai-chat-close");
+    var aiChatCallBtn = document.getElementById("ai-chat-call");
+    var aiChatPanel = document.querySelector(".ai-chat-panel");
+    var aiChatBody = document.getElementById("ai-chat-body");
+    var aiChatTyping = document.getElementById("ai-typing");
+    var aiChatInput = document.getElementById("ai-chat-input");
+    var aiChatSendBtn = document.getElementById("ai-chat-send");
+    var aiChatQuick = document.getElementById("ai-chat-quick");
+    var aiChatMessages = [];
+    var aiChatBusy = false;
+    var aiVoiceMode = false;
+    var aiVapiClient = null;
+    var aiVapiLoading = false;
+    var aiVoiceCallActive = false;
+    var aiCallToggleBtn = document.getElementById("ai-call-toggle");
+    var aiCallStatus = document.getElementById("ai-call-status");
+    var aiCallSubstatus = document.getElementById("ai-call-substatus");
+    var aiCallStateChip = document.getElementById("ai-call-state-chip");
+    var aiCallOrb = document.getElementById("ai-call-orb");
+    var aiCallErrorBox = document.getElementById("ai-call-error-box");
+    var aiCallErrorText = document.getElementById("ai-call-error-text");
+    var aiCallErrorCopyBtn = document.getElementById("ai-call-error-copy");
+    var aiCallLastError = "";
+
+    // TODO(security): This direct browser-side key is temporary for local testing only.
+    // Replace with a backend proxy before any production or shared deployment.
+    var GEMINI_API_KEY = "AIzaSyCsqpAP2J0ViSFndYv8dXwQrMNcTvxitMA";
+    var GEMINI_MODEL = "gemini-3-flash-preview";
+    var GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent?key=" + encodeURIComponent(GEMINI_API_KEY);
+    // TODO(security): Never ship secret/private keys in frontend for production.
+    var VAPI_PUBLIC_KEY = "66e05fc5-3123-4363-86c9-fd1d77db15fb";
+    // IMPORTANT: Vapi start(...) needs an assistant ID (not API keys).
+    // Replace this with your real Vapi Assistant ID from dashboard.
+    var VAPI_ASSISTANT_ID = "574920c5-45b9-4a8f-a6fe-b787440d28c8";
+
+    var AI_QUICK_PROMPTS = [
+      "Explain acid-base reaction simply.",
+      "Give 3 safety tips before AR lab.",
+      "How should I report this experiment?",
+      "What if my result is unexpected?"
+    ];
+
+    function setAiBusy(nextBusy) {
+      aiChatBusy = !!nextBusy;
+      if (aiChatSendBtn) aiChatSendBtn.disabled = aiChatBusy;
+      if (aiChatInput) aiChatInput.disabled = aiChatBusy;
+      if (aiChatTyping) aiChatTyping.classList.toggle("show", aiChatBusy);
+    }
+
+    function closeConflictingOverlaysForAiChat() {
+      if (modalLayer && modalLayer.classList.contains("open")) closeJoinModal();
+      if (sceneLaunchLayer && sceneLaunchLayer.classList.contains("open")) closeSceneLaunchModal(true);
+    }
+
+    function openAiChat() {
+      if (!aiChatLayer) return;
+      closeConflictingOverlaysForAiChat();
+      aiChatLayer.classList.add("open");
+      aiChatLayer.setAttribute("aria-hidden", "false");
+      if (aiChatInput) aiChatInput.focus();
+      requestAnimationFrame(scrollAiChatToBottom);
+    }
+
+    function closeAiChat() {
+      if (!aiChatLayer) return;
+      aiChatLayer.classList.remove("open");
+      aiChatLayer.setAttribute("aria-hidden", "true");
+      if (aiVoiceCallActive) stopVoiceCall();
+    }
+
+    function setAiVoiceMode(nextVoiceMode) {
+      aiVoiceMode = !!nextVoiceMode;
+      if (aiChatPanel) aiChatPanel.classList.toggle("voice-mode", aiVoiceMode);
+      if (aiChatCallBtn) aiChatCallBtn.classList.toggle("active", aiVoiceMode);
+      if (aiChatCallBtn) {
+        var icon = aiChatCallBtn.querySelector(".material-symbols-outlined");
+        if (icon) icon.textContent = aiVoiceMode ? "chat" : "call";
+      }
+      if (!aiVoiceMode && aiVoiceCallActive) stopVoiceCall();
+    }
+
+    function updateVoiceUi(status, substatus, chip, pulsing) {
+      if (aiCallStatus) aiCallStatus.textContent = status;
+      if (aiCallSubstatus) aiCallSubstatus.textContent = substatus;
+      if (aiCallStateChip) aiCallStateChip.textContent = chip;
+      if (aiCallOrb) aiCallOrb.classList.toggle("pulsing", !!pulsing);
+      if (aiCallToggleBtn) {
+        aiCallToggleBtn.textContent = aiVoiceCallActive ? "End Call" : "Start Call";
+        aiCallToggleBtn.className = "ai-call-btn " + (aiVoiceCallActive ? "end" : "start");
+      }
+    }
+
+    function clearVoiceErrorDetails() {
+      aiCallLastError = "";
+      if (aiCallErrorText) aiCallErrorText.textContent = "";
+      if (aiCallErrorBox) aiCallErrorBox.classList.remove("show");
+    }
+
+    function buildErrorDetailText(err) {
+      if (!err) return "Unknown Vapi error.";
+      var lines = [];
+      try {
+        if (typeof err === "string") {
+          lines.push("message: " + err);
+        } else {
+          if (err.message) lines.push("message: " + err.message);
+          if (err.code) lines.push("code: " + err.code);
+          if (err.status) lines.push("status: " + err.status);
+          if (err.type) lines.push("type: " + err.type);
+          if (err.name) lines.push("name: " + err.name);
+          var raw = "";
+          try {
+            raw = JSON.stringify(err, Object.getOwnPropertyNames(err), 2);
+          } catch (jsonErr) {
+            raw = String(err);
+          }
+          if (raw && raw !== "{}") {
+            if (raw.length > 1200) raw = raw.substring(0, 1200) + "...";
+            lines.push("raw: " + raw);
+          }
+        }
+      } catch (formatErr) {
+        lines.push("message: Failed to parse Vapi error object.");
+      }
+      return lines.join("\n");
+    }
+
+    function showVoiceErrorDetails(err) {
+      aiCallLastError = buildErrorDetailText(err);
+      if (aiCallErrorText) aiCallErrorText.textContent = aiCallLastError;
+      if (aiCallErrorBox) aiCallErrorBox.classList.add("show");
+    }
+
+    function ensureVapiClient() {
+      if (aiVapiClient) return Promise.resolve(aiVapiClient);
+      if (aiVapiLoading) return Promise.reject(new Error("Vapi SDK is still loading."));
+      aiVapiLoading = true;
+
+      return import("https://esm.sh/@vapi-ai/web@2.5.2")
+        .then(function (mod) {
+          var VapiCtor = mod && (mod.default || mod.Vapi || mod);
+          if (!VapiCtor) throw new Error("Could not load Vapi SDK constructor.");
+          aiVapiClient = new VapiCtor(VAPI_PUBLIC_KEY);
+
+          aiVapiClient.on("call-start", function () {
+            aiVoiceCallActive = true;
+            clearVoiceErrorDetails();
+            updateVoiceUi("Voice Call Live", "You are connected to LucidLab AI voice assistant.", "Connected", true);
+          });
+          aiVapiClient.on("call-end", function () {
+            aiVoiceCallActive = false;
+            updateVoiceUi("Voice Call Ended", "Tap start call whenever you want to talk again.", "Idle", false);
+          });
+          aiVapiClient.on("error", function (err) {
+            console.error("[AI Voice] Vapi error:", err);
+            aiVoiceCallActive = false;
+            updateVoiceUi("Call Error", "Could not connect voice assistant. Please retry.", "Error", false);
+            showVoiceErrorDetails(err);
+          });
+          aiVapiClient.on("speech-start", function () {
+            updateVoiceUi("Listening", "Voice assistant is listening to you.", "Listening", true);
+          });
+          aiVapiClient.on("speech-end", function () {
+            updateVoiceUi("Processing", "Analyzing your request...", "Thinking", true);
+          });
+
+          return aiVapiClient;
+        })
+        .catch(function (err) {
+          var sdkErr = new Error("Vapi SDK module load failed. Check network/CSP/WebView cross-origin import support.");
+          sdkErr.cause = err;
+          throw sdkErr;
+        })
+        .finally(function () {
+          aiVapiLoading = false;
+        });
+    }
+
+    function isUuidLike(value) {
+      return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.trim());
+    }
+
+    function startVoiceCall() {
+      if (!isUuidLike(VAPI_ASSISTANT_ID)) {
+        aiVoiceCallActive = false;
+        updateVoiceUi("Assistant Not Configured", "Set VAPI_ASSISTANT_ID to a valid assistant UUID from Vapi dashboard.", "Config Needed", false);
+        showVoiceErrorDetails({ message: "Invalid assistant id format.", assistantId: VAPI_ASSISTANT_ID });
+        return;
+      }
+
+      // Microphone permission precheck to avoid opaque Vapi/Daily startup failures.
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        aiVoiceCallActive = false;
+        updateVoiceUi("Microphone Unsupported", "This WebView/browser cannot access microphone APIs.", "Blocked", false);
+        showVoiceErrorDetails({ message: "navigator.mediaDevices.getUserMedia is unavailable in this runtime." });
+        return;
+      }
+
+      clearVoiceErrorDetails();
+      updateVoiceUi("Checking Microphone...", "Please allow microphone access to continue.", "Permission", true);
+
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+        // We only need permission check here; release preflight track immediately.
+        stream.getTracks().forEach(function (track) { track.stop(); });
+
+        updateVoiceUi("Connecting...", "Starting secure voice session...", "Connecting", true);
+        return ensureVapiClient().then(function (client) {
+          return client.start(VAPI_ASSISTANT_ID);
+        });
+      }).catch(function (permissionErr) {
+        console.error("[AI Voice] Microphone permission denied/unavailable:", permissionErr);
+        aiVoiceCallActive = false;
+        updateVoiceUi("Microphone Permission Required", "Enable microphone permission for this app and try again.", "Permission Needed", false);
+        showVoiceErrorDetails(permissionErr);
+      }).catch(function (err) {
+        console.error("[AI Voice] Failed to start call:", err);
+        aiVoiceCallActive = false;
+        updateVoiceUi("Unable to Start Call", "Verify VAPI_PUBLIC_KEY, VAPI_ASSISTANT_ID, and network access.", "Error", false);
+        showVoiceErrorDetails(err);
+      });
+    }
+
+    function stopVoiceCall() {
+      if (!aiVapiClient) {
+        aiVoiceCallActive = false;
+        updateVoiceUi("Voice Agent Ready", "Tap start call to talk with LucidLab AI voice assistant.", "Idle", false);
+        return;
+      }
+      try {
+        aiVapiClient.stop();
+      } catch (err) {
+        console.error("[AI Voice] Failed to stop call:", err);
+      }
+      aiVoiceCallActive = false;
+      updateVoiceUi("Voice Call Ended", "Tap start call whenever you want to talk again.", "Idle", false);
+    }
+
+    function scrollAiChatToBottom() {
+      if (!aiChatBody) return;
+      aiChatBody.scrollTop = aiChatBody.scrollHeight;
+    }
+
+    function appendAiMessage(role, text) {
+      if (!aiChatBody || !text) return;
+      var node = document.createElement("div");
+      node.className = "ai-msg " + role;
+      node.textContent = text;
+      aiChatBody.insertBefore(node, aiChatTyping || null);
+      aiChatMessages.push({ role: role, text: text });
+      scrollAiChatToBottom();
+    }
+
+    function autoGrowAiInput() {
+      if (!aiChatInput) return;
+      aiChatInput.style.height = "auto";
+      aiChatInput.style.height = Math.min(aiChatInput.scrollHeight, 130) + "px";
+    }
+
+    function buildGeminiContents() {
+      var contentItems = [];
+      var systemPrompt = "You are LucidLab's student assistant. Be concise, practical, and supportive for classroom experiments and AR learning.";
+      contentItems.push({ role: "user", parts: [{ text: systemPrompt }] });
+      aiChatMessages.forEach(function (m) {
+        if (!m || !m.text) return;
+        if (m.role === "assistant") {
+          contentItems.push({ role: "model", parts: [{ text: m.text }] });
+        } else if (m.role === "user") {
+          contentItems.push({ role: "user", parts: [{ text: m.text }] });
+        }
+      });
+      return contentItems;
+    }
+
+    function extractGeminiText(payload) {
+      if (!payload || !payload.candidates || !payload.candidates.length) return "";
+      var candidate = payload.candidates[0] || {};
+      var parts = ((candidate.content || {}).parts) || [];
+      var chunks = [];
+      parts.forEach(function (part) {
+        if (part && typeof part.text === "string" && part.text.trim()) chunks.push(part.text.trim());
+      });
+      return chunks.join("\n\n").trim();
+    }
+
+    function callGeminiAndRespond() {
+      var payload = {
+        contents: buildGeminiContents(),
+        generationConfig: {
+          temperature: 0.6,
+          topP: 0.9,
+          maxOutputTokens: 600
+        }
+      };
+      return fetch(GEMINI_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }).then(function (res) {
+        if (!res.ok) {
+          return res.text().then(function (bodyText) {
+            var err = new Error("Gemini request failed");
+            err.status = res.status;
+            err.bodyText = bodyText;
+            throw err;
+          });
+        }
+        return res.json();
+      }).then(function (data) {
+        var reply = extractGeminiText(data);
+        if (!reply) throw new Error("Gemini returned an empty response.");
+        appendAiMessage("assistant", reply);
+      });
+    }
+
+    function handleAiSend() {
+      if (!aiChatInput || aiChatBusy) return;
+      var userText = String(aiChatInput.value || "").trim();
+      if (!userText) return;
+      appendAiMessage("user", userText);
+      aiChatInput.value = "";
+      autoGrowAiInput();
+      setAiBusy(true);
+      callGeminiAndRespond().catch(function (err) {
+        console.error("[AI Chat] Gemini request failed:", err);
+        var statusCode = err && err.status ? " (" + err.status + ")" : "";
+        appendAiMessage("system", "AI assistant is unavailable right now" + statusCode + ". Please try again.");
+      }).finally(function () {
+        setAiBusy(false);
+        if (aiChatInput && aiChatLayer && aiChatLayer.classList.contains("open")) aiChatInput.focus();
+      });
+    }
+
+    function renderAiQuickPrompts() {
+      if (!aiChatQuick) return;
+      aiChatQuick.innerHTML = "";
+      AI_QUICK_PROMPTS.forEach(function (prompt) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "ai-quick-btn";
+        btn.textContent = prompt;
+        btn.addEventListener("click", function () {
+          if (!aiChatInput || aiChatBusy) return;
+          aiChatInput.value = prompt;
+          autoGrowAiInput();
+          handleAiSend();
+        });
+        aiChatQuick.appendChild(btn);
+      });
+    }
 
     function resolveInitialAuth(user) {
       if (initialAuthResolved) return;
+
+      if (!splashGateReady) {
+        pendingInitialAuthUser = user;
+        hasPendingInitialAuth = true;
+        return;
+      }
+
       initialAuthResolved = true;
 
-      if (!user && current === "splash") {
+      if (user) {
+        ensureHomeForAuthenticatedUser(user);
+        return;
+      }
+
+      if (current === "splash") {
         navigate("login");
       }
     }
+
+    setTimeout(function () {
+      splashGateReady = true;
+      if (hasPendingInitialAuth) {
+        var pendingUser = pendingInitialAuthUser;
+        hasPendingInitialAuth = false;
+        pendingInitialAuthUser = null;
+        resolveInitialAuth(pendingUser);
+      }
+    }, 1400);
 
     function showShellToast(message, tone) {
       if (!shellToast || !message) return;
@@ -728,6 +1603,7 @@
 
         // FAB only visible on home screen
         fab.classList.toggle("hidden", target !== "home");
+        aiFab.classList.remove("hidden");
 
         // Send profile data to account_settings when navigating there
         if (target === "account_settings" && currentUserData) {
@@ -735,6 +1611,8 @@
         }
       } else {
         fab.classList.add("hidden");
+        aiFab.classList.add("hidden");
+        closeAiChat();
       }
 
       current = target;
@@ -782,6 +1660,60 @@
     });
 
     fab.addEventListener("click", openJoinModal);
+    aiFab.addEventListener("click", openAiChat);
+    aiChatCloseBtn.addEventListener("click", closeAiChat);
+    aiChatCallBtn.addEventListener("click", function () {
+      setAiVoiceMode(!aiVoiceMode);
+      if (aiVoiceMode) {
+        updateVoiceUi("Voice Agent Ready", "Tap start call to talk with LucidLab AI voice assistant.", "Idle", false);
+      }
+    });
+
+    aiChatLayer.addEventListener("click", function (e) {
+      if (e.target === aiChatLayer) closeAiChat();
+    });
+
+    aiChatSendBtn.addEventListener("click", handleAiSend);
+    aiCallToggleBtn.addEventListener("click", function () {
+      if (!aiVoiceMode) return;
+      if (aiVoiceCallActive) stopVoiceCall();
+      else startVoiceCall();
+    });
+    aiCallErrorCopyBtn.addEventListener("click", function () {
+      if (!aiCallLastError) return;
+      var textToCopy = aiCallLastError;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(textToCopy).then(function () {
+          showShellToast("Voice error copied.");
+        }).catch(function () {
+          showShellToast("Could not copy error.", "warning");
+        });
+        return;
+      }
+      try {
+        var ta = document.createElement("textarea");
+        ta.value = textToCopy;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        showShellToast("Voice error copied.");
+      } catch (copyErr) {
+        showShellToast("Could not copy error.", "warning");
+      }
+    });
+
+    aiChatInput.addEventListener("input", autoGrowAiInput);
+    aiChatInput.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleAiSend();
+      }
+    });
+
+    renderAiQuickPrompts();
 
     function escapeHtml(text) {
       var div = document.createElement("div");
@@ -1075,12 +2007,16 @@
     auth.onAuthStateChanged(function (user) {
       if (user) {
         console.log("[Shell] Auth: signed in as", user.email);
-        ensureHomeForAuthenticatedUser(user);
         resolveInitialAuth(user);
+        if (initialAuthResolved) {
+          ensureHomeForAuthenticatedUser(user);
+        }
         loadUserData(user);
       } else {
         console.log("[Shell] Auth: signed out");
         currentUserData = null;
+        closeAiChat();
+        setAiBusy(false);
         if (current !== "login" && current !== "signup") {
           navigate("login");
         }

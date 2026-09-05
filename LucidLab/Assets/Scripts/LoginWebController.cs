@@ -2,6 +2,9 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using LucidLab.UI;
+#if UNITY_ANDROID && !UNITY_EDITOR
+using UnityEngine.Android;
+#endif
 
 namespace LucidLab.UI
 {
@@ -23,6 +26,8 @@ namespace LucidLab.UI
         private void Awake()
         {
             _activeController = this;
+
+            RequestMicrophonePermissionAtStartup();
 
             // Ensure Firebase is initialized (was previously in StartupScene)
             if (FirebaseInitializer.Instance == null)
@@ -90,6 +95,10 @@ namespace LucidLab.UI
                 yield return null;
             }
 
+            // Allow Android WebView getUserMedia audio capture. Without this, the
+            // plugin denies PermissionRequest.RESOURCE_AUDIO_CAPTURE by default.
+            webViewObject.SetMicrophoneAccess(true);
+
             webViewObject.SetMargins(0, 0, 0, 0);
 
                 // Load student shell directly.
@@ -101,6 +110,21 @@ namespace LucidLab.UI
                 webViewObject.LoadURL("file:///android_asset/student_app.html");
 #else
                 webViewObject.LoadURL("file://" + appUrl);
+#endif
+        }
+
+        /// <summary>
+        /// Prompt mic permission as early as possible so voice features in WebView
+        /// can access the input device without failing silently.
+        /// </summary>
+        private void RequestMicrophonePermissionAtStartup()
+        {
+#if UNITY_ANDROID && !UNITY_EDITOR
+            if (!Permission.HasUserAuthorizedPermission(Permission.Microphone))
+            {
+                Debug.Log("[Permissions] Requesting microphone permission at startup.");
+                Permission.RequestUserPermission(Permission.Microphone);
+            }
 #endif
         }
 

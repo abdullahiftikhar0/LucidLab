@@ -3,7 +3,7 @@
     "m_SelectedProcess": {
         "deviceId": "3414636581000C3",
         "name": "com.example.lucidlab",
-        "processId": 29963,
+        "processId": 10184,
         "exited": false
     },
     "m_SelectedPriority": 3,
@@ -42,6 +42,60 @@
             "deviceId": "3414636581000C3",
             "name": "com.example.lucidlab",
             "processId": 29963,
+            "exited": false
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.example.lucidlab",
+            "processId": 3680,
+            "exited": false
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.example.lucidlab",
+            "processId": 13826,
+            "exited": false
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.example.lucidlab",
+            "processId": 24040,
+            "exited": false
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.example.lucidlab",
+            "processId": 28060,
+            "exited": false
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.example.lucidlab",
+            "processId": 30140,
+            "exited": false
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.example.lucidlab",
+            "processId": 32650,
+            "exited": false
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.example.lucidlab",
+            "processId": 2761,
+            "exited": false
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.example.lucidlab",
+            "processId": 9172,
+            "exited": false
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.example.lucidlab",
+            "processId": 10184,
             "exited": false
         },
         {
@@ -281,5 +335,5 @@
             "exited": false
         }
     },
-    "m_AutoScroll": 2
+    "m_AutoScroll": 0
 }
