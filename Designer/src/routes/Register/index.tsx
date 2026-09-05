@@ -4,15 +4,14 @@ import {
   getAuth, createUserWithEmailAndPassword,
   signInWithPopup, GoogleAuthProvider, updateProfile,
 } from 'firebase/auth';
-import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirebaseApp } from 'reactfire';
 import { useAuth } from '../../contexts/AuthContext';
+import { queryCollection, setDocument } from '../../api/firestore';
 import '../../styles/pages/register.css';
 
 export default function RegisterPage() {
   const app       = useFirebaseApp();
   const auth      = getAuth(app);
-  const db        = getFirestore(app);
   const navigate  = useNavigate();
   const { currentUser, loading: authLoading } = useAuth();
 
@@ -43,14 +42,18 @@ export default function RegisterPage() {
       const provider = new GoogleAuthProvider();
       const result   = await signInWithPopup(auth, provider);
       const user     = result.user;
-      const ref      = doc(db, 'users', user.uid);
-      if (!(await getDoc(ref)).exists()) {
-        await setDoc(ref, {
+      const existing = await queryCollection<any>({
+        collection: 'users',
+        where: [{ field: 'uid', op: '==', value: user.uid }],
+        limit: 1,
+      });
+      if ((existing.items ?? []).length === 0) {
+        await setDocument(`users/${user.uid}`, {
           uid: user.uid, email: user.email,
           displayName: user.displayName || '', photoURL: user.photoURL || '',
           role: 'instructor', institution: '', classroomIds: [],
-          createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
-        });
+          createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+        }, true);
       }
       navigate('/dashboard');
     } catch (err: any) {
@@ -67,11 +70,11 @@ export default function RegisterPage() {
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       const user   = result.user;
-      await setDoc(doc(db, 'users', user.uid), {
+      await setDocument(`users/${user.uid}`, {
         uid: user.uid, email: user.email, displayName: fullName, photoURL: '',
         role: 'instructor', institution: '', classroomIds: [],
-        createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
-      });
+        createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+      }, true);
       if (fullName.trim()) await updateProfile(user, { displayName: fullName.trim() });
       navigate('/dashboard');
     } catch (err: any) {

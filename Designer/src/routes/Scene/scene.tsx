@@ -48,6 +48,7 @@ import useScene, { SceneObjectInterface } from '../../core/hooks/useScene';
 import { getScenesCollectionRef } from '../../core/states/references';
 import { ObjectTypesManagerContext } from '../experiment_root';
 import SceneObjectInspector from './object_comp';
+import { generateSceneLogic } from '../../api/ai';
 
 type UnityObjectTransformPayload = {
   objectName: string;
@@ -742,24 +743,15 @@ function SceneContent() {
                   setAiError(null);
                   setAiIsLoading(true);
                   try {
-                    const resp = await fetch('/api/ai/scene-logic', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        prompt: aiPrompt,
-                        // Provide current graph so the AI can modify/extend it.
-                        currentSceneLogic: sceneCore.scene?.sceneLogic ?? null,
-                        objects: (sceneCore.objects ?? []).map((o: any) => ({
-                          objectName: o.objectName,
-                          objectType: o.objectType,
-                        })),
-                      }),
+                    const data = await generateSceneLogic({
+                      prompt: aiPrompt,
+                      // Provide current graph so the AI can modify/extend it.
+                      currentSceneLogic: sceneCore.scene?.sceneLogic ?? null,
+                      objects: (sceneCore.objects ?? []).map((o: any) => ({
+                        objectName: o.objectName,
+                        objectType: o.objectType,
+                      })),
                     });
-                    const data = await resp.json().catch(() => null);
-                    if (!resp.ok) {
-                      setAiError(data?.error || `AI request failed (${resp.status})`);
-                      return;
-                    }
                     if (!data?.sceneLogic) {
                       setAiError('AI returned no scene logic.');
                       return;

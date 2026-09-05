@@ -1,4 +1,9 @@
-import { supabase } from '../supabaseClient';
+import {
+  uploadAvatarApi,
+  uploadCoverApi,
+  uploadExperimentThumbnailApi,
+  deleteStoragePathApi,
+} from '../api/storage';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB final upload size
 const MAX_SOURCE_FILE_SIZE = 15 * 1024 * 1024; // 15MB source file cap before compression
@@ -69,13 +74,6 @@ function compressImage(file: File, maxSize: number = 800): Promise<string> {
   });
 }
 
-// Generate unique file name
-function generateFileName(userId: string, file: File): string {
-  const timestamp = Date.now();
-  const extension = file.name.split('.').pop();
-  return `${userId}_${timestamp}.${extension}`;
-}
-
 export async function uploadAvatar(userId: string, file: File): Promise<string> {
   const error = validateImage(file);
   if (error) throw new Error(error);
@@ -86,29 +84,8 @@ export async function uploadAvatar(userId: string, file: File): Promise<string> 
   const processedError = validateProcessedImage(uploadFile);
   if (processedError) throw new Error(processedError);
 
-  const fileName = generateFileName(userId, file);
-  const filePath = `avatars/${fileName}`;
-
-  // Upload to Supabase Storage
-  const { error: uploadError } = await supabase.storage
-    .from('avatars')
-    .upload(filePath, uploadFile, {
-      contentType: 'image/jpeg',
-      cacheControl: '3600',
-      upsert: true // Replace existing avatar
-    });
-
-  if (uploadError) {
-    console.error('Avatar upload error:', uploadError);
-    throw new Error('Failed to upload avatar');
-  }
-
-  // Get public URL
-  const { data: { publicUrl } } = supabase.storage
-    .from('avatars')
-    .getPublicUrl(filePath);
-
-  return publicUrl;
+  const upload = await uploadAvatarApi(userId, uploadFile);
+  return upload.publicUrl;
 }
 
 // Convert data URL to File
@@ -129,29 +106,8 @@ export async function uploadCoverImage(classroomId: string, file: File): Promise
   const processedError = validateProcessedImage(uploadFile);
   if (processedError) throw new Error(processedError);
 
-  const fileName = generateFileName(classroomId, file);
-  const filePath = `classrooms/${classroomId}/cover/${fileName}`;
-
-  // Upload to Supabase Storage
-  const { error: uploadError } = await supabase.storage
-    .from('classroom-covers')
-    .upload(filePath, uploadFile, {
-      contentType: 'image/jpeg',
-      cacheControl: '3600',
-      upsert: true // Replace existing cover
-    });
-
-  if (uploadError) {
-    console.error('Cover image upload error:', uploadError);
-    throw new Error('Failed to upload cover image');
-  }
-
-  // Get public URL
-  const { data: { publicUrl } } = supabase.storage
-    .from('classroom-covers')
-    .getPublicUrl(filePath);
-
-  return publicUrl;
+  const upload = await uploadCoverApi(classroomId, uploadFile);
+  return upload.publicUrl;
 }
 
 export async function uploadExperimentThumbnail(experimentId: string, file: File): Promise<string> {
@@ -164,29 +120,8 @@ export async function uploadExperimentThumbnail(experimentId: string, file: File
   const processedError = validateProcessedImage(uploadFile);
   if (processedError) throw new Error(processedError);
 
-  const fileName = generateFileName(experimentId, file);
-  const filePath = `experiments/${experimentId}/thumbnail/${fileName}`;
-
-  // Upload to Supabase Storage
-  const { error: uploadError } = await supabase.storage
-    .from('experiment-thumbnails')
-    .upload(filePath, uploadFile, {
-      contentType: 'image/jpeg',
-      cacheControl: '3600',
-      upsert: true // Replace existing thumbnail path when needed
-    });
-
-  if (uploadError) {
-    console.error('Experiment thumbnail upload error:', uploadError);
-    throw new Error('Failed to upload experiment thumbnail');
-  }
-
-  // Get public URL
-  const { data: { publicUrl } } = supabase.storage
-    .from('experiment-thumbnails')
-    .getPublicUrl(filePath);
-
-  return publicUrl;
+  const upload = await uploadExperimentThumbnailApi(experimentId, uploadFile);
+  return upload.publicUrl;
 }
 
 // Delete avatar when user updates
@@ -197,13 +132,7 @@ export async function deleteAvatar(userId: string, avatarUrl: string): Promise<v
     const fileName = urlParts[urlParts.length - 1];
     const filePath = `avatars/${fileName}`;
     
-    const { error } = await supabase.storage
-      .from('avatars')
-      .remove([filePath]);
-
-    if (error) {
-      console.error('Avatar deletion error:', error);
-    }
+    await deleteStoragePathApi('avatars', filePath);
   } catch (err) {
     console.error('Error deleting avatar:', err);
   }
@@ -217,13 +146,7 @@ export async function deleteCoverImage(classroomId: string, coverUrl: string): P
     const fileName = urlParts[urlParts.length - 1];
     const filePath = `classrooms/${classroomId}/cover/${fileName}`;
     
-    const { error } = await supabase.storage
-      .from('classroom-covers')
-      .remove([filePath]);
-
-    if (error) {
-      console.error('Cover image deletion error:', error);
-    }
+    await deleteStoragePathApi('classroom-covers', filePath);
   } catch (err) {
     console.error('Error deleting cover image:', err);
   }
@@ -237,13 +160,7 @@ export async function deleteExperimentThumbnail(experimentId: string, thumbnailU
     const fileName = urlParts[urlParts.length - 1];
     const filePath = `experiments/${experimentId}/thumbnail/${fileName}`;
 
-    const { error } = await supabase.storage
-      .from('experiment-thumbnails')
-      .remove([filePath]);
-
-    if (error) {
-      console.error('Experiment thumbnail deletion error:', error);
-    }
+    await deleteStoragePathApi('experiment-thumbnails', filePath);
   } catch (err) {
     console.error('Error deleting experiment thumbnail:', err);
   }

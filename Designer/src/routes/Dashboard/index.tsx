@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getFirestore, collection, query, where, getDocs, addDoc, doc, setDoc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
-import { useFirebaseApp } from 'reactfire';
 import { useAuth } from '../../contexts/AuthContext';
 import { uploadCoverImage } from '../../utils/storageHelpers';
+import { patchDocument, queryCollection, setDocument } from '../../api/firestore';
+import { arrayUnion } from '../../api/firestoreCompat';
 import MainNav from '../../components/MainNav';
 import PatternPage from '../../components/layout/PatternPage';
 import AppFooter from '../../components/layout/AppFooter';
@@ -59,9 +59,7 @@ function generateJoinCode(): string {
 }
 
 export default function DashboardHome() {
-  const app = useFirebaseApp();
-  const db = getFirestore(app);
-  const { currentUser } = useAuth();
+  const { currentUser, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
@@ -76,22 +74,21 @@ export default function DashboardHome() {
   const coverInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (authLoading || !currentUser) return;
     loadClassrooms();
     loadExperiments();
-  }, [currentUser]);
+  }, [authLoading, currentUser]);
 
   async function loadClassrooms() {
     setLoadingClassrooms(true);
     try {
       // Single where clause to avoid requiring a composite index
-      const q = query(
-        collection(db, 'classrooms'),
-        where('instructorId', '==', currentUser!.uid)
-      );
-      const snap = await getDocs(q);
+      const snap = await queryCollection<Classroom>({
+        collection: 'classrooms',
+        where: [{ field: 'instructorId', op: '==', value: currentUser!.uid }],
+      });
       // Filter archived client-side
-      const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as Classroom));
+      const all = (snap.items ?? []).map((d: any) => ({ id: d.id, ...d } as Classroom));
       setClassrooms(all.filter(c => !(c as any).archived));
     } catch (e) { console.error(e); }
     setLoadingClassrooms(false);
@@ -101,12 +98,11 @@ export default function DashboardHome() {
     setLoadingExperiments(true);
     try {
       // Single where clause only — sort client-side to avoid composite index
-      const q = query(
-        collection(db, 'experiments'),
-        where('instructorId', '==', currentUser!.uid)
-      );
-      const snap = await getDocs(q);
-      const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as Experiment));
+      const snap = await queryCollection<Experiment>({
+        collection: 'experiments',
+        where: [{ field: 'instructorId', op: '==', value: currentUser!.uid }],
+      });
+      const all = (snap.items ?? []).map((d: any) => ({ id: d.id, ...d } as Experiment));
       // Sort by updatedAt descending, take latest 10
       all.sort((a, b) => {
         const aTime = a.updatedAt?.toMillis ? a.updatedAt.toMillis() : 0;
@@ -124,10 +120,15 @@ export default function DashboardHome() {
     try {
       let joinCode = generateJoinCode();
       // Check uniqueness (simple approach)
-      const codeCheck = await getDocs(query(collection(db, 'classrooms'), where('joinCode', '==', joinCode)));
-      if (!codeCheck.empty) joinCode = generateJoinCode();
+      const codeCheck = await queryCollection<any>({
+        collection: 'classrooms',
+        where: [{ field: 'joinCode', op: '==', value: joinCode }],
+        limit: 1,
+      });
+      if ((codeCheck.items ?? []).length > 0) joinCode = generateJoinCode();
 
-      const docRef = await addDoc(collection(db, 'classrooms'), {
+      const classroomId = crypto.randomUUID().replace(/-/g, '').slice(0, 20);
+      await setDocument(`classrooms/${classroomId}`, {
         name: newClassroom.name.trim(),
         subject: newClassroom.subject,
         description: newClassroom.description.trim(),
@@ -138,21 +139,21 @@ export default function DashboardHome() {
         experimentIds: [],
         coverImageURL: '',
         archived: false,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }, false);
       // Upload cover image if selected
       if (coverFile) {
         try {
-          const url = await uploadCoverImage(docRef.id, coverFile);
-          await setDoc(doc(db, 'classrooms', docRef.id), { coverImageURL: url }, { merge: true });
+          const url = await uploadCoverImage(classroomId, coverFile);
+          await patchDocument(`classrooms/${classroomId}`, { coverImageURL: url });
         } catch (e) { console.warn('Cover upload failed:', e); }
       }
       // Add new classroom to instructor's classroomIds without overwriting existing ones
-      await updateDoc(doc(db, 'users', currentUser!.uid), {
-        classroomIds: arrayUnion(docRef.id),
-        updatedAt: serverTimestamp(),
-      });
+      await setDocument(`users/${currentUser!.uid}`, {
+        classroomIds: arrayUnion(classroomId),
+        updatedAt: new Date().toISOString(),
+      }, true);
       setShowCreateModal(false);
       setNewClassroom({ name: '', subject: 'Chemistry', description: '' });
       setCoverFile(null); setCoverPreview(null);

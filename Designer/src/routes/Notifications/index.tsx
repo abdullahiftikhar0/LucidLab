@@ -1,16 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { useFirebaseApp } from 'reactfire';
 import { useAuth } from '../../contexts/AuthContext';
+import { deleteDocument, patchDocument, queryCollection } from '../../api/firestore';
 import MainNav from '../../components/MainNav';
 import PatternPage from '../../components/layout/PatternPage';
 import AppFooter from '../../components/layout/AppFooter';
 import '../../styles/pages/notifications.css';
 
 export default function NotificationsPage() {
-  const app = useFirebaseApp();
-  const db = getFirestore(app);
   const { currentUser } = useAuth();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,40 +15,41 @@ export default function NotificationsPage() {
   useEffect(() => {
     if (!currentUser) return;
 
-    const q = query(
-      collection(db, 'notifications'),
-      where('userId', '==', currentUser.uid)
-    );
-
-    const unsubscribe = onSnapshot(q, (snap) => {
-      const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const load = async () => {
+      const snap = await queryCollection<any>({
+        collection: 'notifications',
+        where: [{ field: 'userId', op: '==', value: currentUser.uid }],
+      }).catch(() => ({ items: [] }));
+      const all = (snap.items ?? []).map((d: any) => ({ id: d.id, ...d }));
       // In-memory sort to avoid index requirement
       all.sort((a: any, b: any) => {
-        const t1 = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
-        const t2 = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+        const t1 = new Date(a.createdAt || 0).getTime();
+        const t2 = new Date(b.createdAt || 0).getTime();
         return t2 - t1;
       });
       setNotifications(all);
       setLoading(false);
-    });
+    };
+    load();
+    const timer = window.setInterval(load, 15000);
 
-    return () => unsubscribe();
-  }, [currentUser, db]);
+    return () => window.clearInterval(timer);
+  }, [currentUser]);
 
   async function markAsRead(id: string) {
-    await updateDoc(doc(db, 'notifications', id), { isRead: true });
+    await patchDocument(`notifications/${id}`, { isRead: true });
   }
 
   async function markAllAsRead() {
     for (const notif of notifications) {
       if (!notif.isRead) {
-        await updateDoc(doc(db, 'notifications', notif.id), { isRead: true });
+        await patchDocument(`notifications/${notif.id}`, { isRead: true });
       }
     }
   }
 
   async function deleteNotification(id: string) {
-    await deleteDoc(doc(db, 'notifications', id));
+    await deleteDocument(`notifications/${id}`);
   }
 
   function formatFullTime(ts: any) {

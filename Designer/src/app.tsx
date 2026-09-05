@@ -45,14 +45,15 @@ const router = createBrowserRouter([
 
 export const LucidLabContext = React.createContext<{
   username: string;
+  loading: boolean;
 }>(null!);
 
 function AppShell() {
-  const { currentUser } = useAuth();
+  const { currentUser, loading } = useAuth();
   const username = currentUser?.uid || 'mainuser';
 
   return (
-    <LucidLabContext.Provider value={{ username }}>
+    <LucidLabContext.Provider value={{ username, loading }}>
       <ExperimentRoot>
         <ColorModeScript />
         <ChakraProvider theme={theme}>

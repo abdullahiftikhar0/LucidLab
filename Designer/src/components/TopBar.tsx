@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
-import { getFirestore, doc, getDoc, collection, query, where, orderBy, onSnapshot, limit, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirebaseApp } from 'reactfire';
 import { useAuth } from '../contexts/AuthContext';
 import { getAvatarDisplay } from '../utils/storageHelpers';
+import { patchDocument, queryCollection } from '../api/firestore';
 
 export default function TopBar() {
   const app = useFirebaseApp();
   const auth = getAuth(app);
-  const db = getFirestore(app);
   const { currentUser } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -36,9 +35,13 @@ export default function TopBar() {
     if (!currentUser) return;
     (async () => {
       try {
-        const snap = await getDoc(doc(db, 'users', currentUser.uid));
-        if (snap.exists()) {
-          const data = snap.data();
+        const result = await queryCollection<any>({
+          collection: 'users',
+          where: [{ field: 'uid', op: '==', value: currentUser.uid }],
+          limit: 1,
+        });
+        const data = result.items?.[0];
+        if (data) {
           setUserData(data);
           if (data.photoURL) {
             setPhotoURL(data.photoURL);
@@ -50,34 +53,32 @@ export default function TopBar() {
 
     // Listen for notifications
     setLoadingNotifications(true);
-    const q = query(
-      collection(db, 'notifications'),
-      where('userId', '==', currentUser.uid)
-    );
-
-    const unsubscribe = onSnapshot(q, (snap) => {
-      const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const loadNotifications = async () => {
+      const snap = await queryCollection<any>({
+        collection: 'notifications',
+        where: [{ field: 'userId', op: '==', value: currentUser.uid }],
+      }).catch(() => ({ items: [] }));
+      const all = (snap.items ?? []).map((d: any) => ({ id: d.id, ...d }));
       // In-memory sort to avoid index requirement
       all.sort((a: any, b: any) => {
-        const t1 = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
-        const t2 = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+        const t1 = new Date(a.createdAt || 0).getTime();
+        const t2 = new Date(b.createdAt || 0).getTime();
         return t2 - t1;
       });
       setNotifications(all.slice(0, 10));
       setUnreadCount(all.filter((n: any) => !n.isRead).length);
       setLoadingNotifications(false);
-    }, (err) => {
-      console.error("Notif listener error:", err);
-      setLoadingNotifications(false);
-    });
+    };
+    loadNotifications();
+    const timer = window.setInterval(loadNotifications, 15000);
 
-    return () => unsubscribe();
-  }, [currentUser, db]);
+    return () => window.clearInterval(timer);
+  }, [currentUser]);
 
   async function markAllAsRead() {
     for (const notif of notifications) {
       if (!notif.isRead) {
-        await updateDoc(doc(db, 'notifications', notif.id), { isRead: true });
+        await patchDocument(`notifications/${notif.id}`, { isRead: true });
       }
     }
   }
@@ -174,7 +175,7 @@ export default function TopBar() {
                           to={n.link || '#'} 
                           onClick={() => { 
                             setShowNotifications(false); 
-                            if (!n.isRead) updateDoc(doc(db, 'notifications', n.id), { isRead: true });
+                            if (!n.isRead) patchDocument(`notifications/${n.id}`, { isRead: true });
                           }}
                           className={`block px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 ${!n.isRead ? 'bg-primary/[0.04]' : ''}`}
                         >

@@ -41,9 +41,10 @@
     "express": "^4.21.2"
   },
   "scripts": {
-    "start": "concurrently -k -n WEB,AI -c green,cyan \"npm run start:web\" \"npm run start:ai\"",
+    "start": "concurrently -k -n WEB,API -c green,cyan \"npm run start:web\" \"npm run start:api\"",
     "start:web": "react-scripts start",
     "start:ai": "node server/geminiProxy.js",
+    "start:api": "node ../backend/src/index.js",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
