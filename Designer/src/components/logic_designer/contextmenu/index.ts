@@ -33,6 +33,36 @@ import {
   GetDistanceBetweenNode,
   SetColorRGBNode,
 } from '../nodes';
+import { setSelectedConnectionId } from '../connection_selection';
+
+type ContextTarget = {
+  kind: 'connection' | 'node';
+  id: string;
+};
+
+function resolveContextTarget(
+  context: unknown,
+  editor: NodeEditor<Schemes>,
+): ContextTarget | null {
+  if (typeof context !== 'object' || context === null || !('id' in context)) {
+    return null;
+  }
+
+  const id = String((context as { id: unknown }).id);
+  if (!id) return null;
+
+  const isConnection = editor.getConnections().some(c => c.id === id);
+  if (isConnection) {
+    return { kind: 'connection', id };
+  }
+
+  const isNode = !!editor.getNode(id);
+  if (isNode) {
+    return { kind: 'node', id };
+  }
+
+  return null;
+}
 
 export const contextMenu = new ContextMenuPlugin<Schemes>({
   items: function (context, plugin) {
@@ -135,11 +165,54 @@ export const contextMenu = new ContextMenuPlugin<Schemes>({
       };
     }
 
+    const contextTarget = resolveContextTarget(context, editor);
+
+    if (contextTarget?.kind === 'connection') {
+      const deleteConnectionItem: Item = {
+        label: 'Delete Connection',
+        key: 'delete-connection',
+        async handler() {
+          const connectionId = contextTarget.id;
+          const exists = editor.getConnections().some(c => c.id === connectionId);
+          if (!exists) {
+            setSelectedConnectionId(null);
+            return;
+          }
+
+          try {
+            await editor.removeConnection(connectionId);
+          } catch (error) {
+            console.warn(
+              `[LogicContextMenu] Failed to remove connection '${connectionId}'.`,
+              error,
+            );
+          } finally {
+            setSelectedConnectionId(null);
+          }
+        },
+      };
+
+      return {
+        searchBar: false,
+        list: [deleteConnectionItem],
+      };
+    }
+
+    if (contextTarget?.kind !== 'node') {
+      return {
+        searchBar: false,
+        list: [],
+      };
+    }
+
     const deleteItem: Item = {
       label: 'Delete',
       key: 'delete',
       async handler() {
-        const nodeId = context.id;
+        const nodeId = contextTarget.id;
+        const nodeExists = !!editor.getNode(nodeId);
+        if (!nodeExists) return;
+
         const connections = editor
           .getConnections()
           .filter((c: { source: any; target: any }) => {
@@ -147,9 +220,32 @@ export const contextMenu = new ContextMenuPlugin<Schemes>({
           });
 
         for (const connection of connections) {
-          await editor.removeConnection(connection.id);
+          const connectionExists = editor
+            .getConnections()
+            .some(c => c.id === connection.id);
+          if (!connectionExists) continue;
+
+          try {
+            await editor.removeConnection(connection.id);
+          } catch (error) {
+            console.warn(
+              `[LogicContextMenu] Failed to remove connection '${connection.id}' while deleting node '${nodeId}'.`,
+              error,
+            );
+          }
         }
-        await editor.removeNode(nodeId);
+
+        const nodeStillExists = !!editor.getNode(nodeId);
+        if (!nodeStillExists) return;
+
+        try {
+          await editor.removeNode(nodeId);
+        } catch (error) {
+          console.warn(
+            `[LogicContextMenu] Failed to remove node '${nodeId}'.`,
+            error,
+          );
+        }
       },
     };
 

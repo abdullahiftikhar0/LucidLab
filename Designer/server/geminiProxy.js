@@ -271,6 +271,8 @@ app.post("/api/ai/scene-logic", async (req, res) => {
     console.log(
       `[ai][${requestId}] Raw Gemini text (first 400 chars):\n${text.slice(0, 400)}`,
     );
+    console.log(`[ai][${requestId}] Raw Gemini text length: ${text.length}`);
+    console.log(`[ai][${requestId}] Raw Gemini text (full) START\n${text}\n[ai][${requestId}] Raw Gemini text (full) END`);
 
     // Apply small, known-safe sanitizations before parsing.
     text = sanitizeJsonText(text);

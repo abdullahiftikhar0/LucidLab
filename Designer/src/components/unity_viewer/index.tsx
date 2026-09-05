@@ -11,12 +11,20 @@ import { TOOL_CURSORS } from '../unity_toolbar/toolbar.types';
 import { ToolbarProvider, useToolbar } from '../unity_toolbar/useToolbarStore';
 import { useUnityObjectManagement } from '../../core/hooks/unity/function_hooks';
 
+type UnityObjectTransformPayload = {
+  objectName: string;
+  position?: number[];
+  rotation?: number[];
+  scale?: number[];
+};
+
 type props = {
   style?: React.CSSProperties | undefined;
   expName: string;
   sceneName: string;
   sceneLogic?: ExportedNodes | null;
   objects?: SceneObjectState[] | undefined;
+  onObjectTransformChanged?: (payload: UnityObjectTransformPayload) => void;
 };
 
 function UnityAndDbSyncComp({
@@ -39,7 +47,14 @@ function UnityAndDbSyncComp({
   return <></>;
 }
 
-export default function UnityViewer({ style, expName, sceneName, sceneLogic, objects }: props) {
+export default function UnityViewer({
+  style,
+  expName,
+  sceneName,
+  sceneLogic,
+  objects,
+  onObjectTransformChanged,
+}: props) {
   const unityContext = useUnityContext({
     loaderUrl: '/renderer/Build/renderer.loader.js',
     dataUrl: '/renderer/Build/renderer.data',
@@ -126,6 +141,30 @@ export default function UnityViewer({ style, expName, sceneName, sceneLogic, obj
     window.addEventListener('unityObjectSelected', handleObjectSelected);
     return () => window.removeEventListener('unityObjectSelected', handleObjectSelected);
   }, [setSelectedObject]);
+
+  React.useEffect(() => {
+    if (!onObjectTransformChanged) return;
+
+    const handleTransformChanged = (e: Event) => {
+      const customEvent = e as CustomEvent<unknown>;
+      let payload = customEvent.detail;
+      if (typeof payload === 'string') {
+        try {
+          payload = JSON.parse(payload);
+        } catch {
+          return;
+        }
+      }
+
+      if (!payload || typeof payload !== 'object') return;
+      const typedPayload = payload as UnityObjectTransformPayload;
+      if (!typedPayload.objectName) return;
+      onObjectTransformChanged(typedPayload);
+    };
+
+    window.addEventListener('unityObjectTransformChanged', handleTransformChanged);
+    return () => window.removeEventListener('unityObjectTransformChanged', handleTransformChanged);
+  }, [onObjectTransformChanged]);
 
   // Hierarchy double-click: focus camera on object in Unity.
   React.useEffect(() => {

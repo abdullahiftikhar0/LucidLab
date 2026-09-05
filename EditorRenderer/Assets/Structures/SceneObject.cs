@@ -10,6 +10,11 @@ using System.Collections;
 
 namespace Assets.Structures {
     public class SceneObject {
+        private const float XSceneMin = -0.438f;
+        private const float XSceneMax = 0.716f;
+        private const float ZSceneMin = -0.017f;
+        private const float ZSceneMax = -0.579f;
+
         public string objectName;
         public string objectType;
         public string color;
@@ -51,6 +56,10 @@ namespace Assets.Structures {
                     }
                     break;
             }
+
+                    // Keep Unity GameObject names aligned with Firestore objectName so
+                    // viewport selection and inspector sync use the same key.
+                    _gameObject.name = objectName;
 
             _gameObject.AddComponent<Rigidbody>();
 
@@ -139,9 +148,46 @@ namespace Assets.Structures {
         public void UpdatePosition() {
             if (!_gameObject) throw new Exception("InitGameobject first!");
 
-            float xPos = position[0] / 10.0f * (0.716f - -0.438f) + -0.438f;
-            float zPos = position[2] / 10.0f * (-0.579f - -0.017f) + -0.017f;
+            float xPos = position[0] / 10.0f * (XSceneMax - XSceneMin) + XSceneMin;
+            float zPos = position[2] / 10.0f * (ZSceneMax - ZSceneMin) + ZSceneMin;
             _gameObject.transform.localPosition = new Vector3(xPos, position[1], zPos);
+        }
+
+        private static float ToSceneAxis(float worldValue, float axisMin, float axisMax) {
+            return (worldValue - axisMin) / (axisMax - axisMin) * 10.0f;
+        }
+
+        public Vector3 GetCurrentScenePosition() {
+            if (_gameObject) {
+                var p = _gameObject.transform.localPosition;
+                return new Vector3(
+                    ToSceneAxis(p.x, XSceneMin, XSceneMax),
+                    p.y,
+                    ToSceneAxis(p.z, ZSceneMin, ZSceneMax)
+                );
+            }
+
+            if (position != null && position.Count >= 3) {
+                return new Vector3(position[0], position[1], position[2]);
+            }
+
+            return Vector3.zero;
+        }
+
+        public Vector3 GetCurrentRotation() {
+            if (_gameObject) return _gameObject.transform.eulerAngles;
+            if (rotation != null && rotation.Count >= 3) {
+                return new Vector3(rotation[0], rotation[1], rotation[2]);
+            }
+            return Vector3.zero;
+        }
+
+        public Vector3 GetCurrentScale() {
+            if (_gameObject) return _gameObject.transform.localScale;
+            if (scale != null && scale.Count >= 3) {
+                return new Vector3(scale[0], scale[1], scale[2]);
+            }
+            return Vector3.one;
         }
 
         public void UpdateScale() {

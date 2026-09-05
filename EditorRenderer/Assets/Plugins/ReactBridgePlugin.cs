@@ -7,6 +7,8 @@ public static class ReactBridge
     public static extern void SendObjectSelected(string objectName);
     [DllImport("__Internal")]
     public static extern void SendShowMessage(string message);
+    [DllImport("__Internal")]
+    public static extern void SendObjectTransformChanged(string payloadJson);
 #else
     public static void SendObjectSelected(string objectName)
     {
@@ -15,6 +17,10 @@ public static class ReactBridge
     public static void SendShowMessage(string message)
     {
         UnityEngine.Debug.Log($"[ReactBridge Mock] ShowMessage: '{message}'");
+    }
+    public static void SendObjectTransformChanged(string payloadJson)
+    {
+        UnityEngine.Debug.Log($"[ReactBridge Mock] ObjectTransformChanged: '{payloadJson}'");
     }
 #endif
 }

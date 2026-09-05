@@ -19,6 +19,10 @@ import { DataSocket } from './components/DataSocket';
 import { DataConnectionComponent } from './components/DataConnection';
 import { contextMenu } from './contextmenu';
 import { CompareNode } from './nodes';
+import {
+  getSelectedConnectionId,
+  setSelectedConnectionId,
+} from './connection_selection';
 
 export async function createEditor(container: HTMLElement) {
   const editor = new NodeEditor<Schemes>();
@@ -95,6 +99,61 @@ export async function createEditor(container: HTMLElement) {
   let onChangeCallback: (nodes: ExportedNodes) => void;
 
   area.addPipe(context => {
+    if (context.type === 'pointerdown') {
+      const mouseButton = context.data.event.button;
+      if (mouseButton === 0) {
+        const target = context.data.event.target as Node | null;
+        let clickedConnectionId: string | null = null;
+
+        if (target) {
+          area.connectionViews.forEach((connectionView, connectionId) => {
+            if (clickedConnectionId) return;
+            if (connectionView?.element?.contains(target)) {
+              clickedConnectionId = connectionId;
+            }
+          });
+        }
+
+        const prevSelected = getSelectedConnectionId();
+        if (clickedConnectionId) {
+          if (prevSelected && prevSelected !== clickedConnectionId) {
+            area.update('connection', prevSelected);
+          }
+          if (prevSelected !== clickedConnectionId) {
+            setSelectedConnectionId(clickedConnectionId);
+            area.update('connection', clickedConnectionId);
+          }
+        } else if (prevSelected) {
+          setSelectedConnectionId(null);
+          area.update('connection', prevSelected);
+        }
+      }
+    }
+
+    if (context.type === 'contextmenu') {
+      const menuContext = context.data.context as any;
+      const isConnectionContext =
+        menuContext &&
+        typeof menuContext === 'object' &&
+        'id' in menuContext &&
+        'source' in menuContext &&
+        'target' in menuContext;
+
+      const prevSelected = getSelectedConnectionId();
+
+      if (isConnectionContext) {
+        const nextSelected = String(menuContext.id);
+        if (prevSelected && prevSelected !== nextSelected) {
+          area.update('connection', prevSelected);
+        }
+        setSelectedConnectionId(nextSelected);
+        area.update('connection', nextSelected);
+      } else if (prevSelected) {
+        setSelectedConnectionId(null);
+        area.update('connection', prevSelected);
+      }
+    }
+
     if (context.type === 'connectioncreate') {
       const { sourceOutput, targetInput } = context.data;
       const source = editor.getNode(context.data.source);
@@ -145,6 +204,14 @@ export async function createEditor(container: HTMLElement) {
       onChangeCallback(
         getSceneJSON(editor.getNodes(), editor.getConnections(), area.nodeViews),
       );
+    }
+
+    if (context.type === 'connectionremoved') {
+      const removedId = (context.data as any)?.id;
+      const selectedId = getSelectedConnectionId();
+      if (selectedId && removedId === selectedId) {
+        setSelectedConnectionId(null);
+      }
     }
 
     return context;

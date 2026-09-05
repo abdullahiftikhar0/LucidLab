@@ -51,20 +51,17 @@ namespace Assets.PlayMode
 
         public Vector3 GetPosition()
         {
-            var p = _sceneObject.position;
-            return p != null && p.Count >= 3 ? new Vector3(p[0], p[1], p[2]) : Vector3.zero;
+            return _sceneObject.GetCurrentScenePosition();
         }
 
         public Vector3 GetRotation()
         {
-            var r = _sceneObject.rotation;
-            return r != null && r.Count >= 3 ? new Vector3(r[0], r[1], r[2]) : Vector3.zero;
+            return _sceneObject.GetCurrentRotation();
         }
 
         public Vector3 GetScale()
         {
-            var s = _sceneObject.scale;
-            return s != null && s.Count >= 3 ? new Vector3(s[0], s[1], s[2]) : Vector3.one;
+            return _sceneObject.GetCurrentScale();
         }
     }
 }

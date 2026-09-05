@@ -44,16 +44,38 @@ import { ExportedNodes } from '../../components/logic_designer/node_exporter';
 import UnityViewer from '../../components/unity_viewer';
 import { ToolbarProvider, useToolbar } from '../../components/unity_toolbar/useToolbarStore';
 import useScene, { SceneObjectInterface } from '../../core/hooks/useScene';
-import { SceneState } from '../../core/states/types';
 import { ObjectTypesManagerContext } from '../experiment_root';
 import SceneObjectInspector from './object_comp';
 
+type UnityObjectTransformPayload = {
+  objectName: string;
+  position?: number[];
+  rotation?: number[];
+  scale?: number[];
+};
+
+function asVec3(value: unknown): [number, number, number] | null {
+  if (!Array.isArray(value) || value.length !== 3) return null;
+  const [x, y, z] = value;
+  if (
+    typeof x !== 'number' ||
+    typeof y !== 'number' ||
+    typeof z !== 'number' ||
+    Number.isNaN(x) ||
+    Number.isNaN(y) ||
+    Number.isNaN(z)
+  ) {
+    return null;
+  }
+  return [x, y, z];
+}
+
 function Rete({
-  sceneState,
+  importSceneLogic,
   setSceneLogicInFirebase,
   logicImportVersion,
 }: {
-  sceneState: SceneState;
+  importSceneLogic?: ExportedNodes;
   setSceneLogicInFirebase: (nodes: ExportedNodes) => void;
   logicImportVersion: number;
 }) {
@@ -78,13 +100,13 @@ function Rete({
     const run = async () => {
       isImportingRef.current = true;
       try {
-        await editor.importSceneState(sceneState.sceneLogic ?? {});
+        await editor.importSceneState(importSceneLogic ?? {});
       } finally {
         isImportingRef.current = false;
       }
     };
     run();
-  }, [editor, logicImportVersion]);
+  }, [editor, logicImportVersion, importSceneLogic]);
   return <Box ref={ref} style={{ width: '100%', height: '100%' }} bg="gray.900"></Box>;
 }
 
@@ -146,6 +168,7 @@ function SceneContent() {
   const [rightWidth, setRightWidth] = useState(320); // px
   const [logicHeight, setLogicHeight] = useState(260); // px
   const [logicImportVersion, setLogicImportVersion] = useState(0);
+  const [logicImportPayload, setLogicImportPayload] = useState<ExportedNodes | undefined>(undefined);
   const initialLogicImportedRef = React.useRef(false);
 
   const createObject = function () {
@@ -214,6 +237,7 @@ function SceneContent() {
     if (initialLogicImportedRef.current) return;
     if (!sceneCore.scene?.sceneLogic) return;
     initialLogicImportedRef.current = true;
+    setLogicImportPayload(sceneCore.scene.sceneLogic);
     setLogicImportVersion(v => v + 1);
   }, [sceneCore.scene?.sceneLogic]);
 
@@ -223,6 +247,25 @@ function SceneContent() {
       setActiveRightTabKey('inspector');
     }
   }, [selectedObjectName]);
+
+  const handleUnityObjectTransformChanged = React.useCallback(
+    (payload: UnityObjectTransformPayload) => {
+      const objectName = payload.objectName?.trim();
+      if (!objectName) return;
+
+      const sceneObjectApi = sceneCore.getObject(objectName);
+      if (!sceneObjectApi.object) return;
+
+      const nextPosition = asVec3(payload.position);
+      const nextRotation = asVec3(payload.rotation);
+      const nextScale = asVec3(payload.scale);
+
+      if (nextPosition) sceneObjectApi.setPosition(nextPosition);
+      if (nextRotation) sceneObjectApi.setRotation(nextRotation);
+      if (nextScale) sceneObjectApi.setScale(nextScale);
+    },
+    [sceneCore],
+  );
 
   const selectedSceneObject = selectedObjectName ? sceneCore.getObject(selectedObjectName) : null;
 
@@ -380,6 +423,7 @@ function SceneContent() {
               sceneName={sceneName}
               sceneLogic={sceneCore.scene?.sceneLogic ?? undefined}
               objects={sceneCore.objects}
+              onObjectTransformChanged={handleUnityObjectTransformChanged}
             />
           </React.Suspense>
           
@@ -445,7 +489,7 @@ function SceneContent() {
             </Flex>
             <Box h="calc(100% - 32px)" w="100%">
                <Rete
-                 sceneState={sceneCore.scene}
+                importSceneLogic={logicImportPayload}
                 setSceneLogicInFirebase={sceneCore.setSceneLogic}
                 logicImportVersion={logicImportVersion}
                />
@@ -701,6 +745,7 @@ function SceneContent() {
                       return;
                     }
                     setAiModel(data.model ?? null);
+                    setLogicImportPayload(data.sceneLogic);
                     sceneCore.setSceneLogic(data.sceneLogic);
                     setIsLogicOpen(true);
                     setLogicImportVersion(v => v + 1);
