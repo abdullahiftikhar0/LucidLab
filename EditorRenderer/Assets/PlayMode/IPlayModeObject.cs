@@ -15,10 +15,16 @@ namespace Assets.PlayMode
         void UpdateScale(List<float> scale);
         void UpdateColor(string color);
         void UpdateColor(float r, float g, float b);
+        void UpdateVisible(bool state);
         void UpdateStaticFriction(float value);
         void UpdateDynamicFriction(float value);
+        void UpdateBounciness(float value);
+        void UpdateMass(float value);
+        void SetDescription(string description);
+        void ApplyForce(Vector3 force);
         Vector3 GetPosition();
         Vector3 GetRotation();
         Vector3 GetScale();
+        float GetSpeed();
     }
 }

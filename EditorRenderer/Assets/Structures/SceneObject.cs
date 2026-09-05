@@ -18,6 +18,7 @@ namespace Assets.Structures {
         public string objectName;
         public string objectType;
         public string color;
+        public string description;
         public List<float> position;
         public List<float> rotation;
         public List<float> scale;
@@ -27,6 +28,8 @@ namespace Assets.Structures {
 
         private GameObject _gameObject = null;
         private Dictionary<Renderer, Material> _colorMaterials;
+        private GameObject _descriptionLabel;
+        private TextMesh _descriptionText;
 
         private bool IsPrimitiveObject() {
             return objectType is "cube" or "sphere" or "cylinder" or "capsule";
@@ -68,6 +71,7 @@ namespace Assets.Structures {
             UpdatePosition();
             UpdateScale();
             UpdateRotation();
+            RefreshDescriptionLabel();
         }
 
         private static Shader _cachedStandardShader = null;
@@ -151,6 +155,7 @@ namespace Assets.Structures {
             float xPos = position[0] / 10.0f * (XSceneMax - XSceneMin) + XSceneMin;
             float zPos = position[2] / 10.0f * (ZSceneMax - ZSceneMin) + ZSceneMin;
             _gameObject.transform.localPosition = new Vector3(xPos, position[1], zPos);
+            RefreshDescriptionLabel();
         }
 
         private static float ToSceneAxis(float worldValue, float axisMin, float axisMax) {
@@ -194,6 +199,7 @@ namespace Assets.Structures {
             if (!_gameObject) throw new Exception("InitGameobject first!");
 
             _gameObject.transform.localScale = new Vector3(scale[0], scale[1], scale[2]);
+            RefreshDescriptionLabel();
         }
 
         public void UpdateRotation() {
@@ -207,7 +213,12 @@ namespace Assets.Structures {
 
             var rigidBody = _gameObject.GetComponent<Rigidbody>();
             rigidBody.useGravity = hasGravity;
-            rigidBody.isKinematic = true;
+            rigidBody.isKinematic = !hasGravity;
+        }
+
+        public void UpdateVisible(bool state) {
+            if (!_gameObject) return;
+            _gameObject.SetActive(state);
         }
 
         public void UpdateStaticFriction(float value) {
@@ -226,6 +237,88 @@ namespace Assets.Structures {
             }
         }
 
+        public void UpdateBounciness(float value) {
+            if (!_gameObject) return;
+            foreach (var collider in _gameObject.GetComponentsInChildren<Collider>()) {
+                if (collider.material == null) collider.material = new PhysicMaterial();
+                collider.material.bounciness = value;
+            }
+        }
+
+        public void UpdateMass(float value) {
+            if (!_gameObject) return;
+            var rigidBody = _gameObject.GetComponent<Rigidbody>();
+            if (rigidBody != null) rigidBody.mass = value;
+        }
+
+        public float GetSpeed() {
+            if (!_gameObject) return 0f;
+            var rigidBody = _gameObject.GetComponent<Rigidbody>();
+            return rigidBody != null ? rigidBody.velocity.magnitude : 0f;
+        }
+
+        public void SetDescription(string desc) {
+            description = desc ?? string.Empty;
+            RefreshDescriptionLabel();
+        }
+
+        private void RefreshDescriptionLabel() {
+            if (!_gameObject) return;
+
+            if (string.IsNullOrWhiteSpace(description)) {
+                if (_descriptionLabel != null) {
+                    UnityEngine.Object.Destroy(_descriptionLabel);
+                    _descriptionLabel = null;
+                    _descriptionText = null;
+                }
+                return;
+            }
+
+            if (_descriptionLabel == null) {
+                _descriptionLabel = new GameObject($"{objectName}_DescLabel");
+                _descriptionLabel.transform.SetParent(_gameObject.transform, false);
+                _descriptionText = _descriptionLabel.AddComponent<TextMesh>();
+                _descriptionText.anchor = TextAnchor.LowerCenter;
+                _descriptionText.alignment = TextAlignment.Center;
+                _descriptionText.fontSize = 64;
+                _descriptionText.color = Color.white;
+                _descriptionText.richText = false;
+
+                var labelRenderer = _descriptionLabel.GetComponent<MeshRenderer>();
+                if (labelRenderer != null) {
+                    labelRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    labelRenderer.receiveShadows = false;
+                }
+            }
+
+            if (_descriptionText == null) {
+                _descriptionText = _descriptionLabel.GetComponent<TextMesh>();
+                if (_descriptionText == null) {
+                    _descriptionText = _descriptionLabel.AddComponent<TextMesh>();
+                }
+            }
+
+            var maxScaleAxis = Mathf.Max(
+                Mathf.Abs(_gameObject.transform.localScale.x),
+                Mathf.Abs(_gameObject.transform.localScale.y),
+                Mathf.Abs(_gameObject.transform.localScale.z)
+            );
+            maxScaleAxis = Mathf.Max(maxScaleAxis, 0.05f);
+
+            _descriptionText.text = description;
+            _descriptionText.characterSize = Mathf.Clamp(maxScaleAxis * 0.35f, 0.02f, 0.18f);
+            _descriptionLabel.transform.localRotation = Quaternion.identity;
+            _descriptionLabel.transform.localPosition = new Vector3(0f, Mathf.Clamp(maxScaleAxis * 1.6f, 0.14f, 3f), 0f);
+        }
+
+        public void ApplyForce(Vector3 force) {
+            if (!_gameObject) return;
+            var rigidBody = _gameObject.GetComponent<Rigidbody>();
+            if (rigidBody == null) return;
+            rigidBody.isKinematic = false;
+            rigidBody.AddForce(force);
+        }
+
         public void Dispose() {
             if (_colorMaterials != null) {
                 foreach (var mat in _colorMaterials.Values) {
@@ -234,6 +327,11 @@ namespace Assets.Structures {
                 _colorMaterials.Clear();
             }
             if (_gameObject != null) {
+                if (_descriptionLabel != null) {
+                    UnityEngine.Object.Destroy(_descriptionLabel);
+                    _descriptionLabel = null;
+                    _descriptionText = null;
+                }
                 foreach (Transform child in _gameObject.transform) {
                     if (child != null) {
                         UnityEngine.Object.Destroy(child.gameObject);
