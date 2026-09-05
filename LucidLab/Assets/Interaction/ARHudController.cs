@@ -108,7 +108,7 @@ namespace Assets.Interaction
 
             // Wait for top bar ready, then set title
             yield return new WaitUntil(() => _topBarReady);
-            string expName = PlayerPrefs.GetString("expname", "AR Experiment");
+            string expName = PlayerPrefs.GetString("experimentTitle", PlayerPrefs.GetString("expname", "AR Experiment"));
             EvalOnPanel(_topBar, $"setTitle('{EscapeJS(expName)}');");
         }
 
@@ -341,7 +341,8 @@ namespace Assets.Interaction
                 studentId = PlayerPrefs.GetString("studentId", "unknown"),
                 experimentId = PlayerPrefs.GetString("experimentId", "unknown"),
                 classroomId = PlayerPrefs.GetString("classroomId", "unknown"),
-                expname = PlayerPrefs.GetString("expname", "Untitled"),
+                instructorId = PlayerPrefs.GetString("instructorId", ""),
+                expname = PlayerPrefs.GetString("experimentTitle", PlayerPrefs.GetString("expname", "Untitled")),
                 stateJson = stateJson
             };
 
@@ -358,6 +359,7 @@ namespace Assets.Interaction
             public string studentId;
             public string experimentId;
             public string classroomId;
+            public string instructorId;
             public string expname;
             public string stateJson;
         }

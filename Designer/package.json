@@ -41,7 +41,8 @@
     "express": "^4.21.2"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "concurrently -k -n WEB,AI -c green,cyan \"npm run start:web\" \"npm run start:ai\"",
+    "start:web": "react-scripts start",
     "start:ai": "node server/geminiProxy.js",
     "build": "react-scripts build",
     "test": "react-scripts test",
@@ -67,6 +68,7 @@
     "@types/debounce": "^1.2.1",
     "@types/react-color": "^3.0.6",
     "@types/styled-components": "^5.1.26",
+    "concurrently": "^9.2.1",
     "eslint-plugin-react": "^7.32.2"
   }
 }

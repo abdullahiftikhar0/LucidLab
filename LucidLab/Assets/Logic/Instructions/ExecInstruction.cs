@@ -22,8 +22,18 @@ namespace Assets.Logic.Instructions {
         protected abstract void ExecuteImpl();
 
         public virtual void Execute() {
-            ExecuteImpl();
-            nextInstructions.GetValueOrDefault("exec")?.Execute();
+            try {
+                ExecuteImpl();
+            } catch (Exception e) {
+                Debug.LogError($"[{GetType().Name}] Execute failed: {e.Message}");
+                return;
+            }
+
+            try {
+                nextInstructions?.GetValueOrDefault("exec")?.Execute();
+            } catch (Exception e) {
+                Debug.LogError($"[{GetType().Name}] Next instruction failed: {e.Message}");
+            }
         }
     }
 }

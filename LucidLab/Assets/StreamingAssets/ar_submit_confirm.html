@@ -296,6 +296,56 @@
       }
     }
 
+    function clampPercent(value) {
+      var n = Number(value);
+      if (!isFinite(n)) return 0;
+      return Math.max(0, Math.min(100, Math.round(n)));
+    }
+
+    function parseStateJson(raw) {
+      if (!raw) return null;
+      try {
+        return JSON.parse(raw);
+      } catch (e) {
+        console.warn("Failed to parse submission stateJson", e);
+        return null;
+      }
+    }
+
+    function buildVariablesMap(parsedState) {
+      var out = {};
+      if (!parsedState || !Array.isArray(parsedState.variables)) return out;
+
+      parsedState.variables.forEach(function (entry) {
+        if (!entry || typeof entry.key !== "string" || entry.key.length === 0) return;
+        out[entry.key] = entry.value == null ? "" : String(entry.value);
+      });
+
+      return out;
+    }
+
+    function resolveInstructorId(experimentId) {
+      if (!experimentId) return Promise.resolve(null);
+      return db.collection("experiments").doc(experimentId).get()
+        .then(function (doc) {
+          if (!doc.exists) return null;
+          var data = doc.data() || {};
+          return data.instructorId || null;
+        })
+        .catch(function () { return null; });
+    }
+
+    function resolveStudentName(studentId) {
+      if (!studentId) return Promise.resolve(null);
+      return db.collection("users").doc(studentId).get()
+        .then(function (doc) {
+          if (!doc.exists) return null;
+          var data = doc.data() || {};
+          return data.displayName || null;
+        })
+        .catch(function () { return null; });
+    }
+
     function confirmSubmit() {
       if (!submissionData) {
         console.error("No submission data available");
@@ -307,39 +357,83 @@
       btn.disabled = true;
       btn.style.opacity = "0.6";
 
-      // Perform Firestore write
-      db.collection("submissions").add({
+      var stateJson = submissionData.stateJson || "{}";
+      var parsedState = parseStateJson(stateJson);
+      var completionPct = clampPercent(
+        parsedState && parsedState.completionPercentage != null
+          ? parsedState.completionPercentage
+          : submissionData.progress
+      );
+      var variables = buildVariablesMap(parsedState);
+      var sceneName = (parsedState && parsedState.sceneName) ? String(parsedState.sceneName) : "";
+
+      var submissionPayload = {
         studentId: submissionData.studentId || "unknown",
         experimentId: submissionData.experimentId || "unknown",
         classroomId: submissionData.classroomId || "unknown",
+        instructorId: submissionData.instructorId || null,
         expname: submissionData.expname || "Untitled",
+        experimentName: submissionData.expname || "Untitled",
         status: "submitted",
         grade: null,
-        stateJson: submissionData.stateJson || "{}",
+        instructorFeedback: "",
+        stateJson: stateJson,
+        completionPct: completionPct,
+        completionPercentage: completionPct,
+        sceneName: sceneName,
+        variables: variables,
+        experimentState: {
+          completionPercentage: completionPct,
+          sceneName: sceneName,
+          variables: variables
+        },
+        recordingUrl: "",
         submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      })
+      };
+
+      // Perform Firestore write
+      db.collection("submissions").add(submissionPayload)
       .then(function(docRef) {
         console.log("Submission successful ID:", docRef.id);
-        
-        // Create notification for the instructor
-        if (submissionData.instructorId) {
-          db.collection("notifications").add({
-            userId: submissionData.instructorId,
+
+        Promise.all([
+          submissionData.instructorId
+            ? Promise.resolve(submissionData.instructorId)
+            : resolveInstructorId(submissionPayload.experimentId),
+          submissionData.studentName
+            ? Promise.resolve(submissionData.studentName)
+            : resolveStudentName(submissionPayload.studentId)
+        ])
+        .then(function(values) {
+          var instructorId = values[0];
+          var studentName = values[1] || "A student";
+          if (!instructorId) return;
+
+          if (!submissionPayload.instructorId) {
+            submissionPayload.instructorId = instructorId;
+            db.collection("submissions").doc(docRef.id).update({ instructorId: instructorId }).catch(function() {});
+          }
+
+          return db.collection("notifications").add({
+            userId: instructorId,
             type: "submission_received",
             title: "New Submission Received",
-            message: (submissionData.studentName || "A student") + " submitted " + (submissionData.expname || "an experiment"),
-            link: "/evaluation/" + submissionData.classroomId + "/" + submissionData.experimentId,
+            message: studentName + " submitted " + (submissionPayload.experimentName || "an experiment"),
+            link: "/evaluation/" + submissionPayload.classroomId + "/" + submissionPayload.experimentId,
             isRead: false,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             data: {
-              classroomId: submissionData.classroomId,
-              experimentId: submissionData.experimentId,
+              classroomId: submissionPayload.classroomId,
+              experimentId: submissionPayload.experimentId,
               submissionId: docRef.id,
-              studentId: submissionData.studentId
+              studentId: submissionPayload.studentId
             }
-          }).catch(function(e) { console.error("Notif failed:", e); });
-        }
+          });
+        })
+        .catch(function(e) {
+          console.error("Notif failed:", e);
+        });
 
         // Transition to success state
         document.getElementById("confirm-state").style.display = "none";

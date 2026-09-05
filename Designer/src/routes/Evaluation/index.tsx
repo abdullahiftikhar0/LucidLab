@@ -11,7 +11,10 @@ interface Submission {
   submittedAt: any; status: string; quizScore: number; quizTotal: number;
   quizAnswers: { question: string; answer: string; correct: boolean; correctAnswer?: string }[];
   completedSteps: number; totalSteps: number; completionPercentage: number;
+  completionPct?: number;
   variables: Record<string, string>; recordingUrl: string;
+  experimentState?: { completionPercentage?: number; variables?: Record<string, string> };
+  stateJson?: string;
   instructorFeedback: string; grade: string;
 }
 
@@ -66,37 +69,68 @@ export default function EvaluationPage() {
       if (classroomId) {
         const cSnap = await getDoc(doc(db, 'classrooms', classroomId));
         if (cSnap.exists()) setClassroom(cSnap.data() as ClassroomData);
-        const membersSnap = await getDocs(collection(db, 'classrooms', classroomId, 'members'));
-        setTotalStudents(membersSnap.size || (cSnap.data() as ClassroomData)?.studentCount || 0);
+
+        const memberLookup = {} as Record<string, { displayName?: string; email?: string }>;
+        try {
+          const membersSnap = await getDocs(collection(db, 'classrooms', classroomId, 'members'));
+          setTotalStudents(membersSnap.size || (cSnap.data() as ClassroomData)?.studentCount || 0);
+          membersSnap.forEach((memberDoc) => {
+            const data = memberDoc.data() as any;
+            const uid = data.uid || memberDoc.id;
+            if (!uid) return;
+            memberLookup[uid] = {
+              displayName: data.displayName,
+              email: data.email,
+            };
+          });
+        } catch (memberError) {
+          console.warn('Failed to load classroom members, continuing with submission fallback fields.', memberError);
+          setTotalStudents((cSnap.data() as ClassroomData)?.studentCount || 0);
+        }
+
+        if (classroomId && experimentId) {
+          const q = query(
+            collection(db, 'submissions'),
+            where('classroomId', '==', classroomId),
+            where('experimentId', '==', experimentId)
+          );
+          const snap = await getDocs(q);
+          const subs = snap.docs.map(d => {
+            const raw = d.data() as any;
+            const member = raw.studentId ? memberLookup[raw.studentId] : undefined;
+            const normalizedCompletion = Number(
+              raw.completionPercentage ?? raw.completionPct ?? raw.experimentState?.completionPercentage ?? 0
+            );
+            return {
+              id: d.id,
+              ...raw,
+              submittedAt: raw.submittedAt ?? raw.updatedAt ?? null,
+              studentName: raw.studentName || member?.displayName || 'Unknown Student',
+              studentEmail: raw.studentEmail || member?.email || '',
+              completionPercentage: Number.isFinite(normalizedCompletion) ? normalizedCompletion : 0,
+              variables: raw.variables || raw.experimentState?.variables || {},
+            } as Submission;
+          });
+          
+          // Sort in memory to avoid needing a composite index
+          subs.sort((a, b) => {
+            const tA = a.submittedAt?.toMillis ? a.submittedAt.toMillis() : new Date(a.submittedAt).getTime();
+            const tB = b.submittedAt?.toMillis ? b.submittedAt.toMillis() : new Date(b.submittedAt).getTime();
+            return tB - tA;
+          });
+
+          setSubmissions(subs);
+          if (subs.length > 0) {
+            setSelectedId(subs[0].id);
+            setGradeStatus(subs[0].status || 'pending');
+            setFeedback(subs[0].instructorFeedback || '');
+          }
+        }
       }
       // Load experiment
       if (experimentId) {
         const eSnap = await getDoc(doc(db, 'experiments', experimentId));
         if (eSnap.exists()) setExperiment(eSnap.data() as ExperimentData);
-      }
-      // Load submissions
-      if (classroomId && experimentId) {
-        const q = query(
-          collection(db, 'submissions'),
-          where('classroomId', '==', classroomId),
-          where('experimentId', '==', experimentId)
-        );
-        const snap = await getDocs(q);
-        const subs = snap.docs.map(d => ({ id: d.id, ...d.data() } as Submission));
-        
-        // Sort in memory to avoid needing a composite index
-        subs.sort((a, b) => {
-          const tA = a.submittedAt?.toMillis ? a.submittedAt.toMillis() : new Date(a.submittedAt).getTime();
-          const tB = b.submittedAt?.toMillis ? b.submittedAt.toMillis() : new Date(b.submittedAt).getTime();
-          return tB - tA;
-        });
-
-        setSubmissions(subs);
-        if (subs.length > 0) {
-          setSelectedId(subs[0].id);
-          setGradeStatus(subs[0].status || 'pending');
-          setFeedback(subs[0].instructorFeedback || '');
-        }
       }
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -191,6 +225,12 @@ export default function EvaluationPage() {
 
   const selected = submissions.find(s => s.id === selectedId) || null;
   const statusStyle = (s: string) => STATUS_STYLES[s?.toLowerCase()?.replace(/\s+/g, '_')] || STATUS_STYLES.pending;
+  const selectedCompletion = Number(
+    selected?.completionPercentage ?? selected?.completionPct ?? selected?.experimentState?.completionPercentage ?? 0
+  ) || 0;
+  const selectedVariables = selected?.variables && Object.keys(selected.variables).length > 0
+    ? selected.variables
+    : (selected?.experimentState?.variables || {});
 
   if (loading) return (
     <div className="dark">
@@ -509,7 +549,7 @@ export default function EvaluationPage() {
                         <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                           <div>
                             <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold">Progress</p>
-                            <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{selected.completionPercentage || 0}% Complete</p>
+                            <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{selectedCompletion}% Complete</p>
                           </div>
                           <div>
                             <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold">Quiz Score</p>
@@ -519,23 +559,23 @@ export default function EvaluationPage() {
                       </div>
 
                       {/* Experiment State / Progress */}
-                      {(selected.completedSteps || selected.totalSteps) && (
+                      {(selected.completedSteps || selected.totalSteps || selectedCompletion > 0 || Object.keys(selectedVariables).length > 0) && (
                         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
                           <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
                             <span className="material-symbols-outlined text-primary text-lg">analytics</span> Progress Details
                           </h3>
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-xs text-slate-600 dark:text-slate-400">{selected.completedSteps || 0} / {selected.totalSteps || 0} Steps</span>
-                            <span className="text-xs font-bold text-primary">{selected.completionPercentage || 0}%</span>
+                            <span className="text-xs font-bold text-primary">{selectedCompletion}%</span>
                           </div>
                           <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden mb-4">
-                            <div className="bg-primary h-full transition-all" style={{ width: `${selected.completionPercentage || 0}%` }} />
+                            <div className="bg-primary h-full transition-all" style={{ width: `${selectedCompletion}%` }} />
                           </div>
                           
-                          {selected.variables && Object.keys(selected.variables).length > 0 && (
+                          {Object.keys(selectedVariables).length > 0 && (
                             <div className="space-y-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                               <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold mb-1">Variables</p>
-                              {Object.entries(selected.variables).map(([key, val]) => (
+                              {Object.entries(selectedVariables).map(([key, val]) => (
                                 <div key={key} className="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 rounded-lg px-2 py-1.5 border border-slate-100 dark:border-slate-800/50">
                                   <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">{key}</span>
                                   <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{val}</span>

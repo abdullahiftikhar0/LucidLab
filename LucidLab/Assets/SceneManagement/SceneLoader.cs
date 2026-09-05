@@ -18,6 +18,41 @@ namespace Assets.SceneManagement {
         public string experimentName;
         public List<SceneData> Scenes { get; private set; }
 
+        [System.Serializable]
+        private class ExperimentLaunchPayload {
+            public string experimentId;
+        }
+
+        private static string ParseExperimentIdFromPayload(string payload) {
+            if (string.IsNullOrWhiteSpace(payload)) return null;
+            var trimmed = payload.Trim();
+            if (!trimmed.StartsWith("{")) return trimmed;
+
+            try {
+                var parsed = JsonUtility.FromJson<ExperimentLaunchPayload>(trimmed);
+                if (!string.IsNullOrWhiteSpace(parsed?.experimentId)) return parsed.experimentId;
+            } catch {
+                // Ignore parse errors and fall through to null.
+            }
+
+            return null;
+        }
+
+        private static string ResolveExperimentNameFromPrefs() {
+            var experimentId = PlayerPrefs.GetString("experimentId", "");
+            if (!string.IsNullOrWhiteSpace(experimentId)) return experimentId;
+
+            var expname = PlayerPrefs.GetString("expname", "");
+            var fromExpName = ParseExperimentIdFromPayload(expname);
+            if (!string.IsNullOrWhiteSpace(fromExpName)) return fromExpName;
+
+            var currentExperiment = PlayerPrefs.GetString("current_experiment", "");
+            var fromCurrent = ParseExperimentIdFromPayload(currentExperiment);
+            if (!string.IsNullOrWhiteSpace(fromCurrent)) return fromCurrent;
+
+            return null;
+        }
+
         public async Task LoadAllScenes() {
             Debug.Log($"[SceneLoader] LoadAllScenes START, experimentName='{experimentName}'");
             if (string.IsNullOrEmpty(experimentName)) {
@@ -74,10 +109,7 @@ namespace Assets.SceneManagement {
         }
 
         void Awake() {
-            if (PlayerPrefs.HasKey("expname"))
-                experimentName = PlayerPrefs.GetString("expname");
-            else if (PlayerPrefs.HasKey("current_experiment"))
-                experimentName = PlayerPrefs.GetString("current_experiment");
+            experimentName = ResolveExperimentNameFromPrefs();
             Debug.Log($"[SceneLoader] Awake: experimentName='{experimentName}' (expname='{PlayerPrefs.GetString("expname", "<unset>")}', current_experiment='{PlayerPrefs.GetString("current_experiment", "<unset>")}')" );
         }
     }

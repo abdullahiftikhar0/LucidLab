@@ -5,7 +5,6 @@ using Assets.SceneManagement.Models;
 using GLTFast;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Assertions;
 
 namespace Assets.SceneManagement.Builders {
     public class ObjectBuilder : MonoBehaviour {
@@ -37,13 +36,27 @@ namespace Assets.SceneManagement.Builders {
                     break;
                 default:
                     gameObj = new GameObject();
+                    var loadedCustomModel = false;
                     if (modelManager != null) {
                         var cachedData = await modelManager.GetModelBytes(objectData.objectType);
-                        Assert.IsNotNull(cachedData);
-                        var gltf = new GltfImport();
-                        var success = await gltf.Load(cachedData);
-                        if (success) await gltf.InstantiateMainSceneAsync(gameObj.transform);
+                        if (cachedData != null && cachedData.Length > 0) {
+                            var gltf = new GltfImport();
+                            var success = await gltf.Load(cachedData);
+                            if (success) {
+                                await gltf.InstantiateMainSceneAsync(gameObj.transform);
+                                loadedCustomModel = true;
+                            }
+                        }
                     }
+
+                    if (!loadedCustomModel) {
+                        Debug.LogWarning($"[ObjectBuilder] Failed to load custom model '{objectData.objectType}'. Falling back to cube primitive.");
+                        Destroy(gameObj);
+                        gameObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                        isCustomObj = false;
+                        break;
+                    }
+
                     foreach (var renderer in gameObj.GetComponentsInChildren<Renderer>()) {
                         var collider = renderer.gameObject.AddComponent<MeshCollider>();
                         collider.convex = true;

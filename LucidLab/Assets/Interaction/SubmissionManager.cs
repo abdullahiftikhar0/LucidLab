@@ -74,7 +74,8 @@ namespace Assets.Interaction
             }
             string experimentId = PlayerPrefs.GetString("experimentId", "");
             string classroomId  = PlayerPrefs.GetString("classroomId", "");
-            string expName      = PlayerPrefs.GetString("expname", "AR Experiment");
+            string instructorId = PlayerPrefs.GetString("instructorId", "");
+            string expName      = PlayerPrefs.GetString("experimentTitle", PlayerPrefs.GetString("expname", "AR Experiment"));
 
             if (string.IsNullOrEmpty(experimentId))
             {
@@ -87,6 +88,23 @@ namespace Assets.Interaction
 
             // 2. Collect current scene state from LogicManager (variables) + loaded SceneData
             var submissionState = BuildSubmissionState();
+
+            var variablesMap = new Dictionary<string, object>();
+            if (submissionState.variables != null)
+            {
+                foreach (var variable in submissionState.variables)
+                {
+                    if (string.IsNullOrEmpty(variable?.key)) continue;
+                    variablesMap[variable.key] = variable.value ?? "";
+                }
+            }
+
+            var experimentState = new Dictionary<string, object>
+            {
+                { "completionPercentage", submissionState.completionPercentage },
+                { "sceneName", submissionState.sceneName ?? "" },
+                { "variables", variablesMap },
+            };
 
             // 3. Serialise to JSON (same format as the downloaded experiment JSON)
             string stateJson = JsonUtility.ToJson(submissionState, prettyPrint: false);
@@ -102,16 +120,25 @@ namespace Assets.Interaction
                 { "studentId",           studentId },
                 { "experimentId",        experimentId },
                 { "classroomId",         classroomId },
+                { "expname",             expName },
                 { "experimentName",      expName },
                 { "status",              "submitted" },
                 { "stateJson",           stateJson },
                 { "completionPct",       submissionState.completionPercentage },
+                { "completionPercentage",submissionState.completionPercentage },
+                { "variables",           variablesMap },
+                { "experimentState",     experimentState },
                 { "submittedAt",         FieldValue.ServerTimestamp },
                 { "updatedAt",           FieldValue.ServerTimestamp },
                 { "recordingUrl",        "" },   // placeholder — populate if recording exists
                 { "instructorFeedback",  "" },
                 { "grade",               "" },
             };
+
+            if (!string.IsNullOrEmpty(instructorId))
+            {
+                submissionData["instructorId"] = instructorId;
+            }
 
             bool uploadDone = false;
             string uploadError = null;

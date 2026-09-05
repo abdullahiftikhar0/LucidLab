@@ -835,9 +835,17 @@
         classroom.id = doc.id;
 
         // Get instructor name
-        db.collection("users").doc(classroom.instructorId).get().then(function (userDoc) {
-          var instructor = userDoc.exists ? userDoc.data() : { displayName: "Instructor" };
-          classroom.instructorName = instructor.displayName;
+        var instructorNamePromise = classroom.instructorId
+          ? db.collection("users").doc(classroom.instructorId).get()
+              .then(function (userDoc) {
+                var instructor = userDoc.exists ? userDoc.data() : { displayName: "Instructor" };
+                return instructor.displayName || "Instructor";
+              })
+              .catch(function () { return "Instructor"; })
+          : Promise.resolve("Instructor");
+
+        instructorNamePromise.then(function (instructorName) {
+          classroom.instructorName = instructorName;
 
           if (!classroom.experimentIds || classroom.experimentIds.length === 0) {
             broadcastToFrame("classroom", { type: "classroom_detail", classroom: classroom, experiments: [], selectedExperimentId: selectedExperimentId });
@@ -851,6 +859,9 @@
               snap.forEach(function (d) {
                 var e = d.data();
                 e.id = d.id;
+                e.classroomId = e.classroomId || classroomId;
+                e.instructorId = e.instructorId || classroom.instructorId || "";
+                if (!e.modelUsername && e.instructorId) e.modelUsername = e.instructorId;
                 experiments.push(e);
               });
 
@@ -864,7 +875,15 @@
                   .onSnapshot(function (subSnap) {
                     var subMap = {};
                     subSnap.forEach(function (s) { var sd = s.data(); subMap[sd.experimentId] = sd; });
-                    experiments.forEach(function (e) { if (subMap[e.id]) e.submission = subMap[e.id]; });
+                    experiments.forEach(function (e) {
+                      if (subMap[e.id]) {
+                        var sub = subMap[e.id];
+                        if (!sub.classroomId) sub.classroomId = classroomId;
+                        if (!sub.instructorId && classroom.instructorId) sub.instructorId = classroom.instructorId;
+                        if (!sub.modelUsername && sub.instructorId) sub.modelUsername = sub.instructorId;
+                        e.submission = sub;
+                      }
+                    });
                     broadcastToFrame("classroom", { type: "classroom_detail", classroom: classroom, experiments: experiments, selectedExperimentId: selectedExperimentId });
                     // Only use selectedExperimentId once
                     selectedExperimentId = null; 
@@ -918,12 +937,14 @@
         .get().then(function (snap) {
           var allExpIds = [];
           var classroomMap = {};
+          var classroomById = {};
           snap.forEach(function (doc) {
             var d = doc.data();
             d.id = doc.id;
+            classroomById[d.id] = d;
             (d.experimentIds || []).forEach(function (eid) {
               allExpIds.push(eid);
-              classroomMap[eid] = d;
+              if (!classroomMap[eid]) classroomMap[eid] = d;
             });
           });
 
@@ -946,10 +967,16 @@
                 var e = doc.data();
                 e.id = doc.id;
                 e.classroom = classroomMap[e.id];
+                e.classroomId = e.classroomId || (e.classroom && e.classroom.id) || "";
+                e.instructorId = e.instructorId || (e.classroom && e.classroom.instructorId) || "";
+                if (!e.modelUsername && e.instructorId) e.modelUsername = e.instructorId;
                 expNameMap[e.id] = e.title || e.name || "Experiment";
                 // Check if already submitted
                 var sub = existingActive.concat(existingCompleted).find(function (s) { return s.experimentId === e.id; });
                 if (sub) {
+                  if (!sub.classroomId && e.classroomId) sub.classroomId = e.classroomId;
+                  if (!sub.instructorId && e.instructorId) sub.instructorId = e.instructorId;
+                  if (!sub.modelUsername && sub.instructorId) sub.modelUsername = sub.instructorId;
                   e.submission = sub;
                 }
                 var isCompleted = sub && (sub.status === "submitted" || sub.status === "graded" || sub.status === "correct" || sub.status === "incorrect" || sub.status === "needs_revision");
@@ -965,8 +992,12 @@
 
               // Enrich completed submissions with experiment and classroom names
               existingCompleted.forEach(function (s) {
+                var fallbackClass = classroomById[s.classroomId] || classroomMap[s.experimentId] || null;
+                if (!s.classroomId && fallbackClass && fallbackClass.id) s.classroomId = fallbackClass.id;
+                if (!s.instructorId && fallbackClass && fallbackClass.instructorId) s.instructorId = fallbackClass.instructorId;
+                if (!s.modelUsername && s.instructorId) s.modelUsername = s.instructorId;
                 s.experimentTitle = expNameMap[s.experimentId] || "Experiment";
-                s.classroomName = classNameMap[s.classroomId] || "";
+                s.classroomName = classNameMap[s.classroomId] || (fallbackClass && fallbackClass.name) || "";
               });
 
               broadcastToFrame("experiments", { type: "assignments", data: activeAssignments, user: currentUserData });

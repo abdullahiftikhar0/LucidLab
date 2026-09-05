@@ -18,6 +18,8 @@ export function useObjectTypesManager(): ObjectTypesManager {
   const [objects, setObjects] = useState<ObjectType[]>([]);
 
   async function getObjects() {
+    if (!username) return {} as Record<string, ObjectType>;
+
     const { data, error } = await supabase.storage
       .from('object-types')
       .list(username + '/');
@@ -59,9 +61,14 @@ export function useObjectTypesManager(): ObjectTypesManager {
 
   useEffect(() => {
     updateObjectsList();
-  }, []);
+  }, [username]);
 
   async function uploadObject(objName: string, objFile: Blob) {
+    if (!username) {
+      console.error('Cannot upload object without username context');
+      return false;
+    }
+
     const filePath = `${username}/${objName}.glb`;
 
     // Upload the file

@@ -389,6 +389,8 @@
         if (sub && (sub.status === "graded" || sub.status === "correct")) mode = "review";
         else if (sub && sub.status === "submitted") mode = "view";
         else if (sub && sub.status === "in_progress") mode = "continue";
+        var classroomId = currentDetailExp.classroomId || (currentDetailExp.classroom && currentDetailExp.classroom.id) || null;
+        var modelUsername = (currentDetailExp.classroom && currentDetailExp.classroom.instructorId) || currentDetailExp.instructorId || null;
         
         // Show loading state on button
         this.disabled = true;
@@ -398,7 +400,9 @@
           experimentId: currentDetailExp.id, 
           title: currentDetailExp.title || currentDetailExp.name, 
           mode: mode,
-          classroomId: currentDetailExp.classroomId
+          classroomId: classroomId,
+          instructorId: modelUsername,
+          modelUsername: modelUsername
         }), "*");
       });
 
@@ -490,11 +494,15 @@
               if (capturedSub && (capturedSub.status === "graded" || capturedSub.status === "correct")) mode = "review";
               else if (capturedSub && capturedSub.status === "submitted") mode = "view";
               else if (capturedSub && capturedSub.status === "in_progress") mode = "continue";
+              var classroomId = exp.classroomId || (exp.classroom && exp.classroom.id) || null;
+              var modelUsername = (exp.classroom && exp.classroom.instructorId) || exp.instructorId || null;
               parent.postMessage("unity:start_ar:" + JSON.stringify({ 
                 experimentId: exp.id, 
                 title: exp.title || exp.name, 
                 mode: mode,
-                classroomId: exp.classroomId 
+                classroomId: classroomId,
+                instructorId: modelUsername,
+                modelUsername: modelUsername
               }), "*");
             });
           })(sub);

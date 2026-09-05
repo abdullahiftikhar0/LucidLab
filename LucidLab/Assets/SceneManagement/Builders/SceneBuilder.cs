@@ -1,5 +1,7 @@
+using System;
 using System.Threading.Tasks;
 using Assets.Logic;
+using Assets.Logic.Instructions;
 using Assets.SceneManagement.Models;
 using UnityEngine;
 using Object = Assets.SceneManagement.Core.Object;
@@ -24,8 +26,12 @@ namespace Assets.SceneManagement.Builders {
                 scene.sceneObjects.Add(await objectBuilder.CreateObjectFromData(obj));
             }
 
-            var logicBuilder = new LogicBuilder(sceneData.sceneLogic);
-            scene.Instructions = logicBuilder.GetInstructions();
+            if (sceneData.sceneLogic == null || sceneData.sceneLogic.Count == 0) {
+                scene.Instructions = Array.Empty<DataInstruction>();
+            } else {
+                var logicBuilder = new LogicBuilder(sceneData.sceneLogic);
+                scene.Instructions = logicBuilder.GetInstructions();
+            }
 
             return scene;
         }
