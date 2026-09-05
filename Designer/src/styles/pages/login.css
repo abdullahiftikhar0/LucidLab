@@ -90,8 +90,8 @@
   border-radius: 1.9rem;
   padding: 1.75rem 2rem;
   box-shadow: 0 24px 54px rgba(15, 23, 42, 0.08);
-  overflow-y: auto;
-  max-height: min(860px, calc(var(--app-vh, 1vh) * 100 - 2rem));
+  overflow: visible;
+  max-height: none;
 }
 
 .lp-brand {

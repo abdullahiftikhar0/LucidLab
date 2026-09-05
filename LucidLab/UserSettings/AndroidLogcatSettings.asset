@@ -3,7 +3,7 @@
     "m_SelectedProcess": {
         "deviceId": "3414636581000C3",
         "name": "com.example.lucidlab",
-        "processId": 10184,
+        "processId": 12497,
         "exited": false
     },
     "m_SelectedPriority": 3,
@@ -96,6 +96,12 @@
             "deviceId": "3414636581000C3",
             "name": "com.example.lucidlab",
             "processId": 10184,
+            "exited": false
+        },
+        {
+            "deviceId": "3414636581000C3",
+            "name": "com.example.lucidlab",
+            "processId": 12497,
             "exited": false
         },
         {
