@@ -1,0 +1,320 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{ifthen}
+\usepackage{hyperref}
+\usepackage{ragged2e}
+\usepackage{xcolor}
+
+\setstretch{1.25}
+\justifying
+
+% Heading sizes to match template requirements
+\titleformat{\section}{\bfseries\fontsize{14}{16}\selectfont}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\bfseries\fontsize{12}{14}\selectfont}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}{\bfseries\fontsize{12}{14}\selectfont}{\thesubsubsection}{0.5em}{}
+
+% Page numbers top-right
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+\newcommand{\coursename}{Theory and Applications of Virtual Reality}
+\newcommand{\semester}{Spring 2026}
+\newcommand{\instructor}{Dr. Ibrahim Ghaznavi}
+\newcommand{\ta}{Muhammad Qasim}
+\newcommand{\projecttitle}{LucidLab AR Science Learning Platform}
+\newcommand{\submissiondate}{May 2, 2026}
+
+\newcommand{\storyboardframe}[2]{
+  \begin{figure}[H]
+    \centering
+    \IfFileExists{figures/#1}{
+      \includegraphics[width=0.85\textwidth]{figures/#1}
+    }{
+      \fbox{
+        \parbox[c][6cm][c]{0.82\textwidth}{
+          \centering
+          Placeholder for \texttt{figures/#1}\\
+          (hand-drawn Vincent-style frame; see \S\ref{sec:storyboard-frames} for screen mapping)
+        }
+      }
+    }
+    \caption{#2}
+  \end{figure}
+}
+
+\newcommand{\appscreenshot}[2]{
+  \begin{figure}[H]
+    \centering
+    \IfFileExists{figures/#1}{
+      \includegraphics[width=0.8\textwidth]{figures/#1}
+    }{
+      \fbox{
+        \parbox[c][5.3cm][c]{0.78\textwidth}{
+          \centering
+          Placeholder for \texttt{figures/#1}\\
+          (working application screenshot to be inserted)
+        }
+      }
+    }
+    \caption{#2}
+  \end{figure}
+}
+
+\begin{document}
+
+% -------------------- Title Page --------------------
+\begin{titlepage}
+  \thispagestyle{empty}
+  \begin{center}
+    {\Large \bfseries Group Project Report}\\[0.4cm]
+    {\large \coursename}\\[0.2cm]
+    {\large \semester}\\[1.0cm]
+
+    {\LARGE \bfseries \projecttitle}\\[1.2cm]
+
+    \begin{tabular}{>{\bfseries}p{4cm}p{9cm}}
+      Course Name: & \coursename \\
+      Instructor: & \instructor \\
+      TA: & \ta \\
+      Submission Date: & \submissiondate \\
+    \end{tabular}
+
+    \vspace{1.2cm}
+    {\large \bfseries Team Members}\\[0.3cm]
+    \begin{tabular}{p{3.2cm}p{8.8cm}}
+      BSCS23070 & Muhammad Abdullah \\
+      BSCS23118 & Abdul Moiz \\
+      BSCS23212 & Faizan Amir \\
+      BSCS23173 & Waqas Shoaib \\
+      BSCS23176 & Sameer \\
+    \end{tabular}
+
+  \end{center}
+\end{titlepage}
+
+\section{Introduction (Project Overview)}
+
+\subsection{Background}
+The project addresses a practical gap in science education where students often learn theory without immersive experimentation due to lab resource limits, safety concerns, and limited guided feedback outside physical labs. The proposed solution, \textbf{LucidLab AR Science Learning Platform}, combines an instructor-facing designer studio with a student-facing mobile AR application. Instructors create experiments and scenes, assign them to classrooms, and evaluate submissions; students run the assigned experiments in AR and receive feedback.
+
+The implemented system context is strongly evidenced by the repository architecture: a Designer application for experiment/classroom authoring, a backend API service for AI/Firestore/storage operations, and a Unity AR runtime for student execution. Extended reality is suitable here because it allows interactive object manipulation, scene-based procedural learning, and repeatable low-risk experimentation on mobile devices while preserving instructional structure.
+
+\subsection{Problem Statement}
+Current classroom systems typically separate content authoring, simulation, and assessment into disconnected tools. As a result, instructors struggle to rapidly design interactive experiment logic, while students face limited guided practice and weak continuity between performing an activity and receiving scene-specific feedback.
+
+In this project context, what is missing in current systems is an integrated workflow where:
+\begin{itemize}[leftmargin=1.2cm]
+  \item instructors can author AR experiment scenes and logic without writing low-level runtime code for each case,
+  \item students can perform assigned AR tasks in a structured classroom-linked flow, and
+  \item submissions and grading can be connected back to the same experiment structure.
+\end{itemize}
+
+\subsection{Project Objectives}
+\begin{itemize}[leftmargin=1.2cm]
+  \item Build an instructor Designer studio to create and manage experiments, scenes, and classroom assignments.
+  \item Provide a student mobile AR app that launches assigned experiments and executes scene logic interactively.
+  \item Support marker-based and plane-based AR interaction for flexible classroom deployment.
+  \item Enable visual logic authoring for scene behavior through a node-based editor.
+  \item Integrate submission and feedback workflows for classroom evaluation.
+  \item Add AI-assisted scene-logic generation to accelerate authoring.
+\end{itemize}
+
+\section{Literature Review / Existing Solutions}
+
+\subsection{Similar Applications}
+\textbf{System 1: Labster (VR science labs).}  
+Labster provides virtual laboratory experiences for science learning with guided tasks and conceptual reinforcement. It demonstrates the educational value of immersive simulation but is primarily structured as a content platform rather than a classroom-custom AR scene-authoring environment for instructors.
+
+\textbf{System 2: HoloLAB Champions (mixed reality chemistry training).}  
+HoloLAB Champions focuses on chemistry lab procedures in mixed reality and emphasizes procedural learning and safety. It validates the usefulness of spatially contextualized learning but is oriented toward packaged training experiences more than instructor-side custom scene-logic composition tied to classroom assignment cycles.
+
+\subsection{Gap Analysis}
+From implementation evidence in this project, three practical gaps in existing XR systems are targeted:
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textbf{Instructor-side custom logic authoring gap:} many XR apps provide fixed experiences; this platform introduces a Designer workflow with scene-level visual logic editing.
+  \item \textbf{Classroom lifecycle integration gap:} this project links design, assignment, student execution, and evaluation in one pipeline.
+  \item \textbf{Hybrid architecture gap:} the system combines web-based authoring and native mobile AR execution, allowing educators to design quickly while students run optimized AR sessions.
+\end{itemize}
+The added novel feature in this project is \textbf{AI-assisted scene-logic generation} integrated into the design process, helping instructors bootstrap behavior graphs and iterate faster.
+
+\section{Target Audience}
+The target users are:
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textbf{Primary: Instructors/teachers} in science courses who need to create and assign interactive AR experiments.
+  \item \textbf{Primary: Students} enrolled in those classrooms who complete scene-based AR tasks on mobile devices.
+  \item \textbf{Secondary: Teaching assistants} who may support assignment setup, progress monitoring, and grading workflows.
+\end{itemize}
+
+The audience profile is particularly suited to university-level or advanced school-level science classes where practical experimentation and conceptual visualization are both required.
+
+\section{Use Case \& Task Analysis (Scenario)}
+
+\subsection{Main User Scenario}
+An instructor logs into the Designer, creates or edits an experiment, adds scenes and object behavior using the visual logic editor, and assigns the experiment to a classroom. A student then opens the mobile app, views assigned work, launches AR mode for the experiment, interacts with objects according to scene instructions, and submits progress/results for review. The instructor later evaluates submissions and provides feedback.
+
+\subsection{Task Flow}
+\begin{enumerate}[leftmargin=1.2cm]
+  \item User launches application.
+  \item User selects environment (classroom/experiment/scene context).
+  \item User interacts with objects in AR.
+  \item User receives feedback (status, grading, or instructor comments).
+  \item User exits system.
+\end{enumerate}
+
+\section{XR Technology Selection}
+
+\subsection{Selected Technology}
+\textbf{Selected modality: AR (Augmented Reality)} with classroom-compatible interaction.  
+AR was selected because the project goal is to integrate experimentation into real physical contexts (classroom/home surfaces) rather than fully isolated virtual environments. The implemented runtime supports marker and plane interaction modes, making AR practical across varying device and environment conditions.
+
+\subsection{Hardware Platform}
+\begin{itemize}[leftmargin=1.2cm]
+  \item Android smartphones (ARCore-supported and ARCore-optional metadata configuration).
+  \item iOS devices with ARKit support.
+\end{itemize}
+
+\subsection{Software \& Tools}
+\begin{itemize}[leftmargin=1.2cm]
+  \item Unity 2022 LTS for AR runtime development.
+  \item AR Foundation with ARCore/ARKit providers.
+  \item Designer frontend (React/TypeScript) for experiment and classroom management.
+  \item Node/Express backend APIs.
+  \item Firebase (authentication and Firestore-backed academic data workflows).
+  \item Supabase storage integration for media/object asset handling.
+  \item Gemini-powered backend endpoint for AI scene-logic generation support.
+\end{itemize}
+
+\section{System Requirements}
+
+\subsection{Functional Requirements}
+\begin{enumerate}[leftmargin=1.2cm]
+  \item The system shall allow instructor authentication and protected dashboard access.
+  \item The system shall allow instructors to create, edit, publish, and delete experiments.
+  \item The system shall allow scene-level authoring with object creation, transform editing, marker configuration, and logic graph persistence.
+  \item The system shall allow classroom creation and assignment of published experiments to classroom members.
+  \item The student application shall launch assigned experiments in AR and load scenes dynamically.
+  \item The system shall support student submission tracking and instructor evaluation/feedback.
+  \item The system shall provide AI-assisted generation of scene-logic graph content from prompts.
+  \item The system shall synchronize object and scene updates between authoring UI and Unity runtime for preview/edit workflows.
+\end{enumerate}
+
+\subsection{Non-Functional Requirements}
+\begin{enumerate}[leftmargin=1.2cm]
+  \item \textbf{Usability:} instructor and student interfaces must support clear workflows with minimal training overhead.
+  \item \textbf{Performance:} scene/object loading and editor interactions should remain responsive under normal classroom-scale content.
+  \item \textbf{Reliability:} data writes/reads must preserve experiment and submission consistency across sessions.
+  \item \textbf{Compatibility:} the runtime must function on targeted Android/iOS AR-capable devices.
+  \item \textbf{Maintainability:} architecture should separate authoring UI, backend APIs, and runtime engine responsibilities.
+\end{enumerate}
+
+\section{Storyboarding}
+
+\subsection{Storyboard Description}
+The student journey implemented in the Unity-hosted WebView shell (\texttt{student\_app.html}, with embedded pages under \texttt{LucidLab/Assets/StreamingAssets/}) begins at the splash screen, proceeds through authentication, and lands on the home dashboard listing classrooms. The user opens a classroom, reviews assignments, and launches AR through the pre-AR \emph{Select Scene} overlay. In AR, an instruction banner can prompt marker scanning before virtual experiment objects are manipulated. The session closes with a submit-confirmation step tied to the assignment workflow before returning to classroom or experiments views.
+
+\subsection{Frame sequence (implementation-aligned)}
+\label{sec:storyboard-frames}
+The six hand-drawn frames follow this order, aligned with the student UI flow above:
+\begin{enumerate}[leftmargin=1.2cm]
+  \item \textbf{Splash} --- \texttt{splash\_screen.html}: LucidLab title, dark radial background, neon cyan accents (initial load before auth routing).
+  \item \textbf{Sign-in} --- \texttt{login\_screen.html} (shell \texttt{student\_app.html}): dark teal UI (\texttt{\#0f2223}), cyan accent (\texttt{\#00f2ff}), email/password or OAuth entry.
+  \item \textbf{Home / classrooms} --- \texttt{dashboard.html}: header ``My Classrooms,'' glass cards for enrolled classes, bottom navigation (Home, Experiments, Profile).
+  \item \textbf{Classroom and scene choice} --- \texttt{classroom\_detail.html} and modal \texttt{ar\_scene\_picker.html}: assignment context and \emph{Select Scene} list before native AR starts.
+  \item \textbf{AR session start} --- live camera with \texttt{ar\_instruction.html} overlay: instruction text such as ``Scan a marker to start,'' marker on surface, faint virtual lab objects.
+  \item \textbf{Submit and exit} --- \texttt{ar\_submit\_confirm.html}: glass modal to confirm submission and return to the non-AR shell flow.
+\end{enumerate}
+Frames should use the course Vincent sketch template (rough pencil/ink, single phone silhouette). Generated art should remain hand-drawn in appearance, not photorealistic UI mockups.
+
+\subsection{Storyboard Frames (Insert Images)}
+% Required 6 frames (hand-drawn Vincent template expected by course policy)
+\storyboardframe{storyboard_frame_1.jpg}{Frame 1 --- Splash: LucidLab branding, radial dark-violet-to-black background, neon cyan accents (\texttt{splash\_screen.html}).}
+\storyboardframe{storyboard_frame_2.jpg}{Frame 2 --- Login: dark teal shell, cyan accent buttons and fields, LucidLab Student sign-in (\texttt{login\_screen.html}).}
+\storyboardframe{storyboard_frame_3.jpg}{Frame 3 --- Home: ``My Classrooms'' dashboard, glass classroom cards, bottom nav Home / Experiments / Profile (\texttt{dashboard.html}).}
+\storyboardframe{storyboard_frame_4.jpg}{Frame 4 --- Classroom and scene launcher: assignment/classroom context plus \emph{Select Scene} modal list (\texttt{classroom\_detail.html}, \texttt{ar\_scene\_picker.html}).}
+\storyboardframe{storyboard_frame_5.jpg}{Frame 5 --- AR start: camera view, frosted banner ``Scan a marker to start,'' marker sheet and wireframe lab props (\texttt{ar\_instruction.html}).}
+\storyboardframe{storyboard_frame_6.jpg}{Frame 6 --- Submit: dark glass confirmation dialog, submit/cancel, end of AR session (\texttt{ar\_submit\_confirm.html}).}
+
+\subsection{Storyboard Analysis Question}
+The storyboard supports immersion by moving from branded splash and familiar 2D shell screens (\texttt{student\_app.html} chrome) into camera-based AR with spatial instructions. Usability is preserved through a linear sequence: authenticate $\rightarrow$ choose classroom $\rightarrow$ pick scene $\rightarrow$ align marker $\rightarrow$ interact $\rightarrow$ submit. Learning goals are supported because instruction text and submission are tied to the same experiment/scene path as in the running app. Each frame maps to a concrete screen or overlay so reviewers can trace the journey from repository filenames to the illustrated panels.
+
+\section{Development}
+Team responsibilities in this project were:
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textbf{Muhammad Abdullah (BSCS23070):} responsible for the mobile app implementation and runtime execution flow.
+  \item \textbf{Abdul Moiz (BSCS23118):} responsible for the Designer Studio where projects/experiments are authored.
+  \item \textbf{Faizan Amir (BSCS23212):} responsible for website UI/UX design and front-end presentation quality.
+  \item \textbf{Waqas Shoaib (BSCS23173):} responsible for backend services and integration support.
+  \item \textbf{Sameer (BSCS23176):} responsible for backend development along with Waqas Shoaib.
+\end{itemize}
+
+Application running-state evidence is represented through screenshot inserts below (to be replaced with actual captured images from your deployment builds).
+
+\appscreenshot{app_screenshot_1.jpg}{Working Application Screenshot 1: Designer dashboard/classroom management}
+\appscreenshot{app_screenshot_2.jpg}{Working Application Screenshot 2: Experiment/scene management}
+\appscreenshot{app_screenshot_3.jpg}{Working Application Screenshot 3: Scene editor with Unity viewport}
+\appscreenshot{app_screenshot_4.jpg}{Working Application Screenshot 4: Mobile AR runtime scene interaction}
+\appscreenshot{app_screenshot_5.jpg}{Working Application Screenshot 5: Submission/evaluation workflow}
+
+\section{Limitations \& Risks}
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textbf{Technical limitations:}
+  \begin{itemize}
+    \item Hybrid architecture complexity (web authoring + backend API + Unity runtime) increases integration overhead.
+    \item Documentation drift exists between some design docs and current implemented backend paths/endpoints.
+  \end{itemize}
+  \item \textbf{Hardware constraints:}
+  \begin{itemize}
+    \item AR quality depends on device sensors, camera, and platform AR support.
+    \item Marker tracking quality can degrade in poor lighting or low-feature surfaces.
+  \end{itemize}
+  \item \textbf{Skill limitations:}
+  \begin{itemize}
+    \item Advanced AR interaction tuning and robust cross-platform WebView-media behavior require specialized expertise.
+  \end{itemize}
+  \item \textbf{Time issues:}
+  \begin{itemize}
+    \item Given semester timelines, advanced fluid mechanics and high-fidelity simulation features were constrained; focus remained on a robust educational workflow and interaction pipeline.
+  \end{itemize}
+\end{itemize}
+
+\subsection*{Implementation-vs-Documentation Drift Note}
+During repository evidence review, several documented architectural claims (e.g., some cloud-functions and AI endpoint descriptions) did not fully match current implemented backend routes. This report prioritizes implemented code evidence for accuracy and treats such mismatches as maintainability risk rather than product intent failure.
+
+\section{Conclusion}
+LucidLab AR Science Learning Platform presents a practical, evidence-backed approach for immersive classroom science learning by combining instructor-side authoring, student-side mobile AR execution, and classroom evaluation workflows. The project demonstrates that AR can be used not only for visualization but also for structured interactive learning tasks linked to instructional outcomes. While there are technical and timeline limitations, the implemented architecture establishes a strong base for future enhancements such as richer simulation behavior, stronger test automation, and tighter production-hardening of backend and media pipelines.
+
+\section{References}
+\begin{thebibliography}{99}
+
+\bibitem{azuma1997}
+Azuma, R. T. (1997). A survey of augmented reality. \textit{Presence: Teleoperators and Virtual Environments, 6}(4), 355--385. https://doi.org/10.1162/pres.1997.6.4.355
+
+\bibitem{billinghurst2015}
+Billinghurst, M., Clark, A., \& Lee, G. (2015). A survey of augmented reality. \textit{Foundations and Trends in Human--Computer Interaction, 8}(2--3), 73--272. https://doi.org/10.1561/1100000049
+
+\bibitem{labster}
+Labster. (2026). \textit{Virtual labs for science education}. Retrieved May 1, 2026, from https://www.labster.com
+
+\bibitem{hololab}
+Schell Games. (2026). \textit{HoloLAB Champions}. Retrieved May 1, 2026, from https://www.hololabchampions.com
+
+\bibitem{unityarfoundation}
+Unity Technologies. (2026). \textit{AR Foundation documentation}. Retrieved May 1, 2026, from https://docs.unity3d.com/Packages/com.unity.xr.arfoundation@latest
+
+\bibitem{lucidlabrepo}
+LucidLab Team. (2026). \textit{LucidLab project repository and implementation artifacts}. Internal course project source, Spring 2026.
+
+\end{thebibliography}
+
+\end{document}

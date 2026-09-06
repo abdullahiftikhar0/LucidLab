@@ -9,7 +9,12 @@ namespace Assets.SceneManagement.Misc {
         }
 
         public static void PutFileInCache(string fileName, byte[] file) {
-            File.WriteAllBytes(Path.Combine(Application.persistentDataPath, fileName), file);
+            var fullPath = Path.Combine(Application.persistentDataPath, fileName);
+            var directory = Path.GetDirectoryName(fullPath);
+            if (!string.IsNullOrEmpty(directory)) {
+                Directory.CreateDirectory(directory);
+            }
+            File.WriteAllBytes(fullPath, file);
         }
     }
 }

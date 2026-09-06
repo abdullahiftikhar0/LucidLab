@@ -18,6 +18,7 @@ namespace LucidLab.UI
         // Persistent WebViewObject that survives scene loads
         private static WebViewObject _persistentWebView;
         // Route callbacks to whichever LoginWebController is currently active
+        public static LoginWebController Instance { get; private set; }
         private static LoginWebController _activeController;
 
         // Splash → app loading state
@@ -25,8 +26,15 @@ namespace LucidLab.UI
 
         private void Awake()
         {
-            _activeController = this;
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
 
+            _activeController = this;
             RequestMicrophonePermissionAtStartup();
 
             // Ensure Firebase is initialized (was previously in StartupScene)
@@ -202,6 +210,15 @@ namespace LucidLab.UI
                     {
                         PlayerPrefs.DeleteKey("initialSceneName");
                     }
+                    
+                    if (!string.IsNullOrEmpty(json.mode))
+                    {
+                        PlayerPrefs.SetString("ar_mode", json.mode);
+                    }
+                    else
+                    {
+                        PlayerPrefs.DeleteKey("ar_mode");
+                    }
                 } catch {
                     PlayerPrefs.SetString("expname", payload);
                     PlayerPrefs.SetString("experimentId", payload);
@@ -209,10 +226,19 @@ namespace LucidLab.UI
                     PlayerPrefs.DeleteKey("initialSceneName");
                 }
                 PlayerPrefs.Save();
-                // Hide webview instead of destroying it so we can restore it later
-                if (_persistentWebView != null)
-                    _persistentWebView.SetVisibility(false);
+                // We no longer hide the webview here so the HTML loading spinner stays visible.
+                // It will be hidden by SceneManager once all AR assets (models, markers) are downloaded.
                 SceneManager.LoadScene("ARMainScene");
+            }
+            else if (msg.StartsWith("start_demo:"))
+            {
+                string sceneName = msg.Substring("start_demo:".Length);
+                Debug.Log($"[App] Starting Demo Scene: {sceneName}");
+                
+                // Hide WebView before loading demo scene
+                HideWebView();
+                
+                SceneManager.LoadScene(sceneName);
             }
             else if (msg == "logout")
             {
@@ -246,6 +272,20 @@ namespace LucidLab.UI
             // persistent webview — it survives across scene loads.
             if (_activeController == this)
                 _activeController = null;
+        }
+
+        /// <summary>
+        /// Called by the AR SceneManager once models and markers finish downloading.
+        /// Hides the webview to reveal the AR camera underneath.
+        /// </summary>
+        public void HideWebView()
+        {
+            if (_persistentWebView != null)
+            {
+                // Reset any lingering loading modals in the HTML
+                _persistentWebView.EvaluateJS("if(typeof window.closeSceneLaunchModal === 'function') { window.closeSceneLaunchModal(); }");
+                _persistentWebView.SetVisibility(false);
+            }
         }
     }
 }

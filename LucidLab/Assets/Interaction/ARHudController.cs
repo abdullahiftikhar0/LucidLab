@@ -4,7 +4,6 @@ using UnityEngine.UI;
 using TMPro;
 using Assets.SceneManagement;
 using Assets.Logic;
-using Assets.SceneManagement;
 
 namespace Assets.Interaction
 {
@@ -46,7 +45,6 @@ namespace Assets.Interaction
         // Ready flags
         private bool _topBarReady;
         private bool _modeToggleReady;
-        private bool _toolbeltReady;
         private bool _instructionReady;
         private bool _taskReady;
         private bool _scenePickerReady;
@@ -60,6 +58,8 @@ namespace Assets.Interaction
         private ScreenOrientation _lastOrientation;
         private int _lastScreenWidth;
         private int _lastScreenHeight;
+
+        public bool hudsVisible = false; // Default to hidden while loading assets
 
         void Start()
         {
@@ -130,8 +130,8 @@ namespace Assets.Interaction
                 started: (msg) => Debug.Log($"[{goName}] Started: {msg}"),
                 ld: (msg) =>
                 {
-                    Debug.Log($"[{goName}] Loaded: {msg}");
-                    wv.SetVisibility(true);
+                    Debug.Log($"[ARHudController] Panel '{goName}' LOADED. Setting visibility to: {hudsVisible}");
+                    wv.SetVisibility(hudsVisible);
                 },
                 transparent: true
             );
@@ -238,7 +238,11 @@ namespace Assets.Interaction
             switch (msg)
             {
                 case "toolbelt_ready":
-                    _toolbeltReady = true;
+                    string mode = PlayerPrefs.GetString("ar_mode", "");
+                    if (mode == "view" || mode == "review")
+                    {
+                        EvalOnPanel(_toolbelt, "hideSubmitButton();");
+                    }
                     break;
 
                 case "open_submit_confirm":
@@ -614,6 +618,17 @@ namespace Assets.Interaction
         {
             if (string.IsNullOrEmpty(s)) return "";
             return s.Replace("\\", "\\\\").Replace("'", "\\'").Replace("\n", "\\n").Replace("\r", "");
+        }
+
+        public void SetHudVisibility(bool visible)
+        {
+            Debug.Log($"[ARHudController] SetHudVisibility called with visible={visible}. Current hudsVisible was: {hudsVisible}");
+            hudsVisible = visible;
+            if (_topBar != null) { Debug.Log("[ARHudController] Updating _topBar visibility."); _topBar.SetVisibility(visible); }
+            if (_modeToggle != null) { Debug.Log("[ARHudController] Updating _modeToggle visibility."); _modeToggle.SetVisibility(visible); }
+            if (_toolbelt != null) { Debug.Log("[ARHudController] Updating _toolbelt visibility."); _toolbelt.SetVisibility(visible); }
+            if (_instruction != null) { Debug.Log("[ARHudController] Updating _instruction visibility."); _instruction.SetVisibility(visible); }
+            if (_task != null) { Debug.Log("[ARHudController] Updating _task visibility."); _task.SetVisibility(visible); }
         }
 
         void OnDestroy()

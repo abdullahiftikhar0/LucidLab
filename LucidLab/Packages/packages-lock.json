@@ -19,6 +19,14 @@
         "com.unity.test-framework": "1.1.31"
       }
     },
+    "com.ptc.vuforia.engine": {
+      "version": "file:com.ptc.vuforia.engine",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.unity.ugui": "1.0.0"
+      }
+    },
     "com.unity.burst": {
       "version": "1.8.21",
       "depth": 1,

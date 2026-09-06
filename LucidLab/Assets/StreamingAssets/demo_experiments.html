@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>LucidLab - Demo Experiments</title>
+    <link rel="stylesheet" href="fonts/fonts.css" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "var(--accent, #00f2ff)",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#0f2223",
+                        "surface": "#162c2d",
+                    },
+                    fontFamily: { "display": ["Inter", "sans-serif"] },
+                },
+            },
+        }
+    </script>
+    <style>
+        :root { --accent: #00f2ff; }
+        .glass-card {
+            background: rgba(22, 44, 45, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid color-mix(in srgb, var(--accent) 10%, transparent);
+        }
+        .neon-text-glow {
+            text-shadow: 0 0 8px color-mix(in srgb, var(--accent) 50%, transparent);
+        }
+    </style>
+</head>
+<body class="bg-background-dark font-display text-slate-100 min-h-screen flex flex-col">
+    <header class="sticky top-0 z-50 bg-background-dark/80 backdrop-blur-md border-b border-primary/10">
+        <div class="max-w-md mx-auto flex items-center p-4 gap-3">
+            <button id="back-btn" class="flex items-center justify-center size-10 rounded-full hover:bg-primary/10 transition-colors">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <h1 class="text-lg font-bold tracking-tight">Demo Experiments</h1>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-md mx-auto w-full p-4 space-y-6">
+        <div class="relative h-40 w-full rounded-xl overflow-hidden bg-gradient-to-br from-primary/30 to-background-dark border border-primary/20 flex items-end p-6">
+            <div class="relative z-10">
+                <h2 class="text-3xl font-black text-white tracking-tighter neon-text-glow uppercase">Chemistry Lab</h2>
+                <p class="text-sm text-slate-400 mt-1">Free-play interactive simulations</p>
+            </div>
+        </div>
+
+        <div id="demo-list" class="space-y-4">
+            <!-- Chemical Reaction Demo -->
+            <div class="glass-card rounded-xl p-4 border-l-4 border-primary">
+                <div class="mb-4">
+                    <span class="text-[10px] font-bold text-primary uppercase tracking-widest">Chemistry</span>
+                    <h4 class="text-base font-bold text-slate-100">Chemical Reaction Demo</h4>
+                    <p class="text-[11px] text-slate-400 mt-1">Explore atomic fusion and molecular reactions in real-time.</p>
+                </div>
+                <button onclick="launchDemo('Chemical')" class="w-full bg-primary hover:bg-primary/90 text-background-dark font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                    <span class="material-symbols-outlined text-lg">play_arrow</span> Launch Demo
+                </button>
+            </div>
+
+            <!-- More demos can be added here -->
+        </div>
+    </main>
+
+    <script>
+        document.getElementById("back-btn").addEventListener("click", function() {
+            parent.postMessage("navigate:home", "*");
+        });
+
+        function launchDemo(sceneName) {
+            parent.postMessage("unity:start_demo:" + sceneName, "*");
+        }
+    </script>
+</body>
+</html>

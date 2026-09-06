@@ -102,6 +102,8 @@ namespace Assets.Structures {
         public void UpdateColor() {
             if (!_gameObject) throw new Exception("InitGameobject first!");
 
+            if (!IsPrimitiveObject()) return;
+
             var colorToParse = color;
             if (!string.IsNullOrEmpty(colorToParse) && colorToParse[0] != '#') {
                 // If it looks like raw hex (e.g. FF0000), prefix '#'; otherwise let Unity

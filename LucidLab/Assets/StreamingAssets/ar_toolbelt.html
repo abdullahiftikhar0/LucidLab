@@ -96,6 +96,11 @@
       if (t) sendToUnity("touch_at:" + Math.round(t.screenX) + "," + Math.round(t.screenY));
     }, { passive: true });
 
+    function hideSubmitButton() {
+      var btn = document.getElementById("tool-submit");
+      if (btn) btn.style.display = "none";
+    }
+
     sendToUnity("toolbelt_ready");
   </script>
 </body>

@@ -106,37 +106,68 @@ namespace Assets.SceneManagement.Builders {
                 return;
             }
 
-            var replacedCount = 0;
-            foreach (var renderer in root.GetComponentsInChildren<Renderer>(true)) {
-                var materials = renderer.sharedMaterials;
-                var changed = false;
+            try {
+                int replacedCount = 0;
+                var renderers = root.GetComponentsInChildren<Renderer>(true);
+                foreach (var renderer in renderers) {
+                    var sharedMats = renderer.sharedMaterials;
+                    bool changed = false;
+                    for (int i = 0; i < sharedMats.Length; i++) {
+                        var mat = sharedMats[i];
+                        if (IsUnsupportedMaterial(mat)) {
+                            var replacement = new Material(fallbackShader) {
+                                name = $"{objectType}_Fallback_{i}"
+                            };
+                            
+                            // Try to preserve original color/texture if it exists
+                            ApplyFallbackMaterialValues(
+                                replacement, 
+                                GetBestEffortColor(mat), 
+                                GetBestEffortTexture(mat)
+                            );
 
-                for (int i = 0; i < materials.Length; i++) {
-                    var sourceMaterial = materials[i];
-                    if (!IsUnsupportedMaterial(sourceMaterial)) continue;
-
-                    var replacement = new Material(fallbackShader) {
-                        name = $"{objectType}_Fallback_{i}"
-                    };
-
-                    ApplyFallbackMaterialValues(
-                        replacement,
-                        GetBestEffortColor(sourceMaterial),
-                        GetBestEffortTexture(sourceMaterial)
-                    );
-
-                    materials[i] = replacement;
-                    replacedCount++;
-                    changed = true;
+                            sharedMats[i] = replacement;
+                            replacedCount++;
+                            changed = true;
+                        }
+                    }
+                    if (changed) renderer.sharedMaterials = sharedMats;
                 }
 
-                if (changed) {
-                    renderer.sharedMaterials = materials;
+                if (replacedCount > 0) {
+                    Debug.LogWarning($"[ObjectBuilder] Replaced {replacedCount} unsupported material(s) on '{objectType}' using fallback shader '{fallbackShader.name}'. (Preserved colors/textures where possible)");
                 }
-            }
 
-            if (replacedCount > 0) {
-                Debug.LogWarning($"[ObjectBuilder] Replaced {replacedCount} unsupported material(s) on '{objectType}' using fallback shader '{fallbackShader.name}'.");
+                // Diagnostic: Log the raw bounds of the model before AR scale
+                if (renderers.Length > 0) {
+                    Bounds b = new Bounds(renderers[0].bounds.center, Vector3.zero);
+                    foreach (var r in renderers) b.Encapsulate(r.bounds);
+                    Debug.Log($"[ObjectBuilder] 📏 RAW MODEL BOUNDS (pre-scale) — size={b.size}, center={b.center}");
+
+                    // 📐 ROBUST NORMALIZATION: Scale to 1m baseline and sit bottom on Y=0
+                    float maxDim = Mathf.Max(b.size.x, Mathf.Max(b.size.y, b.size.z));
+                    if (maxDim > 0) {
+                        // 1. Scale to a 1.0m unit baseline (makes designer scaling predictable)
+                        float scaleMultiplier = 1.0f / maxDim;
+                        root.transform.localScale *= scaleMultiplier;
+                        
+                        // Update bounds for pivot calculation
+                        b.center *= scaleMultiplier;
+                        b.size *= scaleMultiplier;
+                        
+                        // 2. Pivot Alignment: Sit bottom at Y=0 and center X/Z at 0
+                        // Calculate offset to move the visual bottom to the root origin
+                        Vector3 bottomOffset = new Vector3(b.center.x, b.center.y - (b.size.y / 2f), b.center.z);
+                        
+                        foreach (Transform child in root.transform) {
+                            child.localPosition -= bottomOffset;
+                        }
+                        
+                        Debug.Log($"[ObjectBuilder] ⚖️ NORMALIZED '{objectType}': Scale={scaleMultiplier}x, BottomOffset={-bottomOffset}");
+                    }
+                }
+            } catch (System.Exception e) {
+                Debug.LogError($"[ObjectBuilder] Failed to repair materials for {objectType}: {e.Message}");
             }
         }
 

@@ -11,7 +11,7 @@ namespace Assets.Interaction {
     public class MarkerAnchor : MonoBehaviour {
         public string markerId;
 
-        /// <summary>AR scale factor: designer units → real-world meters on desk.</summary>
+        /// <summary>AR scale factor: designer units (cm) → real-world meters. (1 designer unit = 1cm)</summary>
         public static float ArScale = 0.01f;
 
         private Vector3 _designerLocalPosition;
@@ -26,6 +26,8 @@ namespace Assets.Interaction {
             _designerLocalPosition = transform.localPosition;
             _designerLocalRotation = transform.localRotation;
             _designerLocalScale = transform.localScale;
+
+            Debug.Log($"[MarkerAnchor] Start() — name={gameObject.name}, designerPos={_designerLocalPosition}, designerScale={_designerLocalScale}, worldScale={ArScale}");
 
             // Start hidden until marker is detected
             SetVisible(false);
@@ -161,11 +163,23 @@ namespace Assets.Interaction {
 
         private void SetVisible(bool visible) {
             _isVisible = visible;
-            foreach (var r in GetComponentsInChildren<Renderer>(true)) {
+            var renderers = GetComponentsInChildren<Renderer>(true);
+            var canvases = GetComponentsInChildren<Canvas>(true);
+
+            Debug.Log($"[MarkerAnchor] SetVisible({visible}) — name={gameObject.name}, renderersFound={renderers.Length}, canvasesFound={canvases.Length}");
+
+            foreach (var r in renderers) {
                 r.enabled = visible;
             }
-            foreach (var c in GetComponentsInChildren<Canvas>(true)) {
+            foreach (var c in canvases) {
                 c.enabled = visible;
+            }
+
+            if (visible && renderers.Length > 0) {
+                // Log the combined bounds to see how big it actually is in the world
+                Bounds combinedBounds = new Bounds(renderers[0].bounds.center, Vector3.zero);
+                foreach (var r in renderers) combinedBounds.Encapsulate(r.bounds);
+                Debug.Log($"[MarkerAnchor] 📏 VISUAL BOUNDS — center={combinedBounds.center}, size={combinedBounds.size} (meters)");
             }
         }
     }
