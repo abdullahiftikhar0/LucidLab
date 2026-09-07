@@ -6,9 +6,12 @@ const { firestoreRouter } = require("./routes/firestore");
 const { sketchfabRouter } = require("./routes/sketchfab");
 const { errorHandler } = require("./middleware/errorHandler");
 
+// Object-type GLBs are uploaded as base64 inside JSON (~4/3 size overhead).
+const JSON_BODY_LIMIT = "280mb";
+
 function createApp() {
   const app = express();
-  app.use(express.json({ limit: "25mb" }));
+  app.use(express.json({ limit: JSON_BODY_LIMIT }));
   const quietPaths = new Set(["/ping", "/api/health"]);
   app.use((req, res, next) => {
     const start = Date.now();
