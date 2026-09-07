@@ -1,7 +1,8 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 using Vuforia;
+
 public class CircleFormator : MonoBehaviour
 {
     public GameObject prefab;
@@ -10,68 +11,111 @@ public class CircleFormator : MonoBehaviour
     public bool Interactable;
     public float InteractSpeed = 0.08f;
     public float InteractStopDistance = 5f;
-    private GameObject Atom;
-    private float distance;
-    // Start is called before the first frame update
-    void Start()
+
+    readonly List<GameObject> _electrons = new();
+
+    DefaultTrackableEventHandler _trackableHandler;
+    UnityAction _onMarkerFound;
+    UnityAction _onMarkerLost;
+
+    void OnEnable()
     {
-        CreateElectronsAroundPoint(ElectronNum,this.transform.position,ElectronDistance);
+        BindTrackableEvents();
+        TrySpawnElectrons();
     }
 
-    // Update is called once per frame
-    void Update()
+    void OnDisable()
     {
-        /*if(Atom != null && distance >= InteractStopDistance / 200){
-            Atom.transform.position = Vector3.MoveTowards(Atom.transform.position,
-                                                            this.transform.position , InteractSpeed * Time.deltaTime);
-            distance = Vector3.Distance (Atom.transform.position, this.transform.position);
-            //Debug.Log(distance);
-        }*/
+        UnbindTrackableEvents();
+        ClearElectrons();
     }
 
- /* private void OnTriggerEnter(Collider other) {
-      if(Interactable == true)
-        if(other.name == "atomic orbit"){
-            Atom = other.gameObject.transform.parent.gameObject;
-            distance = Vector3.Distance (Atom.transform.position, this.transform.position);
-            Debug.Log(distance);
-            TrackerManager.Instance.GetTracker<ObjectTracker>().Stop();
+    void BindTrackableEvents()
+    {
+        if (_trackableHandler != null)
+            return;
+
+        _trackableHandler = GetComponentInParent<DefaultTrackableEventHandler>();
+        if (_trackableHandler == null)
+            return;
+
+        _onMarkerFound = TrySpawnElectrons;
+        _onMarkerLost = ClearElectrons;
+
+        _trackableHandler.OnTargetFound.AddListener(_onMarkerFound);
+        _trackableHandler.OnTargetLost.AddListener(_onMarkerLost);
+    }
+
+    void UnbindTrackableEvents()
+    {
+        if (_trackableHandler == null)
+            return;
+
+        if (_onMarkerFound != null)
+            _trackableHandler.OnTargetFound.RemoveListener(_onMarkerFound);
+        if (_onMarkerLost != null)
+            _trackableHandler.OnTargetLost.RemoveListener(_onMarkerLost);
+
+        _trackableHandler = null;
+        _onMarkerFound = null;
+        _onMarkerLost = null;
+    }
+
+    void TrySpawnElectrons()
+    {
+        if (!isActiveAndEnabled || prefab == null || ElectronNum <= 0)
+            return;
+
+        if (_electrons.Count > 0)
+            return;
+
+        if (_trackableHandler == null || !IsTracked(_trackableHandler))
+            return;
+
+        CreateElectronsAroundPoint(ElectronNum, transform.position, ElectronDistance);
+    }
+
+    static bool IsTracked(DefaultTrackableEventHandler handler)
+    {
+        var trackable = handler.GetComponent<TrackableBehaviour>();
+        if (trackable == null)
+            return false;
+
+        var status = trackable.CurrentStatus;
+        return status == TrackableBehaviour.Status.TRACKED
+            || status == TrackableBehaviour.Status.DETECTED;
+    }
+
+    void ClearElectrons()
+    {
+        for (int i = _electrons.Count - 1; i >= 0; i--)
+        {
+            if (_electrons[i] != null)
+                Destroy(_electrons[i]);
         }
-    
-    
-}*/
-public void CreateElectronsAroundPoint (int num, Vector3 point, float radius){
 
-    
-     for (int i = 0; i < num; i++){
-         
-         /* Distance around the circle */  
-         var radians = 2 * Mathf.PI / num * i;
-         
-         /* Get the vector direction */ 
-         var vertrical = Mathf.Sin(radians);
-         var horizontal = Mathf.Cos(radians); 
-         
-         var spawnDir = new Vector3 (horizontal, 0, vertrical);
-         
-         /* Get the spawn position */ 
-         var spawnPos = point + spawnDir * radius; // Radius is just the distance away from the point
-         
-         /* Now spawn */
-         var electron = Instantiate (prefab, spawnPos, Quaternion.identity,this.transform) as GameObject;
-         
-         /* Rotate the enemy to face towards player */
-         electron.transform.LookAt(point);
-         
-         /* Adjust height */
-         //enemy.transform.Translate (new Vector3 (0, enemy.transform.localScale.y / 2, 0));
-     }
-}
+        _electrons.Clear();
+    }
+
+    void CreateElectronsAroundPoint(int num, Vector3 point, float radius)
+    {
+        for (int i = 0; i < num; i++)
+        {
+            var radians = 2 * Mathf.PI / num * i;
+            var vertical = Mathf.Sin(radians);
+            var horizontal = Mathf.Cos(radians);
+            var spawnDir = new Vector3(horizontal, 0, vertical);
+            var spawnPos = point + spawnDir * radius;
+
+            var electron = Instantiate(prefab, spawnPos, Quaternion.identity, transform);
+            electron.transform.LookAt(point);
+            _electrons.Add(electron);
+        }
+    }
 
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, ElectronDistance);
     }
-
 }

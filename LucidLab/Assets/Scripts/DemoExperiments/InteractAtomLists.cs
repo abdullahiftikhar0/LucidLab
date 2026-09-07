@@ -11,6 +11,8 @@ public class InteractAtomLists : MonoBehaviour
     public TextMeshPro chemicalTxt,InteractTxt;
     public float InteractSpeed = 0.08f;
     public float InteractStopDistance = 5f;
+    [Tooltip("Max distance between marker roots to start fusion (meters).")]
+    public float PartnerFusionRange = 0.5f;
     public string MainText;
     private string NewText;
     public List<GameObject> Atoms = new List<GameObject>();
@@ -28,14 +30,104 @@ public class InteractAtomLists : MonoBehaviour
 
     private float distance,distance2;
     private bool isInteracting;
-    // Start is called before the first frame update
+
     void Start()
     {
-        //interActModel = this.transform.Find("My3DModel").gameObject;
-        FusionCard = this.transform.Find("FusionQuad").gameObject;
-        ThisAtom = this.transform.Find("Atom").gameObject;
-        FusionCard.SetActive(false);
-        //interActModel.SetActive(false);
+        WireMissingPartners();
+
+        Transform fusionQuad = FindInHierarchy("FusionQuad");
+        Transform atom = FindInHierarchy("Atom");
+        if (fusionQuad != null)
+            FusionCard = fusionQuad.gameObject;
+        if (atom != null)
+            ThisAtom = atom.gameObject;
+        if (FusionCard != null)
+            FusionCard.SetActive(false);
+    }
+
+    void WireMissingPartners()
+    {
+        foreach (ChemicalItemsList recipe in ListOfListAtoms)
+        {
+            if (recipe.ListAtoms == null)
+                recipe.ListAtoms = new List<GameObject>();
+
+            recipe.ListAtoms.RemoveAll(partner => partner == null);
+            if (recipe.ListAtoms.Count > 0)
+                continue;
+
+            switch (recipe.NewText)
+            {
+                case "NaCl":
+                    TryAddPartner(recipe, "ImageTarget Na (1)");
+                    break;
+                case "HCl":
+                    TryAddPartner(recipe, "ImageTarget H1");
+                    TryAddPartner(recipe, "ImageTarget H2");
+                    break;
+                case "FeCl":
+                    TryAddPartner(recipe, "ImageTarget FE");
+                    break;
+                case "AuCl3":
+                    TryAddPartner(recipe, "ImageTarget Cl (1)");
+                    break;
+                case "SO3":
+                    TryAddPartner(recipe, "ImageTarget O3");
+                    break;
+                case "Fe2O3":
+                    TryAddPartner(recipe, "ImageTarget O2");
+                    break;
+            }
+        }
+    }
+
+    static void TryAddPartner(ChemicalItemsList recipe, string objectName)
+    {
+        GameObject partner = GameObject.Find(objectName);
+        if (partner != null && !recipe.ListAtoms.Contains(partner))
+            recipe.ListAtoms.Add(partner);
+    }
+
+    Transform FindInHierarchy(string childName)
+    {
+        Transform found = transform.Find(childName);
+        if (found != null)
+            return found;
+
+        found = transform.Find("GameObject/" + childName);
+        if (found != null)
+            return found;
+
+        foreach (Transform child in GetComponentsInChildren<Transform>(true))
+        {
+            if (child.name == childName)
+                return child;
+        }
+
+        return null;
+    }
+
+    static GameObject FindAtomChild(GameObject markerRoot)
+    {
+        if (markerRoot == null)
+            return null;
+
+        Transform atom = markerRoot.transform.Find("Atom");
+        if (atom == null)
+            atom = markerRoot.transform.Find("GameObject/Atom");
+        if (atom == null)
+        {
+            foreach (Transform child in markerRoot.GetComponentsInChildren<Transform>(true))
+            {
+                if (child.name == "Atom")
+                {
+                    atom = child;
+                    break;
+                }
+            }
+        }
+
+        return atom != null ? atom.gameObject : null;
     }
 
     // Update is called once per frame
@@ -47,7 +139,7 @@ public class InteractAtomLists : MonoBehaviour
 
             foreach(GameObject myAtom in listAtomsClass.ListAtoms){
                 distanceReverse = Vector3.Distance(myAtom.transform.position, this.transform.position);
-                if(distanceReverse >= 0.2f){
+                if(distanceReverse >= PartnerFusionRange){
                     outRange = true;
                     break;
                 }else{
@@ -55,7 +147,9 @@ public class InteractAtomLists : MonoBehaviour
                     if(Atoms.IndexOf(myAtom) >= 0){
                     }else{
                         Atoms.Add(myAtom);//listAtomsClass.ListAtoms
-                        RealAtoms.Add(myAtom.transform.Find("Atom").transform.gameObject);
+                        GameObject partnerAtom = FindAtomChild(myAtom);
+                        if (partnerAtom != null)
+                            RealAtoms.Add(partnerAtom);
                         NewText = listAtomsClass.NewText;
                         interActModel =listAtomsClass.InteractModel;
                     }

@@ -1,49 +1,37 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class NaAtom : MonoBehaviour
 {
+    [Tooltip("Partner chlorine ImageTarget (Cl or Cl (1)).")]
     public GameObject AtomImage;
+
     private float distanceReverse;
-    // Start is called before the first frame update
+
     void Start()
     {
-        //Na.SetActive(true);
+        if (AtomImage == null)
+            AtomImage = FindPartnerByName();
     }
 
-    // Update is called once per frame
     void Update()
     {
-        if(AtomImage != null && distanceReverse >= 0.2f){
-            Debug.Log("sssssssssssssssss");
+        if (AtomImage == null)
+            return;
 
-        }
+        distanceReverse = Vector3.Distance(AtomImage.transform.position, transform.position);
     }
 
-private void OnTriggerEnter(Collider other)
+    static GameObject FindPartnerByName()
     {
-        string _name = other.name;
+        var go = GameObject.Find("ImageTarget Cl (1)");
+        if (go != null)
+            return go;
+        return GameObject.Find("ImageTarget Cl");
+    }
 
-        if (_name == "ImageTarget Cl")
-        {
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.name == "ImageTarget Cl" || other.gameObject.name == "ImageTarget Cl (1)")
             AtomImage = other.gameObject;
-            distanceReverse = Vector3.Distance(AtomImage.transform.position, this.transform.position);
-        }
-       
     }
-
-    private void OnTriggerExit(Collider other) 
-    {
-        string _name = other.name;
-
-        if (_name == "ImageTarget Cl")
-        {
-
-        }
-       
-    }
-
-
-
 }

@@ -171,39 +171,41 @@
         var empty = document.getElementById("empty-state");
         list.innerHTML = "";
 
-        if (!classrooms || classrooms.length === 0) {
+        var hasClassrooms = classrooms && classrooms.length > 0;
+
+        if (!hasClassrooms) {
           countEl.textContent = "No Courses";
           empty.classList.remove("hidden");
-          return;
-        }
-        empty.classList.add("hidden");
-        countEl.textContent = "Active Courses (" + classrooms.length + ")";
+        } else {
+          empty.classList.add("hidden");
+          countEl.textContent = "Active Courses (" + classrooms.length + ")";
 
-        classrooms.forEach(function (c) {
-          var st = subjectStyle(c.subject);
-          var card = document.createElement("div");
-          card.className = "glass p-4 rounded-xl flex items-center gap-4 group cursor-pointer hover:border-primary/40 transition-all duration-300 mb-4";
-          card.innerHTML =
-            '<div class="size-14 rounded-xl ' + st.bg + ' flex items-center justify-center ' + st.text + '">' +
-              '<span class="material-symbols-outlined text-3xl">' + st.icon + '</span>' +
-            '</div>' +
-            '<div class="flex-1 min-w-0">' +
-              '<h3 class="font-bold text-slate-100 truncate">' + esc(c.name || "Untitled") + '</h3>' +
-              '<p class="text-sm text-slate-400">' + esc(c.instructorName || "Instructor") +
-                (c.subject ? ' \u2022 ' + esc(c.subject) : '') + '</p>' +
-              '<p class="text-xs text-slate-500 mt-0.5">' + ((c.experimentIds && c.experimentIds.length) || 0) + ' experiment' + ((c.experimentIds && c.experimentIds.length) !== 1 ? 's' : '') + '</p>' +
-            '</div>' +
-            '<div class="flex flex-col items-end gap-2">' +
-              '<span class="material-symbols-outlined text-slate-500 group-hover:text-primary group-hover:translate-x-1 transition-all">chevron_right</span>' +
-            '</div>';
-          card.addEventListener("click", function () {
-            parent.postMessage({ type: "request_data", request: "classroom_detail", classroomId: c.id }, "*");
-            parent.postMessage("navigate:classroom", "*");
+          classrooms.forEach(function (c) {
+            var st = subjectStyle(c.subject);
+            var card = document.createElement("div");
+            card.className = "glass p-4 rounded-xl flex items-center gap-4 group cursor-pointer hover:border-primary/40 transition-all duration-300 mb-4";
+            card.innerHTML =
+              '<div class="size-14 rounded-xl ' + st.bg + ' flex items-center justify-center ' + st.text + '">' +
+                '<span class="material-symbols-outlined text-3xl">' + st.icon + '</span>' +
+              '</div>' +
+              '<div class="flex-1 min-w-0">' +
+                '<h3 class="font-bold text-slate-100 truncate">' + esc(c.name || "Untitled") + '</h3>' +
+                '<p class="text-sm text-slate-400">' + esc(c.instructorName || "Instructor") +
+                  (c.subject ? ' \u2022 ' + esc(c.subject) : '') + '</p>' +
+                '<p class="text-xs text-slate-500 mt-0.5">' + ((c.experimentIds && c.experimentIds.length) || 0) + ' experiment' + ((c.experimentIds && c.experimentIds.length) !== 1 ? 's' : '') + '</p>' +
+              '</div>' +
+              '<div class="flex flex-col items-end gap-2">' +
+                '<span class="material-symbols-outlined text-slate-500 group-hover:text-primary group-hover:translate-x-1 transition-all">chevron_right</span>' +
+              '</div>';
+            card.addEventListener("click", function () {
+              parent.postMessage({ type: "request_data", request: "classroom_detail", classroomId: c.id }, "*");
+              parent.postMessage("navigate:classroom", "*");
+            });
+            list.appendChild(card);
           });
-          list.appendChild(card);
-        });
+        }
 
-        // Add Demo Experiments card
+        // Demo Experiments card — always shown
         var demoCard = document.createElement("div");
         demoCard.className = "glass p-4 rounded-xl flex items-center gap-4 group cursor-pointer border-dashed border-primary/30 hover:border-primary/60 transition-all duration-300 mb-4";
         demoCard.innerHTML =
