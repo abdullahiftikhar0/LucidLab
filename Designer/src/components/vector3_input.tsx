@@ -20,6 +20,8 @@ export default function Vector3Input({ value, onChange }: Vector3InputProps) {
         <Text alignSelf="center" fontSize="sm" color="gray.400">X</Text>
         <Input
           type="number"
+          step="any"
+          inputMode="decimal"
           size="sm"
           value={value[0]}
           onChange={e => handleChange(0, e.target.value)}
@@ -29,6 +31,8 @@ export default function Vector3Input({ value, onChange }: Vector3InputProps) {
         <Text alignSelf="center" fontSize="sm" color="gray.400">Y</Text>
         <Input
           type="number"
+          step="any"
+          inputMode="decimal"
           size="sm"
           value={value[1]}
           onChange={e => handleChange(1, e.target.value)}
@@ -38,6 +42,8 @@ export default function Vector3Input({ value, onChange }: Vector3InputProps) {
         <Text alignSelf="center" fontSize="sm" color="gray.400">Z</Text>
         <Input
           type="number"
+          step="any"
+          inputMode="decimal"
           size="sm"
           value={value[2]}
           onChange={e => handleChange(2, e.target.value)}
