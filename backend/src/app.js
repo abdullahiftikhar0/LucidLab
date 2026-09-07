@@ -8,10 +8,11 @@ const { errorHandler } = require("./middleware/errorHandler");
 function createApp() {
   const app = express();
   app.use(express.json({ limit: "25mb" }));
+  const quietPaths = new Set(["/ping", "/api/health"]);
   app.use((req, res, next) => {
     const start = Date.now();
     res.on("finish", () => {
-      if (req.path.startsWith("/api/")) {
+      if (req.path.startsWith("/api/") && !quietPaths.has(req.path)) {
         console.log(`[api] ${req.method} ${req.path} -> ${res.statusCode} (${Date.now() - start}ms)`);
       }
     });
