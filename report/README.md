@@ -1,6 +1,7 @@
 # LucidLab Report (LaTeX)
 
-This folder contains the submission-ready LaTeX source for the project report.
+This folder contains the submission-ready LaTeX source for the
+**Bano Qabil × Alibaba Cloud AI Hackathon 2026** technical report.
 
 ## Build
 
@@ -9,10 +10,12 @@ From the repository root:
 ```bash
 cd report
 pdflatex main.tex
+biber main
+pdflatex main.tex
 pdflatex main.tex
 ```
 
-Or with latexmk:
+Or with latexmk (recommended; runs Biber automatically):
 
 ```bash
 cd report

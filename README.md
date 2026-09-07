@@ -1,19 +1,17 @@
 # LucidLab 🧪✨
-> **AR Science Learning Platform — Theory and Applications of Virtual Reality, Spring 2026**
+> **AR Science Learning Platform — Bano Qabil × Alibaba Cloud AI Hackathon 2026**
 
 LucidLab is a comprehensive two-sided Augmented Reality (AR) education platform designed to make science experiments safer, more accessible, and highly interactive. It replaces expensive and potentially dangerous physical lab equipment with interactive 3D simulations anchored to physical printed Vuforia markers.
 
 ---
 
-## 👥 Team Members & Roles
+## 👤 Author
 
-| Student ID | Name | Role & Responsibilities |
-|------------|------|------------------------|
-| BSCS23070 | Muhammad Abdullah | **Unity AR mobile app** — runtime, WebView shell, Vuforia experiments, and AI (Vapi/Gemini) integration |
-| BSCS23118 | Abdul Moiz | **Designer Studio** — VPL node editor, scene logic system, and EditorRenderer (Unity WebGL preview) |
-| BSCS23212 | Faizan Amir | **Designer Studio** — React frontend, UI/UX, and component library |
-| BSCS23173 | Waqas Shoaib | **Backend** — Firebase Auth, Firestore, Gemini AI logic generation endpoint |
-| BSCS23176 | Sameer | **Backend** — Supabase storage, asset pipeline, build optimization |
+**Muhammad Abdullah** (`bscs23070@itu.edu.pk`) built LucidLab end-to-end:
+
+- **Unity AR mobile app** — runtime, WebView shell, Vuforia experiments, and AI (Vapi/Gemini) integration
+- **Designer Studio** — VPL node editor, scene logic, EditorRenderer (Unity WebGL preview), React UI/UX, and component library
+- **Backend** — Firebase Auth, Firestore, Gemini AI logic generation, Supabase storage, asset pipeline, and build optimization
 
 ---
 
@@ -253,16 +251,16 @@ The EditorRenderer is a Unity WebGL project that is embedded inside the Designer
 
 ---
 
-## 📄 Course Information
+## 🏆 Hackathon Submission
 
 | Field | Details |
 |-------|---------|
-| Course | Theory and Applications of Virtual Reality |
-| Semester | Spring 2026 |
-| Instructor | Dr. Ibrahim Ghaznavi |
-| TA | Muhammad Qasim |
-| Submission Date | May 10, 2026 |
+| Event | Bano Qabil × Alibaba Cloud AI Hackathon 2026 |
+| Organiser | Bano Qabil Pakistan (Alkhidmat Foundation) |
+| Cloud Partner | Alibaba Cloud |
+| Track | AI-powered education / XR |
+| Submission | September 2026 |
 
 ---
 
-*LucidLab — Spring 2026 — ITU*
+*LucidLab — Bano Qabil × Alibaba Cloud AI Hackathon 2026*

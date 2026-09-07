@@ -17,6 +17,7 @@
 \usepackage{xcolor}
 \usepackage{microtype}
 \usepackage{parskip}
+\graphicspath{{figures/}{./}}
 
 % ─── Typography ─────────────────────────────────────────────────────────────
 \setstretch{1.25}
@@ -43,7 +44,7 @@
 \renewcommand{\headrulewidth}{0.4pt}
 
 % ─── Hyperref ───────────────────────────────────────────────────────────────
-% FIX: all link colours set to black for formal academic submission
+% Link colours set to black for formal hackathon submission
 \hypersetup{
   colorlinks=true,
   linkcolor=black,
@@ -65,25 +66,37 @@
 }
 
 % ─── Project metadata ───────────────────────────────────────────────────────
-\newcommand{\coursename}{Theory and Applications of Virtual Reality}
-\newcommand{\semester}{Spring 2026}
-\newcommand{\instructor}{Dr.\ Ibrahim Ghaznavi}
-\newcommand{\ta}{Muhammad Qasim}
+\newcommand{\hackathonname}{Bano Qabil $\times$ Alibaba Cloud AI Hackathon 2026}
+\newcommand{\hackathonorg}{Bano Qabil Pakistan}
+\newcommand{\cloudpartner}{Alibaba Cloud}
 \newcommand{\projecttitle}{LucidLab AR Science Learning Platform}
-\newcommand{\submissiondate}{May 10, 2026}
+\newcommand{\submissiondate}{September 2026}
+
+% ─── Missing-figure placeholder ──────────────────────────────────────────────
+\newcommand{\safeincludegraphics}[2][]{%
+  \IfFileExists{#2}{%
+    \includegraphics[#1]{#2}%
+  }{%
+    \fcolorbox{gray}{gray!10}{%
+      \parbox[c][0.22\textheight][c]{0.86\linewidth}{%
+        \centering\small\textit{Figure placeholder}\\[4pt]\texttt{\detokenize{#2}}%
+      }%
+    }%
+  }%
+}
 
 % ─── App screenshot macro ────────────────────────────────────────────────────
 \newcommand{\appscreenshotLandscape}[2]{%
   \begin{figure}[H]
     \centering
-    \includegraphics[width=0.88\textwidth,keepaspectratio]{#1}
+    \safeincludegraphics[width=0.88\textwidth,keepaspectratio]{#1}
     \caption{#2}
   \end{figure}%
 }
 \newcommand{\appscreenshotPortrait}[2]{%
   \begin{figure}[H]
     \centering
-    \includegraphics[width=0.42\textwidth,keepaspectratio]{#1}
+    \safeincludegraphics[width=0.42\textwidth,keepaspectratio]{#1}
     \caption{#2}
   \end{figure}%
 }
@@ -95,13 +108,13 @@
     % Row 1
     \begin{subfigure}[t]{0.47\textwidth}
       \centering
-      \includegraphics[width=\linewidth]{#1}
+      \safeincludegraphics[width=\linewidth]{#1}
       \caption{Frame 1: Splash Screen}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.47\textwidth}
       \centering
-      \includegraphics[width=\linewidth]{#2}
+      \safeincludegraphics[width=\linewidth]{#2}
       \caption{Frame 2: Login Screen}
     \end{subfigure}
 
@@ -110,13 +123,13 @@
     % Row 2
     \begin{subfigure}[t]{0.47\textwidth}
       \centering
-      \includegraphics[width=\linewidth]{#3}
+      \safeincludegraphics[width=\linewidth]{#3}
       \caption{Frame 3: Home / Classrooms}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.47\textwidth}
       \centering
-      \includegraphics[width=\linewidth]{#4}
+      \safeincludegraphics[width=\linewidth]{#4}
       \caption{Frame 4: Scene Launcher}
     \end{subfigure}
 
@@ -125,13 +138,13 @@
     % Row 3
     \begin{subfigure}[t]{0.47\textwidth}
       \centering
-      \includegraphics[width=\linewidth]{#5}
+      \safeincludegraphics[width=\linewidth]{#5}
       \caption{Frame 5: Live AR Camera}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.47\textwidth}
       \centering
-      \includegraphics[width=\linewidth]{#6}
+      \safeincludegraphics[width=\linewidth]{#6}
       \caption{Frame 6: Submit \& Exit}
     \end{subfigure}
 
@@ -157,26 +170,18 @@
   \thispagestyle{empty}
   \begin{center}
     \vspace*{1.5cm}
-    {\large \coursename}\\[0.3cm]
-    {\large \semester}\\[0.2cm]
-    {\small Instructor:\ \instructor \quad|\quad TA:\ \ta}\\[1.2cm]
+    {\large \hackathonname}\\[0.3cm]
+    {\large Hackathon Project Submission}\\[0.2cm]
+    {\small Organised by \hackathonorg \quad|\quad Powered by \cloudpartner}\\[1.2cm]
 
     \rule{\textwidth}{1.2pt}\\[0.6cm]
     {\LARGE \bfseries \projecttitle}\\[0.4cm]
     \rule{\textwidth}{1.2pt}\\[1.4cm]
 
-    {\large \bfseries Team Members}\\[0.5cm]
-    \begin{tabular}{@{}ll@{}}
-      \toprule
-      \textbf{Registration No.} & \textbf{Name} \\
-      \midrule
-      BSCS23070 & Muhammad Abdullah \\
-      BSCS23118 & Abdul Moiz \\
-      BSCS23212 & Faizan Amir \\
-      BSCS23173 & Waqas Shoaib \\
-      BSCS23176 & Sameer \\
-      \bottomrule
-    \end{tabular}
+    {\large \bfseries Submitted by}\\[0.5cm]
+    {\Large Muhammad Abdullah}\\[0.25cm]
+    {\normalsize bscs23070@itu.edu.pk}\\[0.6cm]
+    {\small Unity AR \textbullet\ Designer Studio \textbullet\ Backend \textbullet\ AI}
 
     \vfill
     {\normalsize Submission Date:\ \submissiondate}
@@ -189,9 +194,11 @@
 
 \subsection{Background}
 
-The project addresses a practical gap in science education where students often learn
-theory without immersive experimentation due to lab resource limits, safety concerns,
-and limited guided feedback outside physical labs. The proposed solution,
+LucidLab is submitted to the Bano Qabil $\times$ Alibaba Cloud AI Hackathon 2026 as an
+AI-powered AR education platform. The project addresses a practical gap in science
+education where students often learn theory without immersive experimentation due to lab
+resource limits, safety concerns, and limited guided feedback outside physical labs. The
+proposed solution,
 \textbf{LucidLab AR Science Learning Platform}, combines an instructor-facing designer
 studio with a student-facing mobile AR application. Instructors create experiments and
 scenes, assign them to classrooms, and evaluate submissions; students run the assigned
@@ -368,7 +375,7 @@ AR practical across varying device and environment conditions.
   \item Vuforia Engine for high-precision marker tracking and database management.
   \item Designer frontend (React/TypeScript) with Rete.js for visual programming (VPL).
   \item Node.js/Express backend APIs.
-  \item Firebase (authentication and Firestore-backed academic data workflows).
+  \item Firebase (authentication and Firestore-backed classroom data workflows).
   \item Supabase storage integration for media and object asset handling.
   \item Gemini 2.5/3 Flash API for AI scene-logic generation and chatbot intelligence.
   \item Vapi SDK (\texttt{@vapi-ai/web}) for low-latency AI voice interaction.
@@ -435,7 +442,7 @@ assignment workflow before returning to classroom or experiments views.
 
 The six hand-drawn frames below follow the student UI flow and are aligned with
 implemented screens in the repository. All frames were produced using the Vincent sketch
-template (rough pencil/ink, single phone silhouette) as required by course policy.
+template (rough pencil/ink, single phone silhouette) for a consistent visual style.
 
 \storyboardgrid%
   {storyboard_frame_1.jpg}%
@@ -474,19 +481,18 @@ The application is in a fully running state: the student AR application has been
 and successfully deployed on Android and iOS mobile devices, while the Designer Studio
 is hosted as a scalable React web application.
 
-\subsection{Team Contributions and Responsibilities}
+\subsection{Author}
+
+LucidLab was designed, implemented, and deployed by \textbf{Muhammad Abdullah}.
+The author contact is \texttt{bscs23070@itu.edu.pk}. The work spans the full platform:
 
 \begin{itemize}[leftmargin=1.4cm]
-  \item \textbf{Muhammad Abdullah (BSCS23070):} Unity AR mobile app --- runtime,
-        WebView shell, Vuforia experiments, and AI (Vapi/Gemini) integration.
-  \item \textbf{Abdul Moiz (BSCS23118):} Designer Studio --- VPL node editor, scene
-        logic system, and EditorRenderer (Unity WebGL preview).
-  \item \textbf{Faizan Amir (BSCS23212):} Designer Studio --- React frontend, UI/UX,
-        and component library.
-  \item \textbf{Waqas Shoaib (BSCS23173):} Backend --- Firebase Auth, Firestore,
-        Gemini AI logic-generation endpoint.
-  \item \textbf{Sameer (BSCS23176):} Backend --- Supabase storage, asset pipeline,
-        build optimisation.
+  \item Unity AR mobile app --- runtime, WebView shell, Vuforia experiments,
+        and AI (Vapi/Gemini) integration.
+  \item Designer Studio --- VPL node editor, scene logic system, EditorRenderer
+        (Unity WebGL preview), React frontend, UI/UX, and component library.
+  \item Backend --- Firebase Auth, Firestore, Gemini AI logic-generation
+        endpoint, Supabase storage, asset pipeline, and build optimisation.
 \end{itemize}
 
 \subsection{AI Systems Implementation \& Engineering}
@@ -650,7 +656,7 @@ across all major interfaces.
   \end{itemize}
   \item \textbf{Time constraints:}
   \begin{itemize}
-    \item Given semester timelines, advanced fluid mechanics and high-fidelity simulation
+    \item Given hackathon timelines, advanced fluid mechanics and high-fidelity simulation
           features were constrained; focus remained on a robust educational workflow and
           interaction pipeline including AI integration.
   \end{itemize}
@@ -667,7 +673,8 @@ such mismatches as a maintainability risk rather than a product intent failure.
 \section{Conclusion}
 % ══════════════════════════════════════════════════════════════════════════════
 
-LucidLab AR Science Learning Platform presents a practical, evidence-backed approach for
+LucidLab AR Science Learning Platform, developed for the Bano Qabil $\times$ Alibaba Cloud
+AI Hackathon 2026, presents a practical, evidence-backed approach for
 immersive classroom science learning by combining instructor-side authoring, student-side
 mobile AR execution, and classroom evaluation workflows. The project demonstrates that AR
 can be used not only for visualisation but also for structured interactive learning tasks
