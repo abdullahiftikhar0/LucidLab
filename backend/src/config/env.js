@@ -20,13 +20,14 @@ function readInt(name, fallback) {
 const env = {
   nodeEnv: read("NODE_ENV", "development"),
   port: readInt("PORT", readInt("BACKEND_PORT", 5055)),
-  geminiApiKey: read("GEMINI_API_KEY", ""),
-  geminiModel: read("GEMINI_MODEL", "gemini-2.5-flash"),
+  openaiApiKey: read("OPENAI_API_KEY", ""),
+  openaiModel: read("OPENAI_MODEL", "gpt-5.4-mini"),
   firebaseProjectId: read("FIREBASE_PROJECT_ID", ""),
   firebaseClientEmail: read("FIREBASE_CLIENT_EMAIL", ""),
   firebasePrivateKey: read("FIREBASE_PRIVATE_KEY", "").replace(/\\n/g, "\n"),
   supabaseUrl: read("SUPABASE_URL", ""),
   supabaseServiceRoleKey: read("SUPABASE_SERVICE_ROLE_KEY", ""),
+  sketchfabApiToken: read("SKETCHFAB_API_TOKEN", ""),
 };
 
 module.exports = { env };

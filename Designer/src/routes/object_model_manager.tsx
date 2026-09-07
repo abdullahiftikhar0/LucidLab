@@ -1,5 +1,6 @@
 import { useToast } from '@chakra-ui/react';
 import React, { useRef } from 'react';
+import SketchfabSearchModal from '../components/sketchfab/SketchfabSearchModal';
 import { ObjectTypesManagerContext } from './experiment_root';
 
 export default function ObjectModelManager() {
@@ -8,6 +9,7 @@ export default function ObjectModelManager() {
   const [name, setName] = React.useState('');
   const [objFile, setObjFile] = React.useState<Blob | undefined>(undefined);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [sketchfabOpen, setSketchfabOpen] = React.useState(false);
   const toast = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -63,6 +65,22 @@ export default function ObjectModelManager() {
       </div>
 
       <div className="flex flex-col gap-8 flex-grow">
+        <button
+          type="button"
+          onClick={() => setSketchfabOpen(true)}
+          className="w-full shrink-0 bg-white border-2 border-[#169A92] text-[#169A92] hover:bg-[#E6F9F5] font-semibold py-3 rounded-full shadow-sm transition-all flex items-center justify-center gap-2"
+        >
+          <span className="material-symbols-outlined text-sm">travel_explore</span>
+          Search Assets
+        </button>
+
+        <SketchfabSearchModal
+          isOpen={sketchfabOpen}
+          onClose={() => setSketchfabOpen(false)}
+          existingAssetNames={objectTypesManager.objects.map(o => o.name)}
+          onImported={() => objectTypesManager.refreshObjects()}
+        />
+
         {/* Upload Form */}
         <div className="bg-[#f7fcfb] rounded-3xl p-5 border border-[#bfe9e2] shrink-0">
           <h3 className="text-sm font-semibold text-[#169A92] mb-4 uppercase tracking-wider flex items-center gap-2">
@@ -152,7 +170,7 @@ export default function ObjectModelManager() {
           </div>
         </div>
       </div>
-      
+
       {/* Hide scrollbar but keep scroll functionality */}
       <style>{`
         .hide-scrollbar::-webkit-scrollbar {

@@ -1,26 +1,9 @@
 const express = require("express");
 const { getSupabaseAdmin } = require("../services/clients");
+const { uploadBase64 } = require("../services/storageUpload");
 const { requireAuth } = require("../middleware/auth");
 
 const router = express.Router();
-
-function decodeDataUrl(dataUrl) {
-  const m = /^data:([^;]+);base64,(.+)$/i.exec(dataUrl || "");
-  if (!m) throw new Error("Invalid file payload");
-  return { contentType: m[1], buffer: Buffer.from(m[2], "base64") };
-}
-
-async function uploadBase64({ bucket, path, dataUrl, upsert = true }) {
-  const supabase = getSupabaseAdmin();
-  const { contentType, buffer } = decodeDataUrl(dataUrl);
-  const { error } = await supabase.storage.from(bucket).upload(path, buffer, {
-    contentType,
-    upsert,
-  });
-  if (error) throw new Error(error.message || "Supabase upload failed");
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-  return data.publicUrl;
-}
 
 router.post("/avatar", requireAuth, async (req, res, next) => {
   try {

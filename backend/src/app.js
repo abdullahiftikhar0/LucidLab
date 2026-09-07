@@ -3,6 +3,7 @@ const { healthRouter } = require("./routes/health");
 const { aiRouter } = require("./routes/ai");
 const { storageRouter } = require("./routes/storage");
 const { firestoreRouter } = require("./routes/firestore");
+const { sketchfabRouter } = require("./routes/sketchfab");
 const { errorHandler } = require("./middleware/errorHandler");
 
 function createApp() {
@@ -29,6 +30,7 @@ function createApp() {
   app.use(healthRouter);
   app.use("/api/ai", aiRouter);
   app.use("/api/storage", storageRouter);
+  app.use("/api/sketchfab", sketchfabRouter);
   app.use("/api", firestoreRouter);
 
   app.use(errorHandler);
